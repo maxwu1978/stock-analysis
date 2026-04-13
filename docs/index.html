@@ -33,7 +33,7 @@
 <body>
 
 <h1>A股技术分析报告</h1>
-<div class="subtitle">数据更新时间: 2026-04-13 22:30:36 &nbsp;
+<div class="subtitle">数据更新时间: 2026-04-13 22:36:11 &nbsp;
 <button class="btn" id="refreshBtn" onclick="triggerRefresh()">刷新数据</button>
 <span id="refreshMsg" style="margin-left:10px;color:#656d76;font-size:13px;"></span>
 </div>
@@ -103,11 +103,11 @@ async function triggerRefresh() {
 </div>
 <table>
 <tr><th>股票</th><th>方向</th><th>可靠度</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
-<tr><td>宁德时代</td><td><span class="tag tag-neutral">震荡</span></td><td class="strong">强</td><td>49% +0.33% <small>(n=246)</small></td><td>50% +0.81% <small>(n=244)</small></td><td>47% +0.89% <small>(n=240)</small></td><td class="strong">84% +35.33% <small>(n=184)</small></td></tr>
-<tr><td>贵州茅台</td><td><span class="tag tag-down">偏跌</span></td><td class="weak">弱</td><td>44% -0.15% <small>(n=262)</small></td><td>44% -0.50% <small>(n=258)</small></td><td>41% -0.33% <small>(n=253)</small></td><td class="weak">26% -5.27% <small>(n=188)</small></td></tr>
-<tr><td>中国铝业</td><td><span class="tag tag-neutral">震荡</span></td><td class="strong">强</td><td>44% +0.09% <small>(n=90)</small></td><td>42% -0.79% <small>(n=90)</small></td><td>49% +0.52% <small>(n=77)</small></td><td class="weak">36% +6.45% <small>(n=22)</small></td></tr>
-<tr><td>阳光电源</td><td><span class="tag tag-down">偏跌</span></td><td class="weak">弱</td><td>41% -0.90% <small>(n=78)</small></td><td>43% -0.70% <small>(n=76)</small></td><td class="weak">39% -2.64% <small>(n=69)</small></td><td class="strong">94% +109.75% <small>(n=51)</small></td></tr>
-<tr><td>闻泰科技</td><td><span class="tag tag-down">偏跌</span></td><td class="">中</td><td>42% -0.23% <small>(n=199)</small></td><td>41% -0.23% <small>(n=199)</small></td><td class="weak">40% +2.10% <small>(n=188)</small></td><td>54% -1.00% <small>(n=145)</small></td></tr>
+<tr><td>宁德时代</td><td><span class="tag tag-neutral">震荡</span></td><td class="strong">强</td><td>47% +0.39% <small>(n=255)</small></td><td>51% +1.43% <small>(n=253)</small></td><td>51% +2.42% <small>(n=248)</small></td><td class="strong">83% +33.81% <small>(n=193)</small></td></tr>
+<tr><td>贵州茅台</td><td><span class="tag tag-down">偏跌</span></td><td class="weak">弱</td><td>46% -0.04% <small>(n=252)</small></td><td>46% -0.34% <small>(n=248)</small></td><td class="weak">36% -1.20% <small>(n=242)</small></td><td class="weak">19% -6.50% <small>(n=186)</small></td></tr>
+<tr><td>中国铝业</td><td><span class="tag tag-neutral">震荡</span></td><td class="strong">强</td><td>45% +0.23% <small>(n=94)</small></td><td>44% -0.06% <small>(n=95)</small></td><td>49% +0.48% <small>(n=86)</small></td><td>42% +8.66% <small>(n=24)</small></td></tr>
+<tr><td>阳光电源</td><td><span class="tag tag-down">偏跌</span></td><td class="weak">弱</td><td class="weak">40% -0.99% <small>(n=77)</small></td><td>43% -0.88% <small>(n=75)</small></td><td class="weak">39% -2.64% <small>(n=69)</small></td><td class="strong">94% +109.75% <small>(n=51)</small></td></tr>
+<tr><td>闻泰科技</td><td><span class="tag tag-down">偏跌</span></td><td class="">中</td><td class="weak">39% -0.45% <small>(n=211)</small></td><td class="weak">39% -0.69% <small>(n=208)</small></td><td class="weak">39% +1.48% <small>(n=195)</small></td><td>56% -0.57% <small>(n=156)</small></td></tr>
 
 </table>
 
@@ -116,7 +116,7 @@ async function triggerRefresh() {
 <tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr>
 <tr><td>宁德时代</td><td class="up">71.0</td><td>0.232</td><td>401.80</td><td>403.07</td><td>372.77</td><td>31</td><td>混合</td></tr>
 <tr><td>贵州茅台</td><td class="down">37.6</td><td>4.011</td><td>1452.56</td><td>1443.34</td><td>1431.16</td><td>21</td><td>回归</td></tr>
-<tr><td>中国铝业</td><td class="">59.1</td><td>0.272</td><td>12.18</td><td>11.89</td><td>13.07</td><td>22</td><td>混合</td></tr>
+<tr><td>中国铝业</td><td class="">59.1</td><td>0.272</td><td>12.18</td><td>11.89</td><td>13.07</td><td>22</td><td>回归</td></tr>
 <tr><td>阳光电源</td><td class="up">65.0</td><td>-5.295</td><td>127.62</td><td>150.27</td><td>154.52</td><td>35</td><td>混合</td></tr>
 <tr><td>闻泰科技</td><td class="">58.7</td><td>0.171</td><td>31.32</td><td>31.98</td><td>34.59</td><td>14</td><td>回归</td></tr>
 
@@ -150,10 +150,10 @@ async function triggerRefresh() {
 <h2>趋势概率</h2>
 <table>
 <tr><th>股票</th><th>方向</th><th>可靠度</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
-<tr><td>英伟达</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td class="strong">65% +2.17% <small>(n=275)</small></td><td class="strong">68% +3.78% <small>(n=275)</small></td><td class="strong">68% +7.98% <small>(n=275)</small></td><td class="strong">82% +54.79% <small>(n=266)</small></td></tr>
-<tr><td>特斯拉</td><td><span class="tag tag-neutral">震荡</span></td><td class="strong">强</td><td>50% +0.37% <small>(n=446)</small></td><td>48% +0.93% <small>(n=446)</small></td><td>49% +3.13% <small>(n=445)</small></td><td>49% +9.51% <small>(n=389)</small></td></tr>
-<tr><td>谷歌</td><td><span class="tag tag-up">看涨</span></td><td class="weak">弱</td><td>46% -0.48% <small>(n=184)</small></td><td>56% +0.08% <small>(n=182)</small></td><td class="strong">63% +2.29% <small>(n=182)</small></td><td class="strong">79% +22.25% <small>(n=127)</small></td></tr>
-<tr><td>苹果</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td>58% +0.30% <small>(n=430)</small></td><td class="strong">60% +0.80% <small>(n=430)</small></td><td class="strong">61% +2.20% <small>(n=431)</small></td><td class="strong">62% +5.43% <small>(n=356)</small></td></tr>
+<tr><td>英伟达</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td class="strong">64% +2.22% <small>(n=279)</small></td><td class="strong">68% +3.88% <small>(n=279)</small></td><td class="strong">68% +8.83% <small>(n=279)</small></td><td class="strong">83% +53.60% <small>(n=264)</small></td></tr>
+<tr><td>特斯拉</td><td><span class="tag tag-neutral">震荡</span></td><td class="strong">强</td><td>46% +0.06% <small>(n=379)</small></td><td>47% +0.38% <small>(n=379)</small></td><td>46% +2.41% <small>(n=375)</small></td><td>53% +14.08% <small>(n=319)</small></td></tr>
+<tr><td>谷歌</td><td><span class="tag tag-up">看涨</span></td><td class="weak">弱</td><td>47% -0.08% <small>(n=213)</small></td><td>55% +0.04% <small>(n=212)</small></td><td class="strong">61% +2.19% <small>(n=212)</small></td><td class="strong">82% +20.31% <small>(n=146)</small></td></tr>
+<tr><td>苹果</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td>57% +0.35% <small>(n=428)</small></td><td>58% +0.81% <small>(n=428)</small></td><td class="strong">63% +2.57% <small>(n=428)</small></td><td class="strong">67% +6.16% <small>(n=354)</small></td></tr>
 
 </table>
 
