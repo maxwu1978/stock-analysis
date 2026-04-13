@@ -192,20 +192,37 @@ async function triggerRefresh() {{
   btn.disabled = true;
   btn.textContent = '正在刷新...';
   msg.textContent = '';
+
+  let token = localStorage.getItem('gh_token');
+  if (!token) {{
+    token = prompt('首次使用请输入GitHub Personal Access Token (需要repo和workflow权限):');
+    if (!token) {{
+      btn.disabled = false;
+      btn.textContent = '刷新数据';
+      return;
+    }}
+    localStorage.setItem('gh_token', token);
+  }}
+
   try {{
     const r = await fetch('https://api.github.com/repos/maxwu1978/stock-analysis/actions/workflows/update-page.yml/dispatches', {{
       method: 'POST',
-      headers: {{'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + (localStorage.getItem('gh_token') || prompt('首次使用请输入GitHub Personal Access Token (需要repo和workflow权限):'))}},
+      headers: {{
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer ' + token
+      }},
       body: JSON.stringify({{ref: 'main'}})
     }});
     if (r.status === 204) {{
-      localStorage.setItem('gh_token', r.headers ? localStorage.getItem('gh_token') : '');
-      msg.textContent = '已触发更新, 约2分钟后刷新页面查看';
+      msg.textContent = '已触发更新, 约2分钟后自动刷新页面...';
       msg.style.color = '#1a7f37';
       setTimeout(() => location.reload(), 120000);
+    }} else if (r.status === 401 || r.status === 403) {{
+      localStorage.removeItem('gh_token');
+      msg.textContent = 'Token无效或权限不足, 请重新点击刷新输入';
+      msg.style.color = '#cf222e';
     }} else {{
-      const txt = await r.text();
-      msg.textContent = '触发失败: ' + r.status;
+      msg.textContent = '触发失败: HTTP ' + r.status;
       msg.style.color = '#cf222e';
     }}
   }} catch(e) {{
@@ -214,12 +231,6 @@ async function triggerRefresh() {{
   }}
   btn.disabled = false;
   btn.textContent = '刷新数据';
-}}
-// 保存token
-if (location.search.includes('token=')) {{
-  const t = new URLSearchParams(location.search).get('token');
-  if (t) localStorage.setItem('gh_token', t);
-  history.replaceState(null, '', location.pathname);
 }}
 </script>
 
