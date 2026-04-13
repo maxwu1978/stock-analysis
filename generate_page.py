@@ -9,6 +9,7 @@ from fetch_data import STOCKS, fetch_realtime_quotes, fetch_all_history
 from indicators import compute_all, summarize
 from probability import score_trend
 from fundamental import fetch_all_financials
+from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 
 
 def direction_tag(hp):
@@ -267,6 +268,135 @@ async function triggerRefresh() {{
 </div>
 
 </body></html>"""
+
+    # ==================== 美股部分 ====================
+    print("获取美股行情...")
+    try:
+        us_rt = fetch_us_realtime()
+    except Exception as e:
+        print(f"  [!] {e}")
+        us_rt = pd.DataFrame()
+
+    print("获取美股财报...")
+    try:
+        us_fund = fetch_us_financials()
+    except Exception as e:
+        print(f"  [!] {e}")
+        us_fund = {}
+
+    print("获取美股历史数据...")
+    try:
+        us_hist = fetch_us_all_history("5y")
+    except Exception as e:
+        print(f"  [!] {e}")
+        us_hist = {}
+
+    us_quote_html = ""
+    if not us_rt.empty:
+        for _, r in us_rt.iterrows():
+            chg = r.get("涨跌幅", 0)
+            vol = r.get("成交额", 0)
+            vol_s = f"{vol/1e6:.1f}M" if vol >= 1e6 else f"{vol:,.0f}"
+            mcap = r.get("市值", 0)
+            mcap_s = f"${mcap/1e12:.2f}T" if mcap >= 1e12 else f"${mcap/1e9:.0f}B"
+            us_quote_html += f'<tr><td>{r["名称"]}</td><td>{r["代码"]}</td>'
+            us_quote_html += f'<td>${r.get("最新价",0):.2f}</td>'
+            us_quote_html += chg_td(chg)
+            us_quote_html += f'<td>{vol_s}</td><td>{mcap_s}</td>'
+            us_quote_html += f'<td>${r.get("最高",0):.2f}</td>'
+            us_quote_html += f'<td>${r.get("最低",0):.2f}</td></tr>\n'
+
+    us_prob_html = ""
+    us_tech_html = ""
+    us_fund_html = ""
+
+    for ticker, df in us_hist.items():
+        uname = US_STOCKS[ticker]
+        ufund = us_fund.get(ticker)
+        df = compute_all(df, ufund)
+        s = summarize(df)
+        if not s:
+            continue
+        prob = score_trend(df)
+        if "error" in prob:
+            continue
+        hp = prob.get("historical_prob", {})
+        rg = prob.get("regime", {})
+
+        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td>'
+        for period in ["5日", "10日", "30日", "180日"]:
+            us_prob_html += fmt_prob_cell(hp.get(period))
+        us_prob_html += '</tr>\n'
+
+        stype = {"momentum": "动量", "mean_revert": "回归", "mixed": "混合"}.get(rg.get("stock_type"), "?")
+        try:
+            rsi_v = float(s["RSI6"])
+            rsi_cls = "up" if rsi_v > 60 else ("down" if rsi_v < 40 else "")
+        except:
+            rsi_cls = ""
+        us_tech_html += f'<tr><td>{uname}</td>'
+        us_tech_html += f'<td class="{rsi_cls}">{s["RSI6"]}</td>'
+        us_tech_html += f'<td>{s["MACD"]}</td>'
+        us_tech_html += f'<td>{s["MA5"]}</td><td>{s["MA20"]}</td><td>{s["MA60"]}</td>'
+        us_tech_html += f'<td>{rg.get("adx",0):.0f}</td><td>{stype}</td></tr>\n'
+
+        if ufund is not None and not ufund.empty:
+            lt = ufund.iloc[-1]
+            rpt = lt.get("report_date")
+            rpt_s = rpt.strftime("%Y-%m-%d") if hasattr(rpt, "strftime") else str(rpt)
+            def us_fv(key, fmt=".1f"):
+                v = lt.get(key)
+                if pd.isna(v): return "-"
+                return f"{v:{fmt}}%"
+            def us_fv_td(key, fmt=".1f", invert=False):
+                v = lt.get(key)
+                if pd.isna(v): return '<td>-</td>'
+                s_val = f"{v:{fmt}}%"
+                if invert:
+                    cls = "down" if v > 60 else ("up" if v < 30 else "")
+                else:
+                    cls = "up" if v > 15 else ("down" if v < 0 else "")
+                return f'<td class="{cls}">{s_val}</td>'
+            us_fund_html += f'<tr><td>{uname}</td><td>{rpt_s}</td>'
+            us_fund_html += us_fv_td("roe")
+            us_fund_html += us_fv_td("rev_growth", "+.1f")
+            us_fund_html += us_fv_td("profit_growth", "+.1f")
+            us_fund_html += f'<td>{us_fv("gross_margin")}</td>'
+            us_fund_html += us_fv_td("debt_ratio", ".1f", invert=True)
+            us_fund_html += '</tr>\n'
+
+    # 拼接美股HTML
+    us_section = f"""
+<h2 style="margin-top:50px; border-top:3px solid #0969da; padding-top:20px;">
+美股技术分析 (NVDA / TSLA / GOOGL / AAPL)</h2>
+
+<h2>最新行情</h2>
+<table>
+<tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交量</th><th>市值</th><th>最高</th><th>最低</th></tr>
+{us_quote_html}
+</table>
+
+<h2>趋势概率</h2>
+<table>
+<tr><th>股票</th><th>方向</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
+{us_prob_html}
+</table>
+
+<h2>技术指标</h2>
+<table>
+<tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr>
+{us_tech_html}
+</table>
+
+<h2>最新财报</h2>
+<table>
+<tr><th>股票</th><th>报告期</th><th>ROE</th><th>营收增长</th><th>利润增长</th><th>毛利率</th><th>负债率</th></tr>
+{us_fund_html}
+</table>
+"""
+
+    # 在A股footer前插入美股部分
+    html = html.replace('<div class="footer">', us_section + '\n<div class="footer">')
 
     # 写到 docs/index.html (GitHub Pages 从 docs 目录读取)
     os.makedirs("docs", exist_ok=True)

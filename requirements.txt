@@ -6,3 +6,4 @@ mplfinance
 requests
 flask
 tabulate
+yfinance
