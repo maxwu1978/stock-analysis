@@ -47,6 +47,7 @@ FACTORS = [
     "ma5_slope",     # MA5斜率
     "ma20_diff",     # 价格偏离MA20的百分比
     "ma60_diff",     # 价格偏离MA60的百分比
+    "high52w_pos",   # 52周高低位置 (George & Hwang 2004)
 ]
 
 

@@ -23,6 +23,7 @@ FACTOR_COLS = [
     "ma5_slope",
     "ma20_diff",
     "ma60_diff",
+    "high52w_pos",
     # 基本面因子
     "roe",              # ROE (净资产收益率)
     "rev_growth",       # 营收同比增长率

@@ -118,6 +118,19 @@ def add_support_resistance(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
     return df
 
 
+def add_high52w_pos(df: pd.DataFrame, period: int = 250) -> pd.DataFrame:
+    """计算年度高低位置因子 (52-week high/low position)
+    value = (close - 250日低点) / (250日高点 - 250日低点), 范围0~100
+    学术依据: George & Hwang (2004) 52-week high与动量效应
+    靠近年高 → 动量延续; 靠近年低 → 可能反转或继续下跌
+    """
+    high_252 = df["high"].rolling(window=period, min_periods=period // 2).max()
+    low_252 = df["low"].rolling(window=period, min_periods=period // 2).min()
+    spread = high_252 - low_252
+    df["high52w_pos"] = ((df["close"] - low_252) / spread.replace(0, np.nan) * 100)
+    return df
+
+
 def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.DataFrame:
     """计算所有技术指标, 可选整合基本面因子"""
     df = add_ma(df)
@@ -130,6 +143,7 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_vol_price_divergence(df)
     df = add_autocorr(df)
     df = add_support_resistance(df)
+    df = add_high52w_pos(df)
 
     # 整合基本面因子
     if fundamental_df is not None and not fundamental_df.empty:

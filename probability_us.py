@@ -26,6 +26,7 @@ US_FACTOR_COLS = [
     "atr_pct",        # ATR占比 (波动率)
     "vol_change",     # 成交量变化率
     "high_low_range", # 日内振幅
+    "high52w_pos",    # 52周位置 (年度高低位置)
 ]
 
 IC_WINDOW = 90   # 美股用更短窗口
