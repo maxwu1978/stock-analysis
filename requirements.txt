@@ -1,0 +1,8 @@
+akshare
+pandas
+numpy
+matplotlib
+mplfinance
+requests
+flask
+tabulate
