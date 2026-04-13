@@ -12,6 +12,9 @@ from probability_us import score_trend_us
 from fundamental import fetch_all_financials
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 
+A_SIGNAL_RELIABILITY = {"300750": "强", "600519": "弱", "601600": "强", "300274": "弱", "600745": "中"}
+US_SIGNAL_RELIABILITY = {"NVDA": "中", "TSLA": "强", "GOOGL": "弱", "AAPL": "中"}
+
 
 def direction_tag(hp):
     p30 = hp.get("30日")
@@ -104,7 +107,9 @@ def generate():
         hp = prob.get("historical_prob", {})
         rg = prob.get("regime", {})
 
-        prob_html += f'<tr><td>{name}</td><td>{direction_tag(hp)}</td>'
+        reliability = A_SIGNAL_RELIABILITY.get(code, "?")
+        rel_cls = "strong" if reliability == "强" else ("weak" if reliability == "弱" else "")
+        prob_html += f'<tr><td>{name}</td><td>{direction_tag(hp)}</td><td class="{rel_cls}">{reliability}</td>'
         for period in ["5日", "10日", "30日", "180日"]:
             prob_html += fmt_prob_cell(hp.get(period))
         prob_html += '</tr>\n'
@@ -247,7 +252,7 @@ async function triggerRefresh() {{
 方向由30日上涨概率决定: &gt;55%偏涨, &lt;45%偏跌
 </div>
 <table>
-<tr><th>股票</th><th>方向</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
+<tr><th>股票</th><th>方向</th><th>可靠度</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
 {prob_html}
 </table>
 
@@ -324,7 +329,9 @@ async function triggerRefresh() {{
         hp = prob.get("historical_prob", {})
         rg = prob.get("regime", {})
 
-        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td>'
+        us_rel = US_SIGNAL_RELIABILITY.get(ticker, "?")
+        us_rel_cls = "strong" if us_rel == "强" else ("weak" if us_rel == "弱" else "")
+        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td><td class="{us_rel_cls}">{us_rel}</td>'
         for period in ["5日", "10日", "30日", "180日"]:
             us_prob_html += fmt_prob_cell(hp.get(period))
         us_prob_html += '</tr>\n'
@@ -379,7 +386,7 @@ async function triggerRefresh() {{
 
 <h2>趋势概率</h2>
 <table>
-<tr><th>股票</th><th>方向</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
+<tr><th>股票</th><th>方向</th><th>可靠度</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
 {us_prob_html}
 </table>
 

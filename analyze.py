@@ -10,6 +10,14 @@ from probability import score_trend
 from fundamental import fetch_all_financials
 
 
+SIGNAL_RELIABILITY = {
+    "300750": "强",  # 宁德时代
+    "600519": "弱",  # 贵州茅台
+    "601600": "强",  # 中国铝业
+    "300274": "弱",  # 阳光电源
+    "600745": "中",  # 闻泰科技
+}
+
 def direction_from_prob(hp):
     """用30日上涨概率决定方向"""
     p30 = hp.get("30日")
@@ -100,9 +108,11 @@ def main():
             if p <= 40: return f"_{p}%_ {avg} (n={n})"
             return f"{p}% {avg} (n={n})"
 
+        reliability = SIGNAL_RELIABILITY.get(code, "?")
         prob_rows.append([
             f"**{name}**",
             f"**{direction}**",
+            f"**{reliability}**",
             fmt_p(hp.get("5日")),
             fmt_p(hp.get("10日")),
             fmt_p(hp.get("30日")),
@@ -143,7 +153,7 @@ def main():
     print(f"\n### 趋势概率\n")
     print(f"方向由30日上涨概率决定: >55%偏涨, <45%偏跌\n")
     print(md_table(
-        ["股票", "方向", "5日", "10日", "30日", "180日"],
+        ["股票", "方向", "可靠度", "5日", "10日", "30日", "180日"],
         prob_rows))
 
     print(f"\n### 技术指标\n")

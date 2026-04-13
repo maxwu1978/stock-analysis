@@ -9,6 +9,13 @@ from indicators import compute_all, summarize
 from probability_us import score_trend_us as score_trend
 
 
+US_SIGNAL_RELIABILITY = {
+    "NVDA": "中",  # 英伟达
+    "TSLA": "强",  # 特斯拉
+    "GOOGL": "弱", # 谷歌
+    "AAPL": "中",  # 苹果
+}
+
 def direction_from_prob(hp):
     p30 = hp.get("30日")
     if not p30:
@@ -99,8 +106,9 @@ def main():
             if p <= 40: return f"_{p}%_ {avg} (n={n})"
             return f"{p}% {avg} (n={n})"
 
+        reliability = US_SIGNAL_RELIABILITY.get(ticker, "?")
         prob_rows.append([
-            f"**{name}**", f"**{direction}**",
+            f"**{name}**", f"**{direction}**", f"**{reliability}**",
             fmt_p(hp.get("5日")), fmt_p(hp.get("10日")),
             fmt_p(hp.get("30日")), fmt_p(hp.get("180日")),
         ])
@@ -126,7 +134,7 @@ def main():
             ])
 
     print(f"\n### 趋势概率\n")
-    print(md_table(["股票", "方向", "5日", "10日", "30日", "180日"], prob_rows))
+    print(md_table(["股票", "方向", "可靠度", "5日", "10日", "30日", "180日"], prob_rows))
 
     print(f"\n### 技术指标\n")
     print(md_table(["股票", "RSI6", "MACD柱", "MA5", "MA20", "MA60", "ADX", "股性"], tech_rows))
