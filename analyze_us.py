@@ -6,8 +6,7 @@ import sys
 import pandas as pd
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 from indicators import compute_all, summarize
-from probability import score_trend
-from fundamental import align_fundamental_to_daily
+from probability_us import score_trend_us as score_trend
 
 
 def direction_from_prob(hp):

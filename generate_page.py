@@ -8,6 +8,7 @@ import pandas as pd
 from fetch_data import STOCKS, fetch_realtime_quotes, fetch_all_history
 from indicators import compute_all, summarize
 from probability import score_trend
+from probability_us import score_trend_us
 from fundamental import fetch_all_financials
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 
@@ -317,7 +318,7 @@ async function triggerRefresh() {{
         s = summarize(df)
         if not s:
             continue
-        prob = score_trend(df)
+        prob = score_trend_us(df)
         if "error" in prob:
             continue
         hp = prob.get("historical_prob", {})
