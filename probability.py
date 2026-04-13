@@ -40,15 +40,17 @@ IC_WINDOW = 120
 HORIZON = 5
 
 
-def _compute_rolling_ic(df: pd.DataFrame, window: int = IC_WINDOW, horizon: int = HORIZON) -> pd.DataFrame:
+def _compute_rolling_ic(df: pd.DataFrame, window: int = IC_WINDOW, horizon: int = HORIZON, factor_cols: list = None) -> pd.DataFrame:
     """计算每个因子的滚动IC"""
     # 未来收益率
     fwd = df["close"].shift(-horizon) / df["close"] - 1
     df = df.copy()
     df["_fwd"] = fwd
 
+    if factor_cols is None:
+        factor_cols = FACTOR_COLS
     ic_df = pd.DataFrame(index=df.index)
-    for col in FACTOR_COLS:
+    for col in factor_cols:
         if col not in df.columns:
             continue
         # 滚动rank correlation
@@ -80,8 +82,16 @@ def score_trend(df: pd.DataFrame) -> dict:
 
     df = _prepare_extra_factors(df)
 
-    # 计算滚动IC
-    ic_df = _compute_rolling_ic(df)
+    # 过滤掉NaN超过50%的因子 (美股财报数据稀疏时自动跳过)
+    usable_factors = []
+    for col in FACTOR_COLS:
+        if col in df.columns and df[col].notna().mean() > 0.3:
+            usable_factors.append(col)
+    if not usable_factors:
+        return {"error": "可用因子不足"}
+
+    # 计算滚动IC (只用可用因子)
+    ic_df = _compute_rolling_ic(df, factor_cols=usable_factors)
 
     last_idx = df.index[-1]
     last = df.iloc[-1]
@@ -92,7 +102,7 @@ def score_trend(df: pd.DataFrame) -> dict:
         ic_row_idx = -1
 
     ic_weights = {}
-    for col in FACTOR_COLS:
+    for col in usable_factors:
         if col in ic_df.columns:
             ic_val = ic_df[col].iloc[ic_row_idx]
             if pd.notna(ic_val):

@@ -33,7 +33,7 @@
 <body>
 
 <h1>A股技术分析报告</h1>
-<div class="subtitle">数据更新时间: 2026-04-13 18:02:38 &nbsp;
+<div class="subtitle">数据更新时间: 2026-04-13 18:08:18 &nbsp;
 <button class="btn" id="refreshBtn" onclick="triggerRefresh()">刷新数据</button>
 <span id="refreshMsg" style="margin-left:10px;color:#656d76;font-size:13px;"></span>
 </div>
@@ -106,6 +106,8 @@ async function triggerRefresh() {
 <tr><td>宁德时代</td><td><span class="tag tag-neutral">震荡</span></td><td>49% +0.33% <small>(n=246)</small></td><td>50% +0.81% <small>(n=244)</small></td><td>47% +0.89% <small>(n=240)</small></td><td class="strong">84% +35.33% <small>(n=184)</small></td></tr>
 <tr><td>贵州茅台</td><td><span class="tag tag-down">偏跌</span></td><td>44% -0.15% <small>(n=262)</small></td><td>44% -0.50% <small>(n=258)</small></td><td>41% -0.33% <small>(n=253)</small></td><td class="weak">26% -5.27% <small>(n=188)</small></td></tr>
 <tr><td>中国铝业</td><td><span class="tag tag-neutral">震荡</span></td><td>44% +0.09% <small>(n=90)</small></td><td>42% -0.79% <small>(n=90)</small></td><td>49% +0.52% <small>(n=77)</small></td><td class="weak">36% +6.45% <small>(n=22)</small></td></tr>
+<tr><td>阳光电源</td><td><span class="tag tag-down">偏跌</span></td><td>41% -0.90% <small>(n=78)</small></td><td>43% -0.70% <small>(n=76)</small></td><td class="weak">39% -2.64% <small>(n=69)</small></td><td class="strong">94% +109.75% <small>(n=51)</small></td></tr>
+<tr><td>闻泰科技</td><td><span class="tag tag-down">偏跌</span></td><td>42% -0.23% <small>(n=199)</small></td><td>41% -0.23% <small>(n=199)</small></td><td class="weak">40% +2.10% <small>(n=188)</small></td><td>54% -1.00% <small>(n=145)</small></td></tr>
 
 </table>
 
@@ -115,6 +117,8 @@ async function triggerRefresh() {
 <tr><td>宁德时代</td><td class="up">71.0</td><td>0.232</td><td>401.80</td><td>403.07</td><td>372.77</td><td>31</td><td>混合</td></tr>
 <tr><td>贵州茅台</td><td class="down">37.6</td><td>4.011</td><td>1452.56</td><td>1443.34</td><td>1431.16</td><td>21</td><td>回归</td></tr>
 <tr><td>中国铝业</td><td class="">59.1</td><td>0.272</td><td>12.18</td><td>11.89</td><td>13.07</td><td>22</td><td>混合</td></tr>
+<tr><td>阳光电源</td><td class="up">65.0</td><td>-5.295</td><td>127.62</td><td>150.27</td><td>154.52</td><td>35</td><td>混合</td></tr>
+<tr><td>闻泰科技</td><td class="">58.7</td><td>0.171</td><td>31.32</td><td>31.98</td><td>34.59</td><td>14</td><td>回归</td></tr>
 
 </table>
 
@@ -124,6 +128,8 @@ async function triggerRefresh() {
 <tr><td>宁德时代</td><td>2025-12-31</td><td class="up">24.9%</td><td class="up">+17.0%</td><td class="up">+42.3%</td><td>26.3%</td><td class="down">61.9%</td></tr>
 <tr><td>贵州茅台</td><td>2025-09-30</td><td class="up">24.6%</td><td class="">+6.3%</td><td class="">+6.2%</td><td>91.3%</td><td class="up">12.8%</td></tr>
 <tr><td>中国铝业</td><td>2025-12-31</td><td class="up">17.6%</td><td class="">+1.7%</td><td class="">+2.2%</td><td>18.0%</td><td class="">46.0%</td></tr>
+<tr><td>阳光电源</td><td>2025-12-31</td><td class="up">31.3%</td><td class="">+14.6%</td><td class="up">+22.0%</td><td>31.8%</td><td class="">58.1%</td></tr>
+<tr><td>闻泰科技</td><td>2025-09-30</td><td class="">4.3%</td><td class="down">-44.0%</td><td class="up">+265.1%</td><td>17.0%</td><td class="">33.9%</td></tr>
 
 </table>
 
@@ -134,30 +140,30 @@ async function triggerRefresh() {
 <h2>最新行情</h2>
 <table>
 <tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交量</th><th>市值</th><th>最高</th><th>最低</th></tr>
-<tr><td>英伟达</td><td>NVDA</td><td>$188.07</td><td class="down">-0.36%</td><td>63.0M</td><td>$4.57T</td><td>$189.65</td><td>$185.74</td></tr>
-<tr><td>特斯拉</td><td>TSLA</td><td>$350.64</td><td class="up">+0.47%</td><td>26.6M</td><td>$1.32T</td><td>$356.35</td><td>$348.57</td></tr>
-<tr><td>谷歌</td><td>GOOGL</td><td>$318.29</td><td class="up">+0.32%</td><td>7.3M</td><td>$3.85T</td><td>$320.01</td><td>$315.47</td></tr>
-<tr><td>苹果</td><td>AAPL</td><td>$256.94</td><td class="down">-1.36%</td><td>11.5M</td><td>$3.78T</td><td>$260.18</td><td>$256.66</td></tr>
+<tr><td>英伟达</td><td>NVDA</td><td>$188.19</td><td class="down">-0.29%</td><td>64.6M</td><td>$4.57T</td><td>$189.65</td><td>$185.74</td></tr>
+<tr><td>特斯拉</td><td>TSLA</td><td>$351.42</td><td class="up">+0.69%</td><td>27.2M</td><td>$1.32T</td><td>$356.35</td><td>$348.57</td></tr>
+<tr><td>谷歌</td><td>GOOGL</td><td>$318.58</td><td class="up">+0.41%</td><td>7.5M</td><td>$3.85T</td><td>$320.01</td><td>$315.47</td></tr>
+<tr><td>苹果</td><td>AAPL</td><td>$257.03</td><td class="down">-1.32%</td><td>11.8M</td><td>$3.78T</td><td>$260.18</td><td>$256.66</td></tr>
 
 </table>
 
 <h2>趋势概率</h2>
 <table>
 <tr><th>股票</th><th>方向</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
-<tr><td>英伟达</td><td><span class="tag tag-neutral">震荡</span></td><td>50% -0.58% <small>(n=14)</small></td><td class="strong">64% -0.06% <small>(n=14)</small></td><td>50% -1.68% <small>(n=14)</small></td><td>-</td></tr>
-<tr><td>特斯拉</td><td><span class="tag tag-neutral">--</span></td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
-<tr><td>谷歌</td><td><span class="tag tag-up">看涨</span></td><td class="strong">70% +1.69% <small>(n=73)</small></td><td class="strong">67% +2.49% <small>(n=72)</small></td><td class="strong">70% +5.98% <small>(n=69)</small></td><td class="strong">100% +74.31% <small>(n=15)</small></td></tr>
-<tr><td>苹果</td><td><span class="tag tag-neutral">--</span></td><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+<tr><td>英伟达</td><td><span class="tag tag-up">看涨</span></td><td class="strong">63% +2.32% <small>(n=252)</small></td><td class="strong">69% +4.03% <small>(n=252)</small></td><td class="strong">68% +8.66% <small>(n=252)</small></td><td class="strong">82% +54.69% <small>(n=241)</small></td></tr>
+<tr><td>特斯拉</td><td><span class="tag tag-neutral">震荡</span></td><td>45% -0.55% <small>(n=479)</small></td><td>46% -0.54% <small>(n=474)</small></td><td>49% +3.69% <small>(n=457)</small></td><td class="strong">66% +24.11% <small>(n=405)</small></td></tr>
+<tr><td>谷歌</td><td><span class="tag tag-up">看涨</span></td><td class="weak">35% -1.05% <small>(n=121)</small></td><td>51% -0.45% <small>(n=121)</small></td><td class="strong">64% +2.93% <small>(n=121)</small></td><td class="strong">73% +15.19% <small>(n=81)</small></td></tr>
+<tr><td>苹果</td><td><span class="tag tag-up">偏涨</span></td><td>57% +0.18% <small>(n=270)</small></td><td>58% +0.54% <small>(n=271)</small></td><td>55% +0.94% <small>(n=271)</small></td><td class="strong">66% +8.42% <small>(n=238)</small></td></tr>
 
 </table>
 
 <h2>技术指标</h2>
 <table>
 <tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr>
-<tr><td>英伟达</td><td class="up">95.3</td><td>3.933</td><td>184.16</td><td>177.81</td><td>182.75</td><td>24</td><td>回归</td></tr>
-<tr><td>特斯拉</td><td class="down">29.9</td><td>-2.147</td><td>347.02</td><td>368.82</td><td>399.81</td><td>27</td><td>混合</td></tr>
-<tr><td>谷歌</td><td class="up">95.0</td><td>8.078</td><td>315.35</td><td>300.10</td><td>311.72</td><td>35</td><td>回归</td></tr>
-<tr><td>苹果</td><td class="">52.7</td><td>2.446</td><td>258.06</td><td>253.63</td><td>259.53</td><td>14</td><td>回归</td></tr>
+<tr><td>英伟达</td><td class="up">96.3</td><td>3.949</td><td>184.18</td><td>177.82</td><td>182.76</td><td>24</td><td>回归</td></tr>
+<tr><td>特斯拉</td><td class="down">32.2</td><td>-2.037</td><td>347.19</td><td>368.87</td><td>399.83</td><td>27</td><td>混合</td></tr>
+<tr><td>谷歌</td><td class="up">95.1</td><td>8.119</td><td>315.42</td><td>300.11</td><td>311.72</td><td>35</td><td>回归</td></tr>
+<tr><td>苹果</td><td class="">53.0</td><td>2.460</td><td>258.08</td><td>253.63</td><td>259.53</td><td>14</td><td>回归</td></tr>
 
 </table>
 
