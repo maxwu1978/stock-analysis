@@ -1,0 +1,36 @@
+name: 更新分析页面
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 每个交易日收盘后运行 (北京时间15:35 = UTC 07:35)
+    - cron: '35 7 * * 1-5'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 生成页面
+        run: python generate_page.py
+
+      - name: 提交并推送
+        env:
+          TIMESTAMP: ${{ github.run_id }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git diff --cached --quiet || git commit -m "自动更新数据"
+          git push

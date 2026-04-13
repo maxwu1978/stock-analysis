@@ -181,7 +181,47 @@ def generate():
 <body>
 
 <h1>A股技术分析报告</h1>
-<div class="subtitle">数据更新时间: {now}</div>
+<div class="subtitle">数据更新时间: {now} &nbsp;
+<button class="btn" id="refreshBtn" onclick="triggerRefresh()">刷新数据</button>
+<span id="refreshMsg" style="margin-left:10px;color:#656d76;font-size:13px;"></span>
+</div>
+<script>
+async function triggerRefresh() {{
+  const btn = document.getElementById('refreshBtn');
+  const msg = document.getElementById('refreshMsg');
+  btn.disabled = true;
+  btn.textContent = '正在刷新...';
+  msg.textContent = '';
+  try {{
+    const r = await fetch('https://api.github.com/repos/maxwu1978/stock-analysis/actions/workflows/update-page.yml/dispatches', {{
+      method: 'POST',
+      headers: {{'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + (localStorage.getItem('gh_token') || prompt('首次使用请输入GitHub Personal Access Token (需要repo和workflow权限):'))}},
+      body: JSON.stringify({{ref: 'main'}})
+    }});
+    if (r.status === 204) {{
+      localStorage.setItem('gh_token', r.headers ? localStorage.getItem('gh_token') : '');
+      msg.textContent = '已触发更新, 约2分钟后刷新页面查看';
+      msg.style.color = '#1a7f37';
+      setTimeout(() => location.reload(), 120000);
+    }} else {{
+      const txt = await r.text();
+      msg.textContent = '触发失败: ' + r.status;
+      msg.style.color = '#cf222e';
+    }}
+  }} catch(e) {{
+    msg.textContent = '网络错误: ' + e.message;
+    msg.style.color = '#cf222e';
+  }}
+  btn.disabled = false;
+  btn.textContent = '刷新数据';
+}}
+// 保存token
+if (location.search.includes('token=')) {{
+  const t = new URLSearchParams(location.search).get('token');
+  if (t) localStorage.setItem('gh_token', t);
+  history.replaceState(null, '', location.pathname);
+}}
+</script>
 
 <h2>最新行情</h2>
 <table>
