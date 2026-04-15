@@ -33,7 +33,7 @@
 <body>
 
 <h1>A股技术分析报告</h1>
-<div class="subtitle">数据更新时间: 2026-04-15 13:00:36 &nbsp;
+<div class="subtitle">数据更新时间: 2026-04-15 13:48:03 &nbsp;
 <button class="btn" id="refreshBtn" onclick="triggerRefresh()">刷新数据</button>
 <span id="refreshMsg" style="margin-left:10px;color:#656d76;font-size:13px;"></span>
 </div>
@@ -146,29 +146,18 @@ async function triggerRefresh() {
 <h2>趋势概率</h2>
 <table>
 <tr><th>股票</th><th>方向</th><th>可靠度</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
-<tr><td>英伟达</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td class="strong">64% +2.17% <small>(n=261)</small></td><td class="strong">68% +3.83% <small>(n=261)</small></td><td class="strong">69% +8.77% <small>(n=261)</small></td><td class="strong">83% +52.83% <small>(n=253)</small></td></tr>
-<tr><td>特斯拉</td><td><span class="tag tag-up">看涨</span></td><td class="strong">强</td><td>51% +3.52% <small>(n=45)</small></td><td class="strong">62% +6.66% <small>(n=45)</small></td><td class="strong">64% +14.19% <small>(n=45)</small></td><td class="strong">66% +38.12% <small>(n=44)</small></td></tr>
-<tr><td>谷歌</td><td><span class="tag tag-up">看涨</span></td><td class="weak">弱</td><td>48% -0.07% <small>(n=82)</small></td><td class="strong">63% +1.06% <small>(n=82)</small></td><td class="strong">72% +4.87% <small>(n=82)</small></td><td class="strong">93% +21.24% <small>(n=46)</small></td></tr>
-<tr><td>苹果</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td>59% +0.46% <small>(n=414)</small></td><td class="strong">60% +0.90% <small>(n=414)</small></td><td class="strong">64% +2.70% <small>(n=414)</small></td><td class="strong">65% +5.64% <small>(n=339)</small></td></tr>
 
 </table>
 
 <h2>技术指标</h2>
 <table>
 <tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr>
-<tr><td>英伟达</td><td class="">-</td><td>5.135</td><td>188.09</td><td>178.54</td><td>182.93</td><td>28</td><td>混合</td></tr>
-<tr><td>特斯拉</td><td class="up">68.6</td><td>0.876</td><td>350.89</td><td>367.34</td><td>398.60</td><td>25</td><td>动量</td></tr>
-<tr><td>谷歌</td><td class="up">96.5</td><td>9.805</td><td>321.45</td><td>301.62</td><td>311.78</td><td>38</td><td>动量</td></tr>
-<tr><td>苹果</td><td class="">49.9</td><td>2.441</td><td>259.58</td><td>254.04</td><td>259.58</td><td>12</td><td>回归</td></tr>
 
 </table>
 
 <h2>最新财报</h2>
 <table>
 <tr><th>股票</th><th>报告期</th><th>ROE</th><th>营收增长</th><th>利润增长</th><th>毛利率</th><th>负债率</th></tr>
-<tr><td>特斯拉</td><td>2025-12-31</td><td class="">1.0%</td><td class="down">-3.1%</td><td class="down">-63.7%</td><td>20.1%</td><td class="up">10.7%</td></tr>
-<tr><td>谷歌</td><td>2025-12-31</td><td class="">8.3%</td><td class="up">+18.0%</td><td class="up">+29.8%</td><td>59.8%</td><td class="up">10.0%</td></tr>
-<tr><td>苹果</td><td>2025-12-31</td><td class="up">47.7%</td><td class="up">+15.7%</td><td class="up">+15.9%</td><td>48.2%</td><td class="up">23.9%</td></tr>
 
 </table>
 
