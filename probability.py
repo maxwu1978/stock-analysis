@@ -319,13 +319,21 @@ def _compute_historical_probability(df: pd.DataFrame, current_score: float, fact
         if score_std == 0:
             continue
 
-        # 找相似评分的日子 (±0.5 std)
-        similar_mask = (hs >= current_score - score_std * 0.5) & (hs <= current_score + score_std * 0.5)
-        similar_fwd = fw[similar_mask]
+        # 逐步放宽: 0.5std -> 1std -> 1.5std -> 2std -> 最接近的20%样本
+        similar_fwd = None
+        for mult in [0.5, 1.0, 1.5, 2.0]:
+            mask = (hs >= current_score - score_std * mult) & (hs <= current_score + score_std * mult)
+            candidate = fw[mask]
+            if len(candidate) >= 10:
+                similar_fwd = candidate
+                break
 
-        if len(similar_fwd) < 10:
-            similar_mask = (hs >= current_score - score_std) & (hs <= current_score + score_std)
-            similar_fwd = fw[similar_mask]
+        if similar_fwd is None or len(similar_fwd) < 10:
+            # 兜底: 取距离当前评分最近的20%历史样本
+            distances = (hs - current_score).abs()
+            top_n = max(int(len(hs) * 0.2), 30)
+            closest_idx = distances.nsmallest(top_n).index
+            similar_fwd = fw.loc[closest_idx]
 
         if len(similar_fwd) < 5:
             continue

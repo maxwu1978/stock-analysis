@@ -28,8 +28,17 @@ def add_rsi(df: pd.DataFrame, periods: list[int] = [6, 12, 24]) -> pd.DataFrame:
     for p in periods:
         gain = delta.where(delta > 0, 0.0).rolling(window=p).mean()
         loss = (-delta.where(delta < 0, 0.0)).rolling(window=p).mean()
-        rs = gain / loss.replace(0, np.nan)
-        df[f"RSI{p}"] = 100 - (100 / (1 + rs))
+        # 处理边界情况:
+        # - loss=0 (连续全涨): RSI=100
+        # - gain=0 (连续全跌): RSI=0
+        # - 其他: 正常计算
+        rs = gain / loss
+        rsi = 100 - (100 / (1 + rs))
+        # 当loss=0时, rs=inf, RSI理论上=100
+        rsi = rsi.where(loss != 0, 100.0)
+        # 当gain=0且loss>0时, rs=0, RSI=0
+        rsi = rsi.where(~((gain == 0) & (loss > 0)), 0.0)
+        df[f"RSI{p}"] = rsi
     return df
 
 
