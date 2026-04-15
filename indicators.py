@@ -131,6 +131,18 @@ def add_high52w_pos(df: pd.DataFrame, period: int = 250) -> pd.DataFrame:
     return df
 
 
+def add_max_ret_20d(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
+    """计算20日最大单日涨幅因子 (MAX factor)
+    value = 过去20日中最大的单日收益率 (%)
+    学术依据: Bali et al. (2011) MAX效应, 中国A股实证: 高MAX股票彩票偏好→过高估值→未来负超额收益
+    参考: 'Factor MAX in the Chinese Market' (EFMA 2025), 'Dissecting the lottery-like anomaly in China' (2025)
+    预期IC方向: 负 (高MAX→主力/散户追涨→溢价→后续回调)
+    """
+    daily_ret = df["close"].pct_change() * 100
+    df["max_ret_20d"] = daily_ret.rolling(window=period, min_periods=period // 2).max()
+    return df
+
+
 def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.DataFrame:
     """计算所有技术指标, 可选整合基本面因子"""
     df = add_ma(df)
@@ -144,6 +156,7 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_autocorr(df)
     df = add_support_resistance(df)
     df = add_high52w_pos(df)
+    df = add_max_ret_20d(df)
 
     # 整合基本面因子
     if fundamental_df is not None and not fundamental_df.empty:
