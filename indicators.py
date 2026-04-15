@@ -143,6 +143,18 @@ def add_max_ret_20d(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
     return df
 
 
+def add_gap_ret_10d(df: pd.DataFrame, period: int = 10) -> pd.DataFrame:
+    """计算隔夜跳空收益率因子 (Overnight Gap Return)
+    gap_ret = (open_t - close_{t-1}) / close_{t-1} * 100，取10日滚动均值
+    学术依据: 隔夜收益与日内收益由不同投资者主导（机构 vs 散户），A股隔夜高溢价预示均值回归
+    参考: 新浪财经2025年隔夜与日间网络关系因子研究; 隔夜收益领先效应（Aboody et al.）
+    预期IC方向: 负（持续隔夜高开→追涨情绪→短期回调）
+    """
+    gap_ret = (df["open"] - df["close"].shift(1)) / df["close"].shift(1) * 100
+    df["gap_ret_10d"] = gap_ret.rolling(window=period, min_periods=period // 2).mean()
+    return df
+
+
 def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.DataFrame:
     """计算所有技术指标, 可选整合基本面因子"""
     df = add_ma(df)
@@ -157,6 +169,7 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_support_resistance(df)
     df = add_high52w_pos(df)
     df = add_max_ret_20d(df)
+    df = add_gap_ret_10d(df)
 
     # 整合基本面因子
     if fundamental_df is not None and not fundamental_df.empty:

@@ -25,6 +25,7 @@ FACTOR_COLS = [
     "ma60_diff",
     "high52w_pos",
     "max_ret_20d",         # 20日最大单日涨幅 (彩票效应因子)
+    "gap_ret_10d",         # 10日隔夜跳空收益率均值 (overnight gap factor)
     # 基本面因子
     "roe",              # ROE (净资产收益率)
     "rev_growth",       # 营收同比增长率
