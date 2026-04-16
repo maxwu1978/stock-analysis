@@ -109,7 +109,13 @@ def generate():
 
         reliability = A_SIGNAL_RELIABILITY.get(code, "?")
         rel_cls = "strong" if reliability == "强" else ("weak" if reliability == "弱" else "")
-        prob_html += f'<tr><td>{name}</td><td>{direction_tag(hp)}</td><td class="{rel_cls}">{reliability}</td>'
+
+        ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
+        if pd.isna(ft_score): ft_score = 0
+        ft_score = int(ft_score)
+        ft_html = f'<td class="strong">{"⚡" * ft_score}</td>' if ft_score >= 3 else '<td>-</td>'
+
+        prob_html += f'<tr><td>{name}</td><td>{direction_tag(hp)}</td><td class="{rel_cls}">{reliability}</td>{ft_html}'
         for period in ["5日", "10日", "30日", "180日"]:
             prob_html += fmt_prob_cell(hp.get(period))
         prob_html += '</tr>\n'
@@ -252,7 +258,7 @@ async function triggerRefresh() {{
 方向由30日上涨概率决定: &gt;55%偏涨, &lt;45%偏跌
 </div>
 <table>
-<tr><th>股票</th><th>方向</th><th>可靠度</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
+<tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
 {prob_html}
 </table>
 
@@ -331,7 +337,13 @@ async function triggerRefresh() {{
 
         us_rel = US_SIGNAL_RELIABILITY.get(ticker, "?")
         us_rel_cls = "strong" if us_rel == "强" else ("weak" if us_rel == "弱" else "")
-        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td><td class="{us_rel_cls}">{us_rel}</td>'
+
+        us_ft = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
+        if pd.isna(us_ft): us_ft = 0
+        us_ft = int(us_ft)
+        us_ft_html = f'<td class="strong">{"⚡" * us_ft}</td>' if us_ft >= 3 else '<td>-</td>'
+
+        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td><td class="{us_rel_cls}">{us_rel}</td>{us_ft_html}'
         for period in ["5日", "10日", "30日", "180日"]:
             us_prob_html += fmt_prob_cell(hp.get(period))
         us_prob_html += '</tr>\n'
@@ -386,7 +398,7 @@ async function triggerRefresh() {{
 
 <h2>趋势概率</h2>
 <table>
-<tr><th>股票</th><th>方向</th><th>可靠度</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
+<tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
 {us_prob_html}
 </table>
 

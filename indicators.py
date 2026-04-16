@@ -164,6 +164,52 @@ def add_gap_ret_10d(df: pd.DataFrame, period: int = 10) -> pd.DataFrame:
     return df
 
 
+def add_fat_tail_signals(df: pd.DataFrame) -> pd.DataFrame:
+    """肥尾前兆信号 — 基于实证研究的5个前兆因子"""
+    # 1. 布林带宽度 (越宽=波动越大, 正肥尾前偏高)
+    if "BOLL_UP" in df.columns and "BOLL_DN" in df.columns and "BOLL_MID" in df.columns:
+        df["boll_width"] = (df["BOLL_UP"] - df["BOLL_DN"]) / df["BOLL_MID"].replace(0, np.nan) * 100
+
+    # 2. 短期/长期波动率比 (短期波动收缩=正肥尾前兆)
+    ret_vol_5 = df["close"].pct_change().rolling(5).std()
+    ret_vol_20 = df["close"].pct_change().rolling(20).std()
+    df["vol_compress"] = ret_vol_5 / ret_vol_20.replace(0, np.nan)
+
+    # 3. 量能异动 (5日均量/20日均量, 正肥尾前偏高=资金进场)
+    vol_ma5 = df["volume"].rolling(5).mean()
+    vol_ma20 = df["volume"].rolling(20).mean()
+    df["vol_surge"] = vol_ma5 / vol_ma20.replace(0, np.nan)
+
+    # 4. ADX加速度 (ADX 5日变化, 正肥尾前偏高=趋势正在形成)
+    if "ADX" in df.columns:
+        df["adx_accel"] = df["ADX"].diff(5)
+
+    # 5. 20日峰度 (越低=分布越平, 正肥尾前偏低=即将出现极端值)
+    df["kurt_20"] = df["close"].pct_change().rolling(20).apply(
+        lambda x: x.kurtosis() if len(x) == 20 else np.nan, raw=False)
+
+    # 综合肥尾评分: 当多个前兆同时出现时标记
+    # 条件: boll_width > 中位数 & RSI6 < 40 & vol_surge > 1.05
+    if "RSI6" in df.columns and "boll_width" in df.columns:
+        bw_median = df["boll_width"].rolling(120).median()
+        cond_bw = df["boll_width"] > bw_median  # 波动放大
+        cond_rsi = df["RSI6"] < 40               # 超跌
+        cond_vol = df["vol_surge"] > 1.05         # 放量
+
+        score = cond_bw.astype(int) + cond_rsi.astype(int) + cond_vol.astype(int)
+        if "adx_accel" in df.columns:
+            cond_adx = df["adx_accel"] > 1        # ADX加速
+            score += cond_adx.astype(int)
+        if "kurt_20" in df.columns:
+            kurt_median = df["kurt_20"].rolling(120).median()
+            cond_kurt = df["kurt_20"] < kurt_median  # 峰度偏低
+            score += cond_kurt.astype(int)
+
+        df["fat_tail_score"] = score  # 0~5分, 越高越可能出现正肥尾
+
+    return df
+
+
 def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.DataFrame:
     """计算所有技术指标, 可选整合基本面因子"""
     df = add_ma(df)
@@ -179,6 +225,8 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_high52w_pos(df)
     df = add_max_ret_20d(df)
     df = add_gap_ret_10d(df)
+
+    df = add_fat_tail_signals(df)
 
     # 整合基本面因子
     if fundamental_df is not None and not fundamental_df.empty:

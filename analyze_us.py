@@ -107,8 +107,15 @@ def main():
             return f"{p}% {avg} (n={n})"
 
         reliability = US_SIGNAL_RELIABILITY.get(ticker, "?")
+
+        ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
+        if pd.isna(ft_score): ft_score = 0
+        ft_score = int(ft_score)
+        ft_label = f"{'⚡' * ft_score}" if ft_score >= 3 else ""
+
         prob_rows.append([
             f"**{name}**", f"**{direction}**", f"**{reliability}**",
+            ft_label if ft_label else "-",
             fmt_p(hp.get("5日")), fmt_p(hp.get("10日")),
             fmt_p(hp.get("30日")), fmt_p(hp.get("180日")),
         ])
@@ -134,7 +141,7 @@ def main():
             ])
 
     print(f"\n### 趋势概率\n")
-    print(md_table(["股票", "方向", "可靠度", "5日", "10日", "30日", "180日"], prob_rows))
+    print(md_table(["股票", "方向", "可靠度", "肥尾", "5日", "10日", "30日", "180日"], prob_rows))
 
     print(f"\n### 技术指标\n")
     print(md_table(["股票", "RSI6", "MACD柱", "MA5", "MA20", "MA60", "ADX", "股性"], tech_rows))

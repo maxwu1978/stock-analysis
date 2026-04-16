@@ -27,6 +27,12 @@ US_FACTOR_COLS = [
     "vol_change",     # 成交量变化率
     "high_low_range", # 日内振幅
     "high52w_pos",    # 52周位置 (年度高低位置)
+    # 肥尾前兆因子
+    "boll_width",       # 布林带宽度
+    "vol_compress",     # 短期/长期波动比
+    "vol_surge",        # 量能异动
+    "adx_accel",        # ADX加速度
+    "kurt_20",          # 20日峰度
 ]
 
 IC_WINDOW = 90   # 美股用更短窗口

@@ -25,6 +25,12 @@ FACTOR_COLS = [
     "ma60_diff",
     "high52w_pos",
     "max_ret_20d",         # 20日最大单日涨幅 (彩票效应因子)
+    # 肥尾前兆因子
+    "boll_width",       # 布林带宽度
+    "vol_compress",     # 短期/长期波动比
+    "vol_surge",        # 量能异动
+    "adx_accel",        # ADX加速度
+    "kurt_20",          # 20日峰度
     "gap_ret_10d",         # 10日隔夜跳空收益率均值 (overnight gap factor)
     # 基本面因子
     "roe",              # ROE (净资产收益率)
