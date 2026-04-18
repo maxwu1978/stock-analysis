@@ -9,6 +9,7 @@ US_STOCKS = {
     "TSLA": "特斯拉",
     "GOOGL": "谷歌",
     "AAPL": "苹果",
+    "TCOM": "携程",
 }
 
 
@@ -82,25 +83,37 @@ def fetch_us_financials() -> dict[str, pd.DataFrame]:
             if q_income is None or q_income.empty:
                 continue
 
+            def _safe_get(df_, key, col_):
+                """安全提取财报字段, 缺失或NaN返回None"""
+                if df_ is None or key not in df_.index or col_ not in df_.columns:
+                    return None
+                try:
+                    v = df_.loc[key, col_]
+                    if v is None or pd.isna(v):
+                        return None
+                    return float(v)
+                except (TypeError, ValueError):
+                    return None
+
+            def _safe_div(a, b, mult=100):
+                if a is None or b is None or b == 0:
+                    return None
+                return a / b * mult
+
             rows = []
             for col in q_income.columns:
                 report_date = col
-                rev = q_income.loc["Total Revenue", col] if "Total Revenue" in q_income.index else None
-                net = q_income.loc["Net Income", col] if "Net Income" in q_income.index else None
-                gross = q_income.loc["Gross Profit", col] if "Gross Profit" in q_income.index else None
-                gm = (gross / rev * 100) if (rev and gross and rev != 0) else None
+                rev = _safe_get(q_income, "Total Revenue", col)
+                net = _safe_get(q_income, "Net Income", col)
+                gross = _safe_get(q_income, "Gross Profit", col)
+                gm = _safe_div(gross, rev)
 
-                # 资产负债
-                total_assets = None
-                total_debt_val = None
-                equity = None
-                if q_balance is not None and col in q_balance.columns:
-                    total_assets = q_balance.loc["Total Assets", col] if "Total Assets" in q_balance.index else None
-                    total_debt_val = q_balance.loc["Total Debt", col] if "Total Debt" in q_balance.index else None
-                    equity = q_balance.loc["Stockholders Equity", col] if "Stockholders Equity" in q_balance.index else None
+                total_assets = _safe_get(q_balance, "Total Assets", col)
+                total_debt_val = _safe_get(q_balance, "Total Debt", col)
+                equity = _safe_get(q_balance, "Stockholders Equity", col)
 
-                roe = (net / equity * 100) if (net and equity and equity != 0) else None
-                debt_ratio = (total_debt_val / total_assets * 100) if (total_debt_val and total_assets and total_assets != 0) else None
+                roe = _safe_div(net, equity)
+                debt_ratio = _safe_div(total_debt_val, total_assets)
 
                 rows.append({
                     "report_date": pd.Timestamp(report_date),
@@ -115,15 +128,23 @@ def fetch_us_financials() -> dict[str, pd.DataFrame]:
 
             df = pd.DataFrame(rows).sort_values("report_date")
 
+            # 强制数值列为 float, None 转 NaN
+            for col_name in ["roe", "gross_margin", "debt_ratio", "revenue", "net_income"]:
+                if col_name in df.columns:
+                    df[col_name] = pd.to_numeric(df[col_name], errors="coerce")
+
             # 计算同比增长率 (对比4个季度前)
             if len(df) >= 5:
                 df["rev_growth"] = df["revenue"].pct_change(4) * 100
                 df["profit_growth"] = df["net_income"].pct_change(4) * 100
+            else:
+                df["rev_growth"] = pd.NA
+                df["profit_growth"] = pd.NA
 
             # 衍生因子
             df["roe_chg"] = df["roe"].diff()
-            df["rev_growth_accel"] = df["rev_growth"].diff()
-            df["cash_flow_ps"] = None  # yfinance 季度现金流不稳定, 留空
+            df["rev_growth_accel"] = pd.to_numeric(df["rev_growth"], errors="coerce").diff()
+            df["cash_flow_ps"] = pd.NA  # yfinance 季度现金流不稳定, 留空
 
             result[ticker] = df
             print(f"  {name}({ticker}): {len(df)}期财报")

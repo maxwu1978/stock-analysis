@@ -14,6 +14,7 @@ US_SIGNAL_RELIABILITY = {
     "TSLA": "强",  # 特斯拉
     "GOOGL": "弱", # 谷歌
     "AAPL": "中",  # 苹果
+    "TCOM": "?",   # 携程 (待回测验证)
 }
 
 def direction_from_prob(hp):
