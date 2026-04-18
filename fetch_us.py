@@ -14,14 +14,34 @@ US_STOCKS = {
 
 
 def fetch_us_realtime() -> pd.DataFrame:
-    """获取美股实时行情"""
+    """获取美股实时行情 (info失败时回退到历史K线最后一根)"""
     rows = []
     for ticker, name in US_STOCKS.items():
         try:
             t = yf.Ticker(ticker)
-            info = t.info
-            price = info.get("regularMarketPrice", 0)
-            prev = info.get("regularMarketPreviousClose", 0)
+            info = {}
+            try:
+                info = t.info
+            except Exception:
+                pass
+
+            price = info.get("regularMarketPrice") or 0
+            prev = info.get("regularMarketPreviousClose") or 0
+            high = info.get("regularMarketDayHigh") or 0
+            low = info.get("regularMarketDayLow") or 0
+            vol = info.get("regularMarketVolume") or 0
+            mcap = info.get("marketCap") or 0
+
+            # info 缺失时, 用近5天历史数据回退
+            if not price or not prev:
+                hist = t.history(period="5d")
+                if len(hist) >= 2:
+                    price = float(hist["Close"].iloc[-1])
+                    prev = float(hist["Close"].iloc[-2])
+                    high = float(hist["High"].iloc[-1])
+                    low = float(hist["Low"].iloc[-1])
+                    vol = int(hist["Volume"].iloc[-1])
+
             chg = ((price - prev) / prev * 100) if prev else 0
             rows.append({
                 "名称": name,
@@ -29,11 +49,11 @@ def fetch_us_realtime() -> pd.DataFrame:
                 "最新价": price,
                 "涨跌幅": round(chg, 2),
                 "涨跌额": round(price - prev, 2),
-                "成交额": info.get("regularMarketVolume", 0),
-                "最高": info.get("regularMarketDayHigh", 0),
-                "最低": info.get("regularMarketDayLow", 0),
+                "成交额": vol,
+                "最高": high,
+                "最低": low,
                 "昨收": prev,
-                "市值": info.get("marketCap", 0),
+                "市值": mcap,
             })
         except Exception as e:
             print(f"  [!] {name}({ticker}) 行情获取失败: {e}")
