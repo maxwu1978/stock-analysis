@@ -164,121 +164,342 @@ def generate():
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>A股技术分析</title>
+<title>主力分析 · QUANT DESK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
+  :root {{
+    --ink: #141211;
+    --paper: #f2ede2;
+    --paper-2: #e8dfcd;
+    --up: #b8251f;
+    --down: #2a5f4a;
+    --muted: #726b61;
+    --hair: #c9c0ae;
+  }}
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-  body {{ font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
-         background: #fff; color: #1f2328; padding: 20px; max-width: 1100px; margin: 0 auto; }}
-  h1 {{ color: #0969da; margin-bottom: 5px; font-size: 22px; }}
-  .subtitle {{ color: #656d76; font-size: 13px; margin-bottom: 20px; }}
-  h2 {{ color: #0969da; font-size: 16px; margin: 25px 0 10px 0;
-       border-bottom: 2px solid #d0d7de; padding-bottom: 6px; }}
-  table {{ width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 14px; }}
-  th {{ background: #f6f8fa; color: #656d76; text-align: right; padding: 8px 12px;
-       border-bottom: 2px solid #d0d7de; font-weight: 600; }}
-  td {{ padding: 7px 12px; text-align: right; border-bottom: 1px solid #d8dee4; }}
-  th:first-child, td:first-child {{ text-align: left; font-weight: 600; color: #1f2328; }}
-  tr:hover {{ background: #f6f8fa; }}
-  .up {{ color: #cf222e; }}
-  .down {{ color: #1a7f37; }}
-  .strong {{ color: #cf222e; font-weight: 700; }}
-  .weak {{ color: #8c959f; }}
-  .tag {{ display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: 600; }}
-  .tag-up {{ background: #ffebe9; color: #cf222e; }}
-  .tag-down {{ background: #dafbe1; color: #1a7f37; }}
-  .tag-neutral {{ background: #f6f8fa; color: #656d76; }}
-  .footer {{ margin-top: 30px; padding-top: 15px; border-top: 1px solid #d0d7de;
-            color: #656d76; font-size: 12px; line-height: 1.8; }}
+  html, body {{ background: var(--paper); }}
+  body {{
+    font-family: 'Spectral', 'Noto Serif SC', Georgia, serif;
+    color: var(--ink);
+    font-feature-settings: "lnum", "tnum";
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    position: relative;
+    overflow-x: hidden;
+  }}
+  body::before {{
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+    opacity: 0.04; pointer-events: none; z-index: 200; mix-blend-mode: multiply;
+  }}
+  .tape {{
+    border-bottom: 1px solid var(--ink);
+    padding: 9px 28px;
+    font-family: 'JetBrains Mono', 'PingFang SC', monospace;
+    font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    position: sticky; top: 0; background: var(--paper); z-index: 10;
+  }}
+  .tape .dot {{ color: var(--up); animation: pulse 2s ease-in-out infinite; }}
+  .tape .muted {{ color: var(--muted); }}
+  @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.35; }} }}
+  .container {{ max-width: 1180px; margin: 0 auto; padding: 0 28px 80px; }}
+  .hero {{ padding: 72px 0 56px; border-bottom: 2px solid var(--ink); }}
+  .hero-kicker {{
+    display: flex; gap: 16px; align-items: center; margin-bottom: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--muted);
+  }}
+  .hero-kicker::before {{ content: ''; width: 48px; height: 1px; background: var(--ink); display: inline-block; }}
+  .hero h1 {{
+    font-family: 'DM Serif Display', 'Noto Serif SC', serif;
+    font-weight: 400;
+    font-size: clamp(56px, 10vw, 148px);
+    line-height: 0.88;
+    letter-spacing: -0.028em;
+  }}
+  .hero h1 em {{ font-style: italic; color: var(--up); }}
+  .hero h1 .eyebrow {{
+    display: block; font-size: 0.14em; letter-spacing: 0.26em;
+    text-transform: uppercase; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-style: normal;
+    margin-top: 28px; font-weight: 400;
+  }}
+  .hero-meta {{
+    margin-top: 44px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.1em; color: var(--muted);
+  }}
+  .pill {{
+    border: 1px solid var(--ink); padding: 7px 13px;
+    text-transform: uppercase; color: var(--ink);
+    font-size: 10.5px; letter-spacing: 0.16em;
+  }}
+  .btn-refresh {{
+    background: var(--ink); color: var(--paper); border: 1px solid var(--ink);
+    padding: 9px 18px; font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    cursor: pointer; transition: transform 0.18s, background 0.18s;
+  }}
+  .btn-refresh:hover:not(:disabled) {{ background: var(--up); border-color: var(--up); transform: translateY(-1px); }}
+  .btn-refresh:disabled {{ opacity: 0.45; cursor: wait; }}
+  .refresh-msg {{
+    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  }}
+  .section {{ padding: 56px 0 32px; }}
+  .section + .section {{ border-top: 1px solid var(--hair); }}
+  .section-head {{
+    display: grid; grid-template-columns: 100px 1fr auto;
+    gap: 28px; align-items: start; margin-bottom: 28px;
+  }}
+  .section-num {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em; color: var(--muted);
+    border-top: 2px solid var(--ink); padding-top: 12px;
+  }}
+  .section-head h2 {{
+    font-family: 'DM Serif Display', 'Noto Serif SC', serif;
+    font-weight: 400; font-size: clamp(32px, 4.4vw, 54px);
+    line-height: 1; letter-spacing: -0.018em;
+    border-top: 2px solid var(--ink); padding-top: 4px; color: var(--ink);
+  }}
+  .section-head h2 em {{ font-style: italic; color: var(--up); }}
+  .section-head h2 .cn {{
+    font-size: 0.36em; font-family: 'Noto Serif SC', serif;
+    color: var(--muted); letter-spacing: 0.02em; margin-left: 16px;
+    font-style: normal; font-weight: 400; vertical-align: 0.15em;
+  }}
+  .section-meta {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--muted); border-top: 1px solid var(--hair);
+    padding-top: 12px; text-align: right; max-width: 200px; line-height: 1.8;
+  }}
+  .note {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.12em; color: var(--muted);
+    margin: 8px 0 20px 128px; text-transform: uppercase;
+  }}
+  .table-wrap {{ overflow-x: auto; margin-left: 128px; }}
+  @media (max-width: 820px) {{
+    .section-head {{ grid-template-columns: 1fr; gap: 10px; }}
+    .table-wrap, .note {{ margin-left: 0; }}
+    .section-meta {{ text-align: left; max-width: none; }}
+    .container {{ padding: 0 20px 64px; }}
+  }}
+  table {{
+    width: 100%; border-collapse: collapse;
+    font-family: 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
+    font-size: 13px; font-variant-numeric: tabular-nums;
+  }}
+  thead th {{
+    text-align: right; padding: 11px 14px 11px 0;
+    border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+  }}
+  thead th:first-child {{ text-align: left; }}
+  tbody td {{
+    padding: 13px 14px 13px 0; text-align: right;
+    border-bottom: 1px dashed var(--hair); vertical-align: baseline;
+  }}
+  tbody td:first-child {{
+    text-align: left; font-family: 'Noto Serif SC', 'Spectral', serif;
+    font-size: 16px; font-weight: 500; letter-spacing: -0.003em;
+  }}
+  tbody td small {{
+    color: var(--muted); font-size: 10px; letter-spacing: 0.06em; margin-left: 5px;
+  }}
+  tbody tr:hover td {{ background: rgba(20,18,17,0.04); }}
+  tbody tr:last-child td {{ border-bottom: 1px solid var(--ink); }}
+  .up {{ color: var(--up); font-weight: 600; }}
+  .down {{ color: var(--down); font-weight: 600; }}
+  .strong {{ color: var(--up); font-weight: 700; }}
+  .weak {{ color: var(--muted); font-weight: 400; }}
+  .tag {{
+    display: inline-block; font-family: 'JetBrains Mono', 'Noto Serif SC', monospace;
+    font-size: 10.5px; letter-spacing: 0.1em;
+    padding: 3px 9px; border: 1px solid currentColor; font-weight: 500;
+  }}
+  .tag-up {{ color: var(--up); background: rgba(184,37,31,0.08); }}
+  .tag-down {{ color: var(--down); background: rgba(42,95,74,0.08); }}
+  .tag-neutral {{ color: var(--muted); background: transparent; }}
+  .us-divider {{
+    margin: 104px 0 0; padding-top: 72px;
+    border-top: 6px double var(--ink); position: relative;
+  }}
+  .us-divider .stamp {{
+    position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+    background: var(--paper); padding: 0 22px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--ink); white-space: nowrap;
+  }}
+  .us-divider .stamp em {{ color: var(--up); font-style: normal; }}
+  .footer {{
+    margin-top: 80px; border-top: 2px solid var(--ink); padding-top: 28px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.08em; color: var(--muted);
+    line-height: 1.9;
+    display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end;
+  }}
+  .footer strong {{
+    color: var(--ink); letter-spacing: 0.18em; text-transform: uppercase;
+    display: block; margin-bottom: 6px;
+  }}
+  .footer .colophon {{ text-align: right; font-size: 10px; opacity: 0.75; }}
+  @media (max-width: 640px) {{
+    .footer {{ grid-template-columns: 1fr; }}
+    .footer .colophon {{ text-align: left; }}
+    .hero {{ padding: 48px 0 40px; }}
+  }}
 </style>
 </head>
 <body>
 
-<h1>A股技术分析报告</h1>
-<div class="subtitle">数据更新时间: {now} &nbsp;
-<button class="btn" id="refreshBtn" onclick="triggerRefresh()">刷新数据</button>
-<span id="refreshMsg" style="margin-left:10px;color:#656d76;font-size:13px;"></span>
+<div class="tape">
+  <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
+  <div class="muted">IC-WEIGHTED MULTI-FACTOR · CN-A / US · v3</div>
+  <div class="muted">{now}</div>
 </div>
+
+<div class="container">
+
+<header class="hero">
+  <div class="hero-kicker">Issue № 01 · Research Bulletin · 上海 / 深圳</div>
+  <h1>主力<em>分析</em><span class="eyebrow">A-Share Technical &amp; Factor Report</span></h1>
+  <div class="hero-meta">
+    <span class="pill">Last Sync · {now}</span>
+    <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
+    <span class="refresh-msg" id="refreshMsg"></span>
+  </div>
+</header>
+
 <script>
 async function triggerRefresh() {{
   const btn = document.getElementById('refreshBtn');
   const msg = document.getElementById('refreshMsg');
   btn.disabled = true;
-  btn.textContent = '正在刷新...';
+  btn.textContent = 'Syncing...';
   msg.textContent = '';
-
   let token = localStorage.getItem('gh_token');
   if (!token) {{
     token = prompt('首次使用请输入GitHub Personal Access Token (需要repo和workflow权限):');
-    if (!token) {{
-      btn.disabled = false;
-      btn.textContent = '刷新数据';
-      return;
-    }}
+    if (!token) {{ btn.disabled = false; btn.textContent = '◉ Refresh Feed'; return; }}
     localStorage.setItem('gh_token', token);
   }}
-
   try {{
     const r = await fetch('https://api.github.com/repos/maxwu1978/stock-analysis/actions/workflows/update-page.yml/dispatches', {{
       method: 'POST',
-      headers: {{
-        'Accept': 'application/vnd.github+json',
-        'Authorization': 'Bearer ' + token
-      }},
+      headers: {{ 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + token }},
       body: JSON.stringify({{ref: 'main'}})
     }});
     if (r.status === 204) {{
-      msg.textContent = '已触发更新, 约2分钟后自动刷新页面...';
-      msg.style.color = '#1a7f37';
+      msg.textContent = 'DISPATCHED · 约2分钟后自动刷新';
+      msg.style.color = 'var(--down)';
       setTimeout(() => location.reload(), 120000);
     }} else if (r.status === 401 || r.status === 403) {{
       localStorage.removeItem('gh_token');
-      msg.textContent = 'Token无效或权限不足, 请重新点击刷新输入';
-      msg.style.color = '#cf222e';
+      msg.textContent = 'TOKEN INVALID · 请重新点击输入';
+      msg.style.color = 'var(--up)';
     }} else {{
-      msg.textContent = '触发失败: HTTP ' + r.status;
-      msg.style.color = '#cf222e';
+      msg.textContent = 'FAIL · HTTP ' + r.status;
+      msg.style.color = 'var(--up)';
     }}
   }} catch(e) {{
-    msg.textContent = '网络错误: ' + e.message;
-    msg.style.color = '#cf222e';
+    msg.textContent = 'NET ERROR · ' + e.message;
+    msg.style.color = 'var(--up)';
   }}
   btn.disabled = false;
-  btn.textContent = '刷新数据';
+  btn.textContent = '◉ Refresh Feed';
 }}
 </script>
 
-<h2>最新行情</h2>
-<table>
-<tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交额</th><th>最高</th><th>最低</th></tr>
-{quote_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 01</div>
+    <h2>Quote <em>Board</em><span class="cn">最新行情</span></h2>
+    <div class="section-meta">Realtime Tape<br>CN · A-Share</div>
+  </div>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer · 股票</th><th>Code</th><th>Last</th><th>Chg %</th><th>Turnover</th><th>High</th><th>Low</th></tr></thead>
+  <tbody>
+  {quote_html}
+  </tbody>
+  </table>
+  </div>
+</section>
 
-<h2>趋势概率</h2>
-<div style="color:#656d76; font-size:12px; margin-bottom:8px;">
-方向由30日上涨概率决定: &gt;55%偏涨, &lt;45%偏跌
-</div>
-<table>
-<tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
-{prob_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 02</div>
+    <h2>Trend <em>Probability</em><span class="cn">趋势概率</span></h2>
+    <div class="section-meta">IC-Weighted<br>Rolling Model</div>
+  </div>
+  <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short</p>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer</th><th>Bias</th><th>Signal</th><th>Fat-Tail</th><th>5d</th><th>10d</th><th>30d</th><th>180d</th></tr></thead>
+  <tbody>
+  {prob_html}
+  </tbody>
+  </table>
+  </div>
+</section>
 
-<h2>技术指标</h2>
-<table>
-<tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr>
-{tech_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 03</div>
+    <h2>Technical <em>Indicators</em><span class="cn">技术指标</span></h2>
+    <div class="section-meta">Oscillators<br>MA / ADX</div>
+  </div>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer</th><th>RSI6</th><th>MACD</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>Regime</th></tr></thead>
+  <tbody>
+  {tech_html}
+  </tbody>
+  </table>
+  </div>
+</section>
 
-<h2>最新财报</h2>
-<table>
-<tr><th>股票</th><th>报告期</th><th>ROE</th><th>营收增长</th><th>利润增长</th><th>毛利率</th><th>负债率</th></tr>
-{fund_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 04</div>
+    <h2><em>Fundamentals</em><span class="cn">最新财报</span></h2>
+    <div class="section-meta">Latest Filing<br>Report Period</div>
+  </div>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer</th><th>Filing</th><th>ROE</th><th>Rev Δ</th><th>Profit Δ</th><th>Gross</th><th>Debt</th></tr></thead>
+  <tbody>
+  {fund_html}
+  </tbody>
+  </table>
+  </div>
+</section>
 
 <div class="footer">
-模型: 25因子(17技术+8财报) x 滚动IC加权, 6年5800样本回测<br>
-免责: 以上仅为统计概率, 不构成任何投资建议, 过去不代表未来
+<div>
+<strong>Methodology</strong>
+Model · 25-factor stack (17 technical + 8 fundamental) × rolling IC weights<br>
+Backtest · 5 800 samples / 6 years · multi-regime validation
+</div>
+<div class="colophon">
+Issue № 01 · Vol. IV<br>
+Set in DM Serif Display &amp; JetBrains Mono<br>
+<strong style="display:inline; font-size:inherit;">Not investment advice</strong>
+</div>
 </div>
 
+</div>
 </body></html>"""
 
     # ==================== 美股部分 ====================
@@ -387,32 +608,65 @@ async function triggerRefresh() {{
 
     # 拼接美股HTML
     us_section = f"""
-<h2 style="margin-top:50px; border-top:3px solid #0969da; padding-top:20px;">
-美股技术分析 (NVDA / TSLA / GOOGL / AAPL)</h2>
+<section class="us-divider">
+  <span class="stamp">U.S. Equities · <em>美股研判</em> · NVDA · TSLA · GOOGL · AAPL</span>
+</section>
 
-<h2>最新行情</h2>
-<table>
-<tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交量</th><th>市值</th><th>最高</th><th>最低</th></tr>
-{us_quote_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 05</div>
+    <h2>Quote <em>Board</em><span class="cn">美股行情</span></h2>
+    <div class="section-meta">Realtime<br>NYSE / NASDAQ</div>
+  </div>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer</th><th>Ticker</th><th>Last</th><th>Chg %</th><th>Volume</th><th>MCap</th><th>High</th><th>Low</th></tr></thead>
+  <tbody>{us_quote_html}</tbody>
+  </table>
+  </div>
+</section>
 
-<h2>趋势概率</h2>
-<table>
-<tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr>
-{us_prob_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 06</div>
+    <h2>Trend <em>Probability</em><span class="cn">趋势概率</span></h2>
+    <div class="section-meta">US-Tuned<br>IC Weights</div>
+  </div>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer</th><th>Bias</th><th>Signal</th><th>Fat-Tail</th><th>5d</th><th>10d</th><th>30d</th><th>180d</th></tr></thead>
+  <tbody>{us_prob_html}</tbody>
+  </table>
+  </div>
+</section>
 
-<h2>技术指标</h2>
-<table>
-<tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr>
-{us_tech_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 07</div>
+    <h2>Technical <em>Indicators</em><span class="cn">技术指标</span></h2>
+    <div class="section-meta">Oscillators<br>MA / ADX</div>
+  </div>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer</th><th>RSI6</th><th>MACD</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>Regime</th></tr></thead>
+  <tbody>{us_tech_html}</tbody>
+  </table>
+  </div>
+</section>
 
-<h2>最新财报</h2>
-<table>
-<tr><th>股票</th><th>报告期</th><th>ROE</th><th>营收增长</th><th>利润增长</th><th>毛利率</th><th>负债率</th></tr>
-{us_fund_html}
-</table>
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 08</div>
+    <h2><em>Fundamentals</em><span class="cn">最新财报</span></h2>
+    <div class="section-meta">Latest SEC<br>Filing</div>
+  </div>
+  <div class="table-wrap">
+  <table>
+  <thead><tr><th>Issuer</th><th>Filing</th><th>ROE</th><th>Rev Δ</th><th>Profit Δ</th><th>Gross</th><th>Debt</th></tr></thead>
+  <tbody>{us_fund_html}</tbody>
+  </table>
+  </div>
+</section>
 """
 
     # 在A股footer前插入美股部分
