@@ -164,6 +164,20 @@ def add_gap_ret_10d(df: pd.DataFrame, period: int = 10) -> pd.DataFrame:
     return df
 
 
+def add_amihud_20d(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
+    """20日 Amihud 非流动性因子
+    ILLIQ = mean(|daily_ret| / dollar_volume, 20d) * 1e8
+    学术依据: Amihud (2002) 非流动性溢价; A股实证IC=8.78% (高频因子研究2024)
+    时序含义: 近期价格对成交金额的敏感度高→散户追涨导致以小量撬动大价格→均值回归信号
+    预期IC方向: 负 (高非流动性→散户主导→后续回调)
+    """
+    daily_ret = df["close"].pct_change().abs()
+    dollar_vol = (df["close"] * df["volume"]).replace(0, np.nan)
+    amihud_daily = daily_ret / dollar_vol * 1e8
+    df["amihud_20d"] = amihud_daily.rolling(window=period, min_periods=period // 2).mean()
+    return df
+
+
 def add_fat_tail_signals(df: pd.DataFrame) -> pd.DataFrame:
     """肥尾前兆信号 — 基于实证研究的5个前兆因子"""
     # 1. 布林带宽度 (越宽=波动越大, 正肥尾前偏高)
@@ -225,6 +239,7 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_high52w_pos(df)
     df = add_max_ret_20d(df)
     df = add_gap_ret_10d(df)
+    df = add_amihud_20d(df)
 
     df = add_fat_tail_signals(df)
 

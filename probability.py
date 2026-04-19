@@ -32,6 +32,7 @@ FACTOR_COLS = [
     "adx_accel",        # ADX加速度
     "kurt_20",          # 20日峰度
     "gap_ret_10d",         # 10日隔夜跳空收益率均值 (overnight gap factor)
+    "amihud_20d",          # 20日Amihud非流动性因子 (价格冲击/成交金额)
     # 基本面因子
     "roe",              # ROE (净资产收益率)
     "rev_growth",       # 营收同比增长率
