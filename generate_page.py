@@ -296,25 +296,29 @@ def generate():
   table {{
     width: 100%; border-collapse: collapse;
     font-family: 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
-    font-size: 13px; font-variant-numeric: tabular-nums;
+    font-size: 16px; font-variant-numeric: tabular-nums;
   }}
   thead th {{
-    text-align: right; padding: 11px 14px 11px 0;
+    text-align: right; padding: 14px 16px 14px 0;
     border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
-    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--muted); font-weight: 500;
+    font-family: 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
+    font-size: 14px; letter-spacing: 0.04em;
+    color: var(--ink); font-weight: 600; white-space: nowrap;
   }}
-  thead th:first-child {{ text-align: left; }}
+  thead th:first-child {{ text-align: left; padding-right: 24px; }}
   tbody td {{
-    padding: 13px 14px 13px 0; text-align: right;
+    padding: 16px 16px 16px 0; text-align: right;
     border-bottom: 1px dashed var(--hair); vertical-align: baseline;
+    white-space: nowrap;
   }}
   tbody td:first-child {{
     text-align: left; font-family: 'Noto Serif SC', 'Spectral', serif;
-    font-size: 16px; font-weight: 500; letter-spacing: -0.003em;
+    font-size: 19px; font-weight: 500; letter-spacing: -0.003em;
+    padding-right: 24px;
   }}
   tbody td small {{
-    color: var(--muted); font-size: 10px; letter-spacing: 0.06em; margin-left: 5px;
+    color: var(--muted); font-size: 12px; letter-spacing: 0.04em;
+    margin-left: 5px; white-space: nowrap;
   }}
   tbody tr:hover td {{ background: rgba(20,18,17,0.04); }}
   tbody tr:last-child td {{ border-bottom: 1px solid var(--ink); }}
@@ -323,9 +327,9 @@ def generate():
   .strong {{ color: var(--up); font-weight: 700; }}
   .weak {{ color: var(--muted); font-weight: 400; }}
   .tag {{
-    display: inline-block; font-family: 'JetBrains Mono', 'Noto Serif SC', monospace;
-    font-size: 10.5px; letter-spacing: 0.1em;
-    padding: 3px 9px; border: 1px solid currentColor; font-weight: 500;
+    display: inline-block; font-family: 'Noto Serif SC', 'PingFang SC', sans-serif;
+    font-size: 13px; letter-spacing: 0.04em;
+    padding: 4px 11px; border: 1px solid currentColor; font-weight: 500;
   }}
   .tag-up {{ color: var(--up); background: rgba(184,37,31,0.08); }}
   .tag-down {{ color: var(--down); background: rgba(42,95,74,0.08); }}
@@ -429,7 +433,7 @@ async function triggerRefresh() {{
   </div>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer · 股票</th><th>Code</th><th>Last</th><th>Chg %</th><th>Turnover</th><th>High</th><th>Low</th></tr></thead>
+  <thead><tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交额</th><th>最高</th><th>最低</th></tr></thead>
   <tbody>
   {quote_html}
   </tbody>
@@ -446,7 +450,7 @@ async function triggerRefresh() {{
   <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short</p>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer</th><th>Bias</th><th>Signal</th><th>Fat-Tail</th><th>5d</th><th>10d</th><th>30d</th><th>180d</th></tr></thead>
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
   <tbody>
   {prob_html}
   </tbody>
@@ -462,7 +466,7 @@ async function triggerRefresh() {{
   </div>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer</th><th>RSI6</th><th>MACD</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>Regime</th></tr></thead>
+  <thead><tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr></thead>
   <tbody>
   {tech_html}
   </tbody>
@@ -478,7 +482,7 @@ async function triggerRefresh() {{
   </div>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer</th><th>Filing</th><th>ROE</th><th>Rev Δ</th><th>Profit Δ</th><th>Gross</th><th>Debt</th></tr></thead>
+  <thead><tr><th>股票</th><th>报告期</th><th>ROE</th><th>营收增长</th><th>利润增长</th><th>毛利率</th><th>负债率</th></tr></thead>
   <tbody>
   {fund_html}
   </tbody>
@@ -626,7 +630,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer</th><th>Ticker</th><th>Last</th><th>Chg %</th><th>Volume</th><th>MCap</th><th>High</th><th>Low</th></tr></thead>
+  <thead><tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交量</th><th>市值</th><th>最高</th><th>最低</th></tr></thead>
   <tbody>{us_quote_html}</tbody>
   </table>
   </div>
@@ -640,7 +644,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer</th><th>Bias</th><th>Signal</th><th>Fat-Tail</th><th>5d</th><th>10d</th><th>30d</th><th>180d</th></tr></thead>
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
   <tbody>{us_prob_html}</tbody>
   </table>
   </div>
@@ -654,7 +658,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer</th><th>RSI6</th><th>MACD</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>Regime</th></tr></thead>
+  <thead><tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr></thead>
   <tbody>{us_tech_html}</tbody>
   </table>
   </div>
@@ -668,7 +672,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
   <div class="table-wrap">
   <table>
-  <thead><tr><th>Issuer</th><th>Filing</th><th>ROE</th><th>Rev Δ</th><th>Profit Δ</th><th>Gross</th><th>Debt</th></tr></thead>
+  <thead><tr><th>股票</th><th>报告期</th><th>ROE</th><th>营收增长</th><th>利润增长</th><th>毛利率</th><th>负债率</th></tr></thead>
   <tbody>{us_fund_html}</tbody>
   </table>
   </div>
