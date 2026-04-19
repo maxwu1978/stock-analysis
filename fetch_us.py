@@ -104,16 +104,21 @@ def fetch_us_financials() -> dict[str, pd.DataFrame]:
                 continue
 
             def _safe_get(df_, key, col_):
-                """安全提取财报字段, 缺失或NaN返回None"""
-                if df_ is None or key not in df_.index or col_ not in df_.columns:
+                """安全提取财报字段, 缺失或NaN返回None. key可为str或按优先级的list"""
+                if df_ is None or col_ not in df_.columns:
                     return None
-                try:
-                    v = df_.loc[key, col_]
-                    if v is None or pd.isna(v):
-                        return None
-                    return float(v)
-                except (TypeError, ValueError):
-                    return None
+                keys = key if isinstance(key, (list, tuple)) else [key]
+                for k in keys:
+                    if k not in df_.index:
+                        continue
+                    try:
+                        v = df_.loc[k, col_]
+                        if v is None or pd.isna(v):
+                            continue
+                        return float(v)
+                    except (TypeError, ValueError):
+                        continue
+                return None
 
             def _safe_div(a, b, mult=100):
                 if a is None or b is None or b == 0:
@@ -123,8 +128,15 @@ def fetch_us_financials() -> dict[str, pd.DataFrame]:
             rows = []
             for col in q_income.columns:
                 report_date = col
-                rev = _safe_get(q_income, "Total Revenue", col)
-                net = _safe_get(q_income, "Net Income", col)
+                rev = _safe_get(q_income, ["Total Revenue", "Operating Revenue"], col)
+                net = _safe_get(q_income, [
+                    "Net Income",
+                    "Net Income Common Stockholders",
+                    "Net Income Including Noncontrolling Interests",
+                    "Net Income Continuous Operations",
+                    "Net Income From Continuing Operation Net Minority Interest",
+                    "Net Income From Continuing And Discontinued Operation",
+                ], col)
                 gross = _safe_get(q_income, "Gross Profit", col)
                 gm = _safe_div(gross, rev)
 

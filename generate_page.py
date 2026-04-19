@@ -582,7 +582,13 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         us_tech_html += f'<td>{rg.get("adx",0):.0f}</td><td>{stype}</td></tr>\n'
 
         if ufund is not None and not ufund.empty:
-            lt = ufund.iloc[-1]
+            # 跳过关键字段全NaN的占位行(未发财报的季度)
+            key_cols = [c for c in ["roe", "gross_margin", "debt_ratio", "rev_growth"] if c in ufund.columns]
+            mask = ufund[key_cols].notna().any(axis=1) if key_cols else pd.Series([True] * len(ufund))
+            ufund_valid = ufund[mask]
+            if ufund_valid.empty:
+                continue
+            lt = ufund_valid.iloc[-1]
             rpt = lt.get("report_date")
             rpt_s = rpt.strftime("%Y-%m-%d") if hasattr(rpt, "strftime") else str(rpt)
             def us_fv(key, fmt=".1f"):
