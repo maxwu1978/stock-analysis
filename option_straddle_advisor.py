@@ -24,6 +24,7 @@ from datetime import datetime
 
 from fetch_futu import realtime_quotes, get_kline, find_atm_options, health_check
 from fractal_survey import mfdfa_spectrum
+from iv_rank import get_iv_rank_best_effort, describe_rank, log_iv
 
 
 WATCHLISTS = {
@@ -51,8 +52,9 @@ def analyze_stock(code: str) -> dict:
     out["spot"] = float(rt.iloc[0]["last_price"])
 
     # 历史
-    kl = get_kline(code, days=250, ktype="K_DAY")
+    kl = get_kline(code, days=400, ktype="K_DAY")
     closes = kl["close"].astype(float)
+    out["_closes"] = closes  # 保留给 IV rank 计算
     log_ret = np.log(closes / closes.shift(1))
 
     # MF-DFA
@@ -101,8 +103,17 @@ def score_straddle_opportunity(feat: dict, atm_chain: pd.DataFrame) -> dict:
     # 隐含波动率 (两腿均值)
     iv_avg = (atm_call["iv"] + atm_put["iv"]) / 2
 
-    # IV vs realized: 如果 IV < realized, 期权便宜, 买straddle 划算
-    iv_cheap = iv_avg < realized_vol
+    # 记录 IV 到本地历史 (每次跑都追加, 累积到 252 天后切换为真实 IV Rank)
+    closes = feat.get("_closes")
+    if closes is not None and iv_avg > 0:
+        log_iv(atm_call["code"], feat["code"], iv_avg,
+               atm_call.get("expiry", ""), atm_call["strike_price"])
+
+    # IV Rank: 先尝试真实历史, 再回落到 realized vol 代理
+    iv_rank, rank_source = get_iv_rank_best_effort(
+        feat["code"], iv_avg, closes, realized_vol
+    )
+    iv_cheap = iv_avg < realized_vol  # 保留原判断作兼容
 
     # 决策
     result = {
@@ -118,19 +129,42 @@ def score_straddle_opportunity(feat: dict, atm_chain: pd.DataFrame) -> dict:
         "iv_avg": iv_avg,
         "realized_vol": realized_vol,
         "iv_cheap_vs_realized": iv_cheap,
+        "iv_rank": iv_rank,
+        "iv_rank_source": rank_source,
+        "iv_rank_desc": describe_rank(iv_rank, rank_source),
         "delta_alpha": delta_a,
         "days_to_expiry": int(atm_call.get("days_to_expiry", 0)),
     }
 
-    if delta_a > 0.6 and iv_cheap:
+    # 决策: 有 IV Rank 时用 IV Rank (更权威), 否则回落 realized vol 代理
+    if iv_rank is not None:
+        iv_low = iv_rank < 30
+        iv_high = iv_rank > 70
+    else:
+        iv_low = iv_cheap
+        iv_high = False  # 代理无法判断高位, 保守
+
+    # 按优先级判定 (IV_HIGH 先拦截, 再考虑分形+IV 便宜的买入机会)
+    if delta_a > 0.6 and iv_high:
+        # 分形复杂但 IV 贵 → 买跨式性价比差, 等 IV 回落
+        result["signal"] = "WAIT_IV_HIGH"
+        result["confidence"] = None
+    elif delta_a > 0.6 and iv_low:
+        # 分形强 + IV 便宜 = 最强信号
         result["signal"] = "BUY_STRADDLE_STRONG"
         result["confidence"] = "MEDIUM"
     elif delta_a > 0.6:
+        # 分形强但 IV 中位
         result["signal"] = "BUY_STRADDLE_WEAK"
         result["confidence"] = "LOW"
-    elif iv_cheap:
+    elif iv_low:
+        # 分形弱但 IV 低位, 单纯买便宜期权
         result["signal"] = "BUY_STRADDLE_VOL_ONLY"
         result["confidence"] = "LOW"
+    elif iv_high:
+        # 分形弱 + IV 高位 → 考虑卖方 (但卖跨式风险无限, 不在此脚本范围)
+        result["signal"] = "WAIT_IV_HIGH_SELL_CANDIDATE"
+        result["confidence"] = None
     else:
         result["signal"] = "WAIT"
         result["confidence"] = None
@@ -163,7 +197,7 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
             print(f"\n{'─' * 88}")
             print(f"  {code}   现价=${feat['spot']:.2f}")
             print(f"  分形: asym={feat.get('asym', 0):+.3f}  Δα={feat.get('delta_alpha', 0):.3f}  h(q=2)={feat.get('hq2', 0):+.3f}")
-            print(f"  波动: 实际年化={feat['realized_vol']:.1f}%  IV均值={sc.get('iv_avg', 0):.1f}%  IV便宜={sc.get('iv_cheap_vs_realized')}")
+            print(f"  波动: 实际年化={feat['realized_vol']:.1f}%  IV均值={sc.get('iv_avg', 0):.1f}%  IV Rank: {sc.get('iv_rank_desc', '-')}")
             print(f"  信号: {sc['signal']}  置信度: {sc.get('confidence', '-')}")
 
             if sc["signal"].startswith("BUY_STRADDLE"):
