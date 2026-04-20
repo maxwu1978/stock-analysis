@@ -373,6 +373,20 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         }.get(level, "tag tag-neutral")
         return f'<span class="{tag_cls}">{action_cn}</span>'
 
+    def _close_cmd_button(codes_qty: list[tuple[str, int]], button_label: str) -> str:
+        """生成"复制平仓命令"按钮 (多腿一次复制)."""
+        cmds = "\\n".join(
+            f"./venv/bin/python trade_futu_sim.py sell {c} {q} --confirm"
+            for c, q in codes_qty
+        )
+        safe_cmds = cmds.replace('"', '&quot;').replace("'", "\\'")
+        return (
+            f'<button onclick="navigator.clipboard.writeText(\'{safe_cmds}\')'
+            f'.then(()=>{{this.textContent=\'✓ 已复制\';setTimeout(()=>this.textContent=\'{button_label}\',2000)}})" '
+            f'style="font-family:inherit;font-size:11px;padding:4px 8px;'
+            f'border:1px solid currentColor;background:var(--paper);cursor:pointer;">{button_label}</button>'
+        )
+
     # 构造跨式行
     straddle_rows = []
     for s in straddles:
@@ -387,8 +401,15 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         elif days <= 14:
             urgency_tag = '<span class="tag tag-neutral">注意</span>'
         action_tag = _action_tag(s.get("level", "OK"), s.get("action", "HOLD"))
+        # 平仓命令按钮 (跨式两腿)
+        close_btn = _close_cmd_button(
+            [(s['call_code'], int(s['qty'])), (s['put_code'], int(s['qty']))],
+            "📋 复制平仓命令"
+        )
+        # 高优先级行高亮整行
+        row_style = ' style="background:rgba(203,0,0,0.08);"' if s.get("level") == "ACT" else ""
         straddle_rows.append(f"""
-        <tr>
+        <tr{row_style}>
           <td><strong>{s['underlying'].replace('US.','')}</strong> 跨式 Straddle</td>
           <td>${s['strike']:.2f}</td>
           <td>{s['expiry']} · {days}天 {urgency_tag}</td>
@@ -398,7 +419,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if s['pl_per_straddle']<0 else '+'}${s['pl_per_straddle']*s['qty']:.2f}<br><small>({s['pl_pct']:+.2f}%)</small></td>
           <td>${s['theta_daily']*s['qty']:.2f}</td>
           <td>{s['iv_avg']:.1f}%</td>
-          <td>{action_tag}<br><small style="color:var(--muted);">{s.get('reason', '')}</small></td>
+          <td>{action_tag}<br><small style="color:var(--muted);">{s.get('reason', '')}</small><br>{close_btn}</td>
         </tr>""")
 
     straddle_codes = {s['call_code'] for s in straddles} | {s['put_code'] for s in straddles}
@@ -413,8 +434,10 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         urgency_tag = '<span class="tag tag-up">到期近</span>' if days <= 7 else ""
         solo_act = classify_solo_option_action(o)
         solo_tag_html = _action_tag(solo_act["level"], solo_act["action"])
+        solo_close_btn = _close_cmd_button([(o['code'], int(o['qty']))], "📋 复制平仓命令")
+        solo_row_style = ' style="background:rgba(203,0,0,0.08);"' if solo_act.get("level") == "ACT" else ""
         solo_rows.append(f"""
-        <tr>
+        <tr{solo_row_style}>
           <td><strong>{o['underlying'].replace('US.','')}</strong> {o['option_type']}</td>
           <td>${o['strike']:.2f}</td>
           <td>{o['expiry']} · {days}天 {urgency_tag}</td>
@@ -424,21 +447,52 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if pl_val<0 else '+'}${pl_val:.2f}<br><small>({pl_ratio:+.2f}%)</small></td>
           <td>${(o.get('theta', 0))*100:.2f}</td>
           <td>{o.get('iv', 0):.1f}%</td>
-          <td>{solo_tag_html}<br><small style="color:var(--muted);">{solo_act.get('reason', '')}</small></td>
+          <td>{solo_tag_html}<br><small style="color:var(--muted);">{solo_act.get('reason', '')}</small><br>{solo_close_btn}</td>
         </tr>""")
 
     has_content = bool(straddle_rows or solo_rows)
 
+    # 识别紧急 (ACT 级) 期权, 用于页首横幅
+    urgent_items = [s for s in straddles if s.get("level") == "ACT"]
+    for o in options:
+        if o["code"] in straddle_codes:
+            continue
+        if classify_solo_option_action(o).get("level") == "ACT":
+            urgent_items.append({"underlying": o["underlying"], "action": classify_solo_option_action(o).get("action")})
+
     # 输出 HTML fragment (不含 <html>/<body>, 使用主页已有样式类)
     parts = []
     parts.append(f'<!-- 期权持仓 section, 由 option_monitor.py 生成于 {ts} -->')
+
+    # 紧急横幅 + 浏览器标题动态 (仅有 ACT 级别建议时显示)
+    if urgent_items:
+        names = ", ".join(
+            f"{u.get('underlying','?').replace('US.','')} {u.get('action','')}"
+            for u in urgent_items
+        )
+        parts.append(f"""
+<div style="background:#cf222e;color:#fff;padding:14px 20px;margin:20px 0;
+            border-radius:4px;font-weight:600;font-family:'JetBrains Mono',monospace;
+            letter-spacing:0.05em;">
+  ⚠️ 期权平仓提示: {names} &mdash; 请滚动到 № 09 节查看建议动作
+</div>
+<script>
+  // 动态修改浏览器标签页标题, 有紧急建议时闪烁
+  (function(){{
+    var origTitle = document.title;
+    var flashTitles = ['⚠️ 期权注意', origTitle];
+    var i = 0;
+    setInterval(function(){{ document.title = flashTitles[i++ % 2]; }}, 1500);
+  }})();
+</script>""")
+
     parts.append('<section class="section">')
     parts.append('  <div class="section-head">')
     parts.append('    <div class="section-num">№ 09</div>')
     parts.append('    <h2><em>Option</em> Positions<span class="cn">期权持仓</span></h2>')
     parts.append(f'    <div class="section-meta">模拟盘 SIMULATE<br>更新 {ts.split()[1]}</div>')
     parts.append('  </div>')
-    parts.append('  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 仅限模拟盘</p>')
+    parts.append('  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 点"📋 复制平仓命令"复制到终端执行</p>')
     if not has_content:
         parts.append('  <div style="margin-left:128px; color:var(--muted); padding:20px;">当前无期权持仓</div>')
     else:
