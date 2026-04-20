@@ -18,6 +18,9 @@ FACTOR_COLS = [
     "ADX", "+DI", "-DI",
     "ROC5", "ROC10", "ROC20",
     "autocorr",
+    "autocorr_lag5_20d",    # 5期滞后自相关 (20日窗口) — 中周期记忆
+    "autocorr_abs_20d",     # 绝对收益率自相关 — 波动聚集性
+    "autocorr_sign_20d",    # 符号收益率自相关 — 纯方向记忆
     "vol_price_div",
     "price_position",
     "ma5_slope",
