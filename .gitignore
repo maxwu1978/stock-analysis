@@ -17,3 +17,4 @@ futures_fractal_*.csv
 advisor_history.log
 launchd_stdout.log
 launchd_stderr.log
+advisor_backtest_*.csv

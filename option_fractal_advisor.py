@@ -64,68 +64,78 @@ def analyze_underlying(code: str) -> dict:
 def classify_regime(feat: dict) -> dict:
     """根据分形特征 + 技术指标分类市场情境, 给出期权策略建议.
 
-    决策逻辑:
-      - asym > 0.3 强反转股 + RSI超买 → 买短期 Put (反转下注)
-      - asym > 0.3 + RSI超卖 → 买短期 Call (反转下注)
-      - asym > 0.3 + RSI中性 + 低 Δα → 横盘整理 → 卖跨式收权利金 (复杂, 低优先级)
-      - asym < -0.1 趋势股 + RSI 强势 → 买 Call 做延续
-      - asym < -0.1 + RSI 弱势 → 买 Put 做延续
-      - |asym| 弱 + Δα 大 → 波动率放大 → 买 straddle (买 Call + Put)
-      - 其他 → 观望 (不推荐期权)
+    **v2 (基于 2026-04 回测修正)**:
+      400天 × 7只科技股回测 n=545, 发现美股市场:
+      - BUY_CALL @ strong_asym_oversold 胜率 67.9% (✓ 保留核心信号)
+      - BUY_PUT @ strong_asym_overbought 胜率 47.9% (✗ 美股长期牛市 反转不成立)
+      - trend_continuation 样本少且胜率低 (<35%)
+
+    决策逻辑 (保守版):
+      - asym > 0.3 + RSI<40 超卖 → BUY_CALL (反转买入, 胜率 67%) ⭐
+      - asym > 0.3 + RSI>70 超买 → WAIT (不做空) 或降低 confidence
+      - asym < -0.1 + RSI>60 强势 → BUY_CALL 延续 (样本少, 低 confidence)
+      - |asym|弱 + Δα>0.6 → BUY_STRADDLE (波动放大)
+      - 其他 → 观望
     """
     asym = feat.get("asym", 0) or 0
     rsi = feat.get("rsi6", 50) or 50
     ma20 = feat.get("ma20_diff_pct", 0) or 0
     delta_a = feat.get("delta_alpha", 0) or 0
 
-    # 情境分类
     regime = None
     strategy = None
     days_to_expiry = 7
+    confidence = None  # 基于回测的信号置信度
 
     if asym > 0.3:
-        # 强反转股 (A 股 / 贵金属型)
-        if rsi > 70 or ma20 > 8:
-            regime = "strong_asym_overbought"
-            strategy = "BUY_PUT"  # 反转下跌, 买近月 Put
-            days_to_expiry = 4
-        elif rsi < 30 or ma20 < -8:
+        # 强反转股
+        if rsi < 40 or ma20 < -6:
+            # ⭐ 核心强信号: 胜率 67.9% (回测验证)
             regime = "strong_asym_oversold"
             strategy = "BUY_CALL"
-            days_to_expiry = 4
+            days_to_expiry = 14  # Call 持有期更长, 给反转空间
+            confidence = "HIGH"
+        elif rsi > 75 or ma20 > 10:
+            # 超买反转信号 - 回测胜率仅 48%, 不推荐做空
+            regime = "strong_asym_overbought_LOW_CONFIDENCE"
+            strategy = "WAIT"  # 原为 BUY_PUT, 回测证伪后改为 WAIT
+            confidence = "LOW"
         else:
             regime = "strong_asym_neutral"
-            strategy = "OBSERVE"  # 等待技术极端
+            strategy = "OBSERVE"
     elif asym < -0.1:
-        # 趋势延续股 (标普期货型 / 大型科技)
+        # 趋势股
         if rsi > 60 and ma20 > 3:
             regime = "trend_continuation_up"
-            strategy = "BUY_CALL"  # 继续做多
+            strategy = "BUY_CALL"
             days_to_expiry = 14
+            confidence = "LOW"  # 回测样本少 (n=3, 胜率 33%)
         elif rsi < 40 and ma20 < -3:
-            regime = "trend_continuation_down"
-            strategy = "BUY_PUT"
-            days_to_expiry = 14
+            regime = "trend_continuation_down_LOW_CONFIDENCE"
+            strategy = "WAIT"  # 回测 n=8 胜率 25%, 信号方向反
+            confidence = "LOW"
         else:
             regime = "trend_neutral"
             strategy = "OBSERVE"
     else:
-        # asym 弱分形
+        # 弱分形
         if delta_a > 0.6:
             regime = "weak_asym_high_vol_complexity"
-            strategy = "BUY_STRADDLE"  # 波动结构复杂, 买跨式
+            strategy = "BUY_STRADDLE"
             days_to_expiry = 21
+            confidence = "MEDIUM"
         else:
             regime = "weak_asym_low_signal"
             strategy = "OBSERVE"
 
     return {"regime": regime, "strategy": strategy, "days_to_expiry": days_to_expiry,
+            "confidence": confidence,
             "asym": asym, "rsi6": rsi, "ma20_diff_pct": ma20, "delta_alpha": delta_a}
 
 
 def pick_option_contract(underlying: str, strategy: str, days: int) -> pd.DataFrame:
     """根据策略选择推荐的期权合约."""
-    if strategy in ("OBSERVE",):
+    if strategy in ("OBSERVE", "WAIT"):
         return pd.DataFrame()
 
     atm = find_atm_options(underlying, days_to_expiry=days, strike_band=0.03)
@@ -157,7 +167,9 @@ def format_recommendation(feat: dict, regime_info: dict, picks: pd.DataFrame) ->
     lines.append(f"  分形:  asym={feat.get('asym', 0):+.3f}  h(q=2)={feat.get('hq2', 0):+.3f}  Δα={feat.get('delta_alpha', 0):.3f}")
     lines.append(f"  技术:  RSI6={feat['rsi6']:.1f}  MA20偏离={feat['ma20_diff_pct']:+.2f}%  年化σ={feat['vol_20d_ann']:.1f}%")
     lines.append(f"  情境:  {regime_info['regime']}")
-    lines.append(f"  建议:  {regime_info['strategy']}   到期天数目标={regime_info['days_to_expiry']}")
+    conf = regime_info.get("confidence")
+    conf_str = f"  置信度: {conf}" if conf else ""
+    lines.append(f"  建议:  {regime_info['strategy']}   到期天数目标={regime_info['days_to_expiry']}{conf_str}")
 
     if picks.empty:
         lines.append(f"  → 观望, 无期权建议")
