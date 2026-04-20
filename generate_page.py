@@ -682,14 +682,40 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     # 在A股footer前插入美股部分
     html = html.replace('<div class="footer">', us_section + '\n<div class="footer">')
 
-    # 如果存在期权持仓片段 (option_monitor.py 本地生成, 不在 GitHub Actions 中),
-    # 把它也拼进页面 (放在美股后、footer 前)
+    # 期权持仓 section 处理: 本地有最新片段就用新的, 否则从旧 index.html 保留
+    # (Actions 环境无 option_section.html, 要避免 Actions 擦除本地 push 的期权内容)
     opt_section_path = "option_section.html"
+    opt_html = None
     if os.path.exists(opt_section_path):
         with open(opt_section_path, encoding="utf-8") as f:
             opt_html = f.read()
+        print(f"  [+] 期权持仓 section 用本地最新片段 ({len(opt_html)} 字节)")
+    else:
+        # Actions 环境: 尝试从旧 docs/index.html 中提取期权 section 保留
+        old_page_path = "docs/index.html"
+        if os.path.exists(old_page_path):
+            import re
+            with open(old_page_path, encoding="utf-8") as f:
+                old_html = f.read()
+            # 匹配期权 section 的整块 (包括开头注释到 </section>)
+            # 也要保留紧急横幅 (如果有)
+            m = re.search(
+                r'(<!-- 期权持仓 section[\s\S]*?</section>)',
+                old_html,
+            )
+            if m:
+                opt_html = m.group(1)
+                # 同时提取紧急横幅 (如果有)
+                banner_m = re.search(
+                    r'(<div style="background:#cf222e[\s\S]*?</script>)',
+                    old_html,
+                )
+                if banner_m:
+                    opt_html = banner_m.group(1) + "\n" + opt_html
+                print(f"  [+] 期权持仓 section 从旧页保留 ({len(opt_html)} 字节, 预计 Actions 环境)")
+
+    if opt_html:
         html = html.replace('<div class="footer">', opt_html + '\n<div class="footer">')
-        print(f"  [+] 期权持仓 section 已嵌入 ({len(opt_html)} 字节)")
 
     # 真实盘 section **不嵌入公开主页** (隐私保护)
     # 如果存在 real_position_section.html, 说明本地生成了, 但 docs/ 是公开的,

@@ -209,7 +209,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">IC-WEIGHTED MULTI-FACTOR · CN-A / US · v3</div>
-  <div class="muted">2026-04-20 20:20:52</div>
+  <div class="muted">2026-04-20 22:49:46</div>
 </div>
 
 <div class="container">
@@ -218,7 +218,7 @@
   <div class="hero-kicker">Issue № 01 · Research Bulletin · 上海 / 深圳</div>
   <h1>主力<em>分析</em><span class="eyebrow">A-Share Technical &amp; Factor Report</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-20 20:20:52</span>
+    <span class="pill">Last Sync · 2026-04-20 22:49:46</span>
     <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
     <span class="refresh-msg" id="refreshMsg"></span>
   </div>
@@ -364,7 +364,7 @@ async function triggerRefresh() {
   <table>
   <thead><tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交量</th><th>市值</th><th>最高</th><th>最低</th></tr></thead>
   <tbody><tr><td>英伟达</td><td>NVDA</td><td>$202.06</td><td class="up">+0.19%</td><td>115.4M</td><td>$4.91T</td><td>$202.17</td><td>$197.84</td></tr>
-<tr><td>特斯拉</td><td>TSLA</td><td>$392.50</td><td class="down">-2.03%</td><td>64.2M</td><td>$1.47T</td><td>$406.80</td><td>$388.34</td></tr>
+<tr><td>特斯拉</td><td>TSLA</td><td>$392.50</td><td class="down">-2.03%</td><td>64.2M</td><td>$1.47T</td><td>$406.80</td><td>$388.33</td></tr>
 <tr><td>谷歌</td><td>GOOGL</td><td>$337.42</td><td class="down">-1.25%</td><td>18.7M</td><td>$4.08T</td><td>$341.35</td><td>$336.63</td></tr>
 <tr><td>苹果</td><td>AAPL</td><td>$273.05</td><td class="up">+1.04%</td><td>34.7M</td><td>$4.01T</td><td>$274.27</td><td>$270.29</td></tr>
 <tr><td>携程</td><td>TCOM</td><td>$55.01</td><td class="down">-0.33%</td><td>2.7M</td><td>$36B</td><td>$55.03</td><td>$53.95</td></tr>
@@ -430,6 +430,33 @@ async function triggerRefresh() {
   </div>
 </section>
 
+<!-- 期权持仓 section, 由 option_monitor.py 生成于 2026-04-20 21:32:49 -->
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">№ 09</div>
+    <h2><em>Option</em> Positions<span class="cn">期权持仓</span></h2>
+    <div class="section-meta">模拟盘 SIMULATE<br>更新 21:32:49</div>
+  </div>
+  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 点"📋 复制平仓命令"复制到终端执行</p>
+  <div class="table-wrap" style="margin-bottom:24px;">
+  <table>
+  <thead><tr><th>组合</th><th>行权价</th><th>到期</th><th>现价</th><th>盈亏平衡</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th><th>建议动作</th></tr></thead>
+  <tbody>
+
+        <tr>
+          <td><strong>GOOGL</strong> 跨式 Straddle</td>
+          <td>$337.50</td>
+          <td>2026-05-08 · 18天 </td>
+          <td>$338.23</td>
+          <td><span class="down">↓$314.16</span> / <span class="up">↑$360.84</span><br><small>-7.1% / +6.7%</small></td>
+          <td>$2334</td>
+          <td class="up">+$51.00<br><small>(+2.19%)</small></td>
+          <td>$-65.00</td>
+          <td>38.6%</td>
+          <td><span class="tag tag-neutral">⚪ 警戒持有</span><br><small style="color:var(--muted);">剩 18 天, 进入 21天警戒区</small><br><button onclick="navigator.clipboard.writeText('./venv/bin/python trade_futu_sim.py sell US.GOOGL260508C337500 1 --confirm\n./venv/bin/python trade_futu_sim.py sell US.GOOGL260508P337500 1 --confirm').then(()=>{this.textContent='✓ 已复制';setTimeout(()=>this.textContent='📋 复制平仓命令',2000)})" style="font-family:inherit;font-size:11px;padding:4px 8px;border:1px solid currentColor;background:var(--paper);cursor:pointer;">📋 复制平仓命令</button></td>
+        </tr>
+  </tbody></table></div>
+</section>
 <div class="footer">
 <div>
 <strong>Methodology</strong>
