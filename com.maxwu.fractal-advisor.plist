@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.maxwu.fractal-advisor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Volumes/MaxRelocated/主力分析/run_advisor_daily.sh</string>
+    </array>
+
+    <!-- 每天两次:
+         15:00 CEST (美股盘前 9:00 EDT, 给出开盘参考)
+         22:00 CEST (美股收盘 16:00 EDT, 收盘复盘信号)
+         周一到周五运行 (Weekday 1=Monday .. 5=Friday) -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>2</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>3</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>4</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>5</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>22</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>22</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>2</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>22</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>3</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>22</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>4</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>22</integer>
+            <key>Minute</key><integer>0</integer>
+            <key>Weekday</key><integer>5</integer>
+        </dict>
+    </array>
+
+    <!-- 开机时如果到了时间没跑, 补跑一次 -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Volumes/MaxRelocated/主力分析/launchd_stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Volumes/MaxRelocated/主力分析/launchd_stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Volumes/MaxRelocated/主力分析</string>
+</dict>
+</plist>
