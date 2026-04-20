@@ -164,33 +164,29 @@ def add_gap_ret_10d(df: pd.DataFrame, period: int = 10) -> pd.DataFrame:
     return df
 
 
-def add_mfdfa_width_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame:
-    """120日滚动多重分形谱宽度 Δα (MF-DFA)
-
-    单一Hurst/DFA 假设整个序列有一个分形维度;
-    多重分形 (multifractal) 承认不同时段波动的"分形性"不同:
-      Δα = α_max - α_min 大 → 波动结构不均匀, 存在"强动量段"与"强噪声段"混合
-      Δα 小 → 整体均匀, 接近单分形
+def add_mfdfa_spectrum_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame:
+    """120日滚动 MF-DFA 完整奇异谱特征
+    一次计算输出三个互补因子:
+      mfdfa_width_120d  = Δα = α_max - α_min         (波动结构不均匀度)
+      mfdfa_alpha0_120d = α_0 = (α_max + α_min)/2    (谱中心/典型长程依赖)
+      hq2_120d          = h(q=2)                     (q=2广义Hurst, 稳健版)
 
     算法: Kantelhardt et al. (2002) MF-DFA
-      q 阶矩 F_q(s) ∝ s^h(q)
-      对 q ∈ {-4,-2,0,2,4}, 拟合 h(q)
-      Legendre变换得 α(q) = h(q) + q·h'(q)
-      宽度 Δα = α(q_min) - α(q_max)
-
-    预期逻辑: A股实证中 Δα 通常与未来回撤正相关 (波动不均匀=极端行情风险)
-    窗口120日更长, 因为MF-DFA需要多尺度+多q矩估计
+      q阶矩 F_q(s) ∝ s^h(q), q∈{-4,-2,2,4}
+      Legendre变换 α(q) = h(q) + q·h'(q)
+      一次遍历共用中间计算, 三因子成本≈单因子
     """
     log_ret = np.log(df["close"] / df["close"].shift(1))
-
     q_list = np.array([-4, -2, 2, 4])
     sub_lens = [10, 20, 30, 40]
 
-    def _mfdfa(x):
+    def _mfdfa_spectrum(x):
+        """返回 (width, alpha0, h_at_q2)"""
         if len(x) < 50 or x.isna().any():
-            return np.nan
+            return (np.nan, np.nan, np.nan)
         y = (x - x.mean()).cumsum().values
         h_q = []
+        h_at_q2 = np.nan
         for q in q_list:
             log_F = []
             for n in sub_lens:
@@ -206,7 +202,6 @@ def add_mfdfa_width_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame:
                     resid = seg - trend
                     F2.append(np.mean(resid ** 2))
                 F2 = np.array(F2)
-                # q阶矩
                 if q == 0:
                     F_q = np.exp(0.5 * np.mean(np.log(F2 + 1e-12)))
                 else:
@@ -214,14 +209,14 @@ def add_mfdfa_width_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame:
                 if F_q > 0:
                     log_F.append((np.log(n), np.log(F_q)))
             if len(log_F) < 2:
-                return np.nan
+                return (np.nan, np.nan, np.nan)
             xs = np.array([p[0] for p in log_F])
             ys = np.array([p[1] for p in log_F])
             h = np.polyfit(xs, ys, 1)[0]
             h_q.append(h)
+            if q == 2:
+                h_at_q2 = h
         h_q = np.array(h_q)
-        # Legendre: α(q) = h(q) + q * dh/dq
-        # 用中心差分近似 dh/dq
         alphas = []
         for i, q in enumerate(q_list):
             if i == 0:
@@ -232,9 +227,37 @@ def add_mfdfa_width_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame:
                 dh_dq = (h_q[i+1] - h_q[i-1]) / (q_list[i+1] - q_list[i-1])
             alphas.append(h_q[i] + q * dh_dq)
         alphas = np.array(alphas)
-        return alphas.max() - alphas.min()
+        width = alphas.max() - alphas.min()
+        alpha0 = (alphas.max() + alphas.min()) / 2.0
+        return (width, alpha0, h_at_q2)
 
-    df["mfdfa_width_120d"] = log_ret.rolling(window=period, min_periods=period).apply(_mfdfa, raw=False)
+    # 手动滚动避免三次rolling.apply的重复计算
+    n_rows = len(log_ret)
+    widths = np.full(n_rows, np.nan)
+    alpha0s = np.full(n_rows, np.nan)
+    hq2s = np.full(n_rows, np.nan)
+    log_ret_vals = log_ret
+    for i in range(period - 1, n_rows):
+        window = log_ret_vals.iloc[i - period + 1 : i + 1]
+        w, a0, h2 = _mfdfa_spectrum(window)
+        widths[i] = w
+        alpha0s[i] = a0
+        hq2s[i] = h2
+
+    df["mfdfa_width_120d"] = widths
+    df["mfdfa_alpha0_120d"] = alpha0s
+    df["hq2_120d"] = hq2s
+    return df
+
+
+def add_mfdfa_x_roc20(df: pd.DataFrame) -> pd.DataFrame:
+    """Δα × ROC20 交互因子 (波动结构不均匀度调权的动量)"""
+    if "mfdfa_width_120d" in df.columns and "ROC20" in df.columns:
+        delta_a = df["mfdfa_width_120d"]
+        rolling_med = delta_a.rolling(window=120, min_periods=60).median()
+        df["mfdfa_x_roc20"] = (delta_a - rolling_med) * df["ROC20"]
+    else:
+        df["mfdfa_x_roc20"] = np.nan
     return df
 
 
@@ -314,7 +337,8 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_max_ret_20d(df)
     df = add_gap_ret_10d(df)
     df = add_amihud_20d(df)
-    df = add_mfdfa_width_120d(df)
+    df = add_mfdfa_spectrum_120d(df)
+    df = add_mfdfa_x_roc20(df)
 
     df = add_fat_tail_signals(df)
 
