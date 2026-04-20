@@ -8,3 +8,6 @@ temporal_fractal_results.csv
 us_fractal_results.csv
 fractal_strategy_results.csv
 fractal_strategy_pivot.csv
+industry_backtest_results.csv
+industry_backtest_raw.csv
+energy_reverse_results.csv
