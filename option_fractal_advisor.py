@@ -24,7 +24,8 @@ from fractal_survey import mfdfa_spectrum
 WATCHLISTS = {
     "tech": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META", "US.AMZN"],
     "tech_plus": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
-                   "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR", "US.UBER"],
+                   "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR", "US.UBER",
+                   "US.FUTU"],  # 富途控股 (元: 用富途API 研究富途股票)
     "etf": ["US.SPY", "US.QQQ", "US.IWM", "US.DIA", "US.VOO"],
     "crypto_etf": ["US.IBIT", "US.FBTC", "US.BITB"],  # BTC 现货 ETF
     "all_watch": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
