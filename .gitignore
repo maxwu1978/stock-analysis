@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .claude/
 fractal_survey_results.csv
+industry_fractal_results.csv
+temporal_fractal_results.csv
+us_fractal_results.csv
+fractal_strategy_results.csv
+fractal_strategy_pivot.csv
