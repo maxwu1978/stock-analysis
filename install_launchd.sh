@@ -6,35 +6,58 @@
 
 set -euo pipefail
 
-PLIST_SRC="/Volumes/MaxRelocated/主力分析/com.maxwu.fractal-advisor.plist"
-PLIST_DST="$HOME/Library/LaunchAgents/com.maxwu.fractal-advisor.plist"
-LABEL="com.maxwu.fractal-advisor"
+PROJECT_DIR="/Volumes/MaxRelocated/主力分析"
+LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
+
+# 两个任务:
+JOBS=(
+    "com.maxwu.fractal-advisor"  # 工作日 15:00/22:00 跑策略推荐
+    "com.maxwu.option-monitor"   # 每小时跑期权持仓监控 (自带市场过滤)
+)
 
 cmd="${1:-install}"
 
 case "$cmd" in
     install)
-        mkdir -p "$HOME/Library/LaunchAgents"
-        cp "$PLIST_SRC" "$PLIST_DST"
-        # macOS 新版用 bootstrap 替代 load
-        launchctl bootstrap "gui/$(id -u)" "$PLIST_DST" 2>/dev/null || launchctl load "$PLIST_DST"
-        echo "✓ 已安装: $LABEL"
-        echo "  下次运行: 工作日 15:00 或 22:00 CEST"
-        echo "  日志: /Volumes/MaxRelocated/主力分析/advisor_history.log"
-        launchctl list | grep "$LABEL" || echo "  (尚未在 list 中, 稍等几秒)"
+        mkdir -p "$LAUNCH_AGENTS"
+        for label in "${JOBS[@]}"; do
+            src="$PROJECT_DIR/$label.plist"
+            dst="$LAUNCH_AGENTS/$label.plist"
+            if [ ! -f "$src" ]; then
+                echo "  [!] 跳过 $label: $src 不存在"
+                continue
+            fi
+            cp "$src" "$dst"
+            launchctl bootstrap "gui/$(id -u)" "$dst" 2>/dev/null \
+                || launchctl load "$dst"
+            echo "✓ 已安装: $label"
+        done
+        echo ""
+        echo "  策略推荐: 工作日 15:00 / 22:00 CEST → advisor_history.log"
+        echo "  持仓监控: 每小时 (含盘前/中/后) → option_status.log + macOS 通知"
+        echo ""
+        echo "当前 launchctl 状态:"
+        launchctl list | grep -E "fractal-advisor|option-monitor" || echo "  (稍等几秒后重试 status)"
         ;;
     uninstall)
-        launchctl bootout "gui/$(id -u)" "$PLIST_DST" 2>/dev/null || launchctl unload "$PLIST_DST" 2>/dev/null || true
-        rm -f "$PLIST_DST"
-        echo "✓ 已卸载: $LABEL"
+        for label in "${JOBS[@]}"; do
+            dst="$LAUNCH_AGENTS/$label.plist"
+            launchctl bootout "gui/$(id -u)" "$dst" 2>/dev/null \
+                || launchctl unload "$dst" 2>/dev/null || true
+            rm -f "$dst"
+            echo "✓ 已卸载: $label"
+        done
         ;;
     status)
-        launchctl list | grep "$LABEL" || echo "未安装"
+        echo "launchctl list 中的任务:"
+        launchctl list | grep -E "fractal-advisor|option-monitor" || echo "  (未安装)"
         ;;
     test)
-        # 立即跑一次 (不等计划时间)
-        /Volumes/MaxRelocated/主力分析/run_advisor_daily.sh
-        echo "✓ 测试运行完成, 查看 advisor_history.log"
+        echo "=== 测试 fractal-advisor ==="
+        "$PROJECT_DIR/run_advisor_daily.sh"
+        echo ""
+        echo "=== 测试 option-monitor ==="
+        "$PROJECT_DIR/venv/bin/python" "$PROJECT_DIR/option_monitor.py"
         ;;
     *)
         echo "用法: $0 [install|uninstall|status|test]"

@@ -18,3 +18,8 @@ advisor_history.log
 launchd_stdout.log
 launchd_stderr.log
 advisor_backtest_*.csv
+option_status.log
+option_status_latest.txt
+option_monitor_cron.log
+launchd_monitor_stdout.log
+launchd_monitor_stderr.log

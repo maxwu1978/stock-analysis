@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.maxwu.option-monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-c</string>
+        <string>cd /Volumes/MaxRelocated/主力分析 &amp;&amp; ./venv/bin/python option_monitor.py --market-open-only 2&gt;/dev/null | grep -v "open_context_base\|_init_connect_sync\|on_disconnect" &gt;&gt; option_monitor_cron.log</string>
+    </array>
+
+    <!-- 每小时整点运行.
+         option_monitor.py 自带 --market-open-only 市场过滤,
+         美股休市时自动跳过 (不发通知). -->
+    <key>StartInterval</key>
+    <integer>3600</integer>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Volumes/MaxRelocated/主力分析/launchd_monitor_stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Volumes/MaxRelocated/主力分析/launchd_monitor_stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Volumes/MaxRelocated/主力分析</string>
+</dict>
+</plist>
