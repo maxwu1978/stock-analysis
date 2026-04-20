@@ -28,6 +28,9 @@ WATCHLISTS = {
     "tech": ["AAPL", "NVDA", "TSLA", "MSFT", "GOOGL", "META", "AMZN"],
     "default": ["NVDA", "TSLA", "AAPL"],
     "nvda_only": ["NVDA"],
+    "btc": ["BTC-USD"],
+    "crypto": ["BTC-USD", "ETH-USD"],
+    "mix": ["BTC-USD", "NVDA", "TSLA", "META"],  # 强分形资产 vs 中等分形
 }
 
 WINDOW = 120  # MF-DFA 窗口

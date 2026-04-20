@@ -26,32 +26,71 @@ WATCHLISTS = {
     "tech_plus": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
                    "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR", "US.UBER"],
     "etf": ["US.SPY", "US.QQQ", "US.IWM", "US.DIA", "US.VOO"],
+    "crypto_etf": ["US.IBIT", "US.FBTC", "US.BITB"],  # BTC 现货 ETF
     "all_watch": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
                    "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR",
-                   "US.SPY", "US.QQQ", "US.IWM"],
+                   "US.SPY", "US.QQQ", "US.IWM",
+                   "US.IBIT"],  # 含 BTC 敞口
     "nvda_only": ["US.NVDA"],
-    "default": ["US.NVDA", "US.AAPL", "US.TSLA"],
+    "btc_only": ["US.IBIT"],
+    "default": ["US.NVDA", "US.AAPL", "US.TSLA", "US.IBIT"],
+}
+
+# IBIT/FBTC/BITB 作为 BTC 现货 ETF, 分形特征用 BTC-USD 计算更准确
+# 因为 ETF 日线样本少(上市不足2年) 且持有量大时可能有轻微溢价
+BTC_ETF_UNDERLYING = {
+    "US.IBIT": "BTC-USD",
+    "US.FBTC": "BTC-USD",
+    "US.BITB": "BTC-USD",
 }
 
 
 def analyze_underlying(code: str) -> dict:
-    """对单只股票做分形 + 技术分析, 返回决策特征."""
+    """对单只股票做分形 + 技术分析, 返回决策特征.
+
+    对 BTC ETF (IBIT/FBTC/BITB): 分形用 BTC-USD (yfinance) 计算更准确,
+    其他技术指标 + 实时价仍用 ETF 自身.
+    """
     out = {"code": code}
-    # 实时价
+    # 实时价 (始终来自富途 ETF 自己)
     rt = realtime_quotes([code])
     out["last_price"] = float(rt.iloc[0]["last_price"])
     out["chg_pct"] = float(rt.iloc[0]["change_rate"])
 
-    # 拉 200 天历史
-    kl = get_kline(code, days=200, ktype="K_DAY")
-    closes = kl["close"].astype(float)
-    log_ret = np.log(closes / closes.shift(1))
+    # 决定分形数据源: BTC ETF → yfinance BTC-USD; 其他 → 富途 ETF 自己
+    fractal_source_code = BTC_ETF_UNDERLYING.get(code)
+    if fractal_source_code:
+        # 用 BTC-USD 做分形 (样本长, 更稳定)
+        import yfinance as yf
+        out["_fractal_source"] = fractal_source_code
+        try:
+            t = yf.Ticker(fractal_source_code)
+            btc_hist = t.history(period="400d", interval="1d", auto_adjust=False)
+            if btc_hist.index.tz is not None:
+                btc_hist.index = btc_hist.index.tz_localize(None)
+            closes_for_fractal = btc_hist["Close"].astype(float)
+        except Exception as e:
+            out["fractal_err"] = str(e)[:40]
+            closes_for_fractal = pd.Series(dtype=float)
+    else:
+        # 其他标的: 富途拉 K 线
+        kl = get_kline(code, days=200, ktype="K_DAY")
+        closes_for_fractal = kl["close"].astype(float)
+
+    log_ret = np.log(closes_for_fractal / closes_for_fractal.shift(1)) if not closes_for_fractal.empty else pd.Series(dtype=float)
 
     # MF-DFA 谱
     if len(log_ret) >= 120:
         spec = mfdfa_spectrum(log_ret.iloc[-120:])
         out.update({"asym": spec.get("asym"), "hq2": spec.get("hq2"),
                     "delta_alpha": spec.get("delta_alpha"), "alpha0": spec.get("alpha0")})
+
+    # 技术指标 用标的自身 (ETF 价格, 因为下单是对 ETF)
+    if fractal_source_code:
+        kl = get_kline(code, days=200, ktype="K_DAY")
+        closes = kl["close"].astype(float)
+    else:
+        closes = closes_for_fractal
 
     # 技术
     ma20 = closes.rolling(20).mean().iloc[-1]
