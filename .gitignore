@@ -11,3 +11,4 @@ fractal_strategy_pivot.csv
 industry_backtest_results.csv
 industry_backtest_raw.csv
 energy_reverse_results.csv
+futu_live_*.csv
