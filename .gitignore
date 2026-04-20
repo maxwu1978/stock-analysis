@@ -12,3 +12,4 @@ industry_backtest_results.csv
 industry_backtest_raw.csv
 energy_reverse_results.csv
 futu_live_*.csv
+trade_sim_log.csv
