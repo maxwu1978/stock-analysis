@@ -13,7 +13,7 @@ from fundamental import fetch_all_financials
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 
 A_SIGNAL_RELIABILITY = {"300750": "强", "600519": "弱", "601600": "强", "300274": "弱", "600745": "中"}
-US_SIGNAL_RELIABILITY = {"NVDA": "中", "TSLA": "强", "GOOGL": "弱", "AAPL": "中", "TCOM": "?"}
+US_SIGNAL_RELIABILITY = {"NVDA": "中", "TSLA": "强", "GOOGL": "弱", "AAPL": "中", "TCOM": "?", "FUTU": "?"}
 
 
 def direction_tag(hp):
@@ -619,7 +619,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     # 拼接美股HTML
     us_section = f"""
 <section class="us-divider">
-  <span class="stamp">U.S. Equities · <em>美股研判</em> · NVDA · TSLA · GOOGL · AAPL</span>
+  <span class="stamp">U.S. Equities · <em>美股研判</em> · NVDA · TSLA · GOOGL · AAPL · FUTU</span>
 </section>
 
 <section class="section">

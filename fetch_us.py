@@ -10,6 +10,7 @@ US_STOCKS = {
     "GOOGL": "谷歌",
     "AAPL": "苹果",
     "TCOM": "携程",
+    "FUTU": "富途控股",
 }
 
 
