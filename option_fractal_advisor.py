@@ -32,8 +32,8 @@ WATCHLISTS = {
                    "US.SPY", "US.QQQ", "US.IWM",
                    "US.IBIT"],  # 含 BTC 敞口
     "nvda_only": ["US.NVDA"],
-    "btc_only": ["US.IBIT"],
-    "default": ["US.NVDA", "US.AAPL", "US.TSLA", "US.IBIT"],
+    "btc_only": ["US.IBIT"],  # 研究用, 回测失败, 不建议实盘
+    "default": ["US.NVDA", "US.AAPL", "US.TSLA"],  # 不含 IBIT: BTC 策略回测失败
 }
 
 # IBIT/FBTC/BITB 作为 BTC 现货 ETF, 分形特征用 BTC-USD 计算更准确
