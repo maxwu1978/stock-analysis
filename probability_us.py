@@ -33,6 +33,11 @@ US_FACTOR_COLS = [
     "vol_surge",        # 量能异动
     "adx_accel",        # ADX加速度
     "kurt_20",          # 20日峰度
+    # 分形几何因子族 (来自A股验证, 第二轮)
+    "mfdfa_width_120d",    # 120日多重分形谱宽度Δα
+    "mfdfa_alpha0_120d",   # 120日MF-DFA谱中心α_0
+    "hq2_120d",            # 120日MF-DFA h(q=2) 稳健版Hurst
+    "mfdfa_x_roc20",       # Δα × ROC20 交互因子
 ]
 
 IC_WINDOW = 90   # 美股用更短窗口
