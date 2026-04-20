@@ -164,6 +164,80 @@ def add_gap_ret_10d(df: pd.DataFrame, period: int = 10) -> pd.DataFrame:
     return df
 
 
+def add_mfdfa_width_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame:
+    """120日滚动多重分形谱宽度 Δα (MF-DFA)
+
+    单一Hurst/DFA 假设整个序列有一个分形维度;
+    多重分形 (multifractal) 承认不同时段波动的"分形性"不同:
+      Δα = α_max - α_min 大 → 波动结构不均匀, 存在"强动量段"与"强噪声段"混合
+      Δα 小 → 整体均匀, 接近单分形
+
+    算法: Kantelhardt et al. (2002) MF-DFA
+      q 阶矩 F_q(s) ∝ s^h(q)
+      对 q ∈ {-4,-2,0,2,4}, 拟合 h(q)
+      Legendre变换得 α(q) = h(q) + q·h'(q)
+      宽度 Δα = α(q_min) - α(q_max)
+
+    预期逻辑: A股实证中 Δα 通常与未来回撤正相关 (波动不均匀=极端行情风险)
+    窗口120日更长, 因为MF-DFA需要多尺度+多q矩估计
+    """
+    log_ret = np.log(df["close"] / df["close"].shift(1))
+
+    q_list = np.array([-4, -2, 2, 4])
+    sub_lens = [10, 20, 30, 40]
+
+    def _mfdfa(x):
+        if len(x) < 50 or x.isna().any():
+            return np.nan
+        y = (x - x.mean()).cumsum().values
+        h_q = []
+        for q in q_list:
+            log_F = []
+            for n in sub_lens:
+                if len(y) < 2 * n:
+                    continue
+                num_seg = len(y) // n
+                segs = y[:num_seg * n].reshape(num_seg, n)
+                t = np.arange(n)
+                F2 = []
+                for seg in segs:
+                    coef = np.polyfit(t, seg, 1)
+                    trend = np.polyval(coef, t)
+                    resid = seg - trend
+                    F2.append(np.mean(resid ** 2))
+                F2 = np.array(F2)
+                # q阶矩
+                if q == 0:
+                    F_q = np.exp(0.5 * np.mean(np.log(F2 + 1e-12)))
+                else:
+                    F_q = np.mean(F2 ** (q / 2.0)) ** (1.0 / q)
+                if F_q > 0:
+                    log_F.append((np.log(n), np.log(F_q)))
+            if len(log_F) < 2:
+                return np.nan
+            xs = np.array([p[0] for p in log_F])
+            ys = np.array([p[1] for p in log_F])
+            h = np.polyfit(xs, ys, 1)[0]
+            h_q.append(h)
+        h_q = np.array(h_q)
+        # Legendre: α(q) = h(q) + q * dh/dq
+        # 用中心差分近似 dh/dq
+        alphas = []
+        for i, q in enumerate(q_list):
+            if i == 0:
+                dh_dq = (h_q[1] - h_q[0]) / (q_list[1] - q_list[0])
+            elif i == len(q_list) - 1:
+                dh_dq = (h_q[-1] - h_q[-2]) / (q_list[-1] - q_list[-2])
+            else:
+                dh_dq = (h_q[i+1] - h_q[i-1]) / (q_list[i+1] - q_list[i-1])
+            alphas.append(h_q[i] + q * dh_dq)
+        alphas = np.array(alphas)
+        return alphas.max() - alphas.min()
+
+    df["mfdfa_width_120d"] = log_ret.rolling(window=period, min_periods=period).apply(_mfdfa, raw=False)
+    return df
+
+
 def add_amihud_20d(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
     """20日 Amihud 非流动性因子
     ILLIQ = mean(|daily_ret| / dollar_volume, 20d) * 1e8
@@ -240,6 +314,7 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_max_ret_20d(df)
     df = add_gap_ret_10d(df)
     df = add_amihud_20d(df)
+    df = add_mfdfa_width_120d(df)
 
     df = add_fat_tail_signals(df)
 
