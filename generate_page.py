@@ -682,6 +682,15 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     # 在A股footer前插入美股部分
     html = html.replace('<div class="footer">', us_section + '\n<div class="footer">')
 
+    # 如果存在期权持仓片段 (option_monitor.py 本地生成, 不在 GitHub Actions 中),
+    # 把它也拼进页面 (放在美股后、footer 前)
+    opt_section_path = "option_section.html"
+    if os.path.exists(opt_section_path):
+        with open(opt_section_path, encoding="utf-8") as f:
+            opt_html = f.read()
+        html = html.replace('<div class="footer">', opt_html + '\n<div class="footer">')
+        print(f"  [+] 期权持仓 section 已嵌入 ({len(opt_html)} 字节)")
+
     # 写到 docs/index.html (GitHub Pages 从 docs 目录读取)
     os.makedirs("docs", exist_ok=True)
     with open("docs/index.html", "w", encoding="utf-8") as f:

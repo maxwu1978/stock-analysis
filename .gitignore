@@ -23,3 +23,4 @@ option_status_latest.txt
 option_monitor_cron.log
 launchd_monitor_stdout.log
 launchd_monitor_stderr.log
+option_section.html

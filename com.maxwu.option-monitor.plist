@@ -8,8 +8,7 @@
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>-c</string>
-        <string>cd /Volumes/MaxRelocated/主力分析 &amp;&amp; ./venv/bin/python option_monitor.py --market-open-only 2&gt;/dev/null | grep -v "open_context_base\|_init_connect_sync\|on_disconnect" &gt;&gt; option_monitor_cron.log</string>
+        <string>/Volumes/MaxRelocated/主力分析/run_option_monitor.sh</string>
     </array>
 
     <!-- 每小时整点运行.

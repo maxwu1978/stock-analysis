@@ -243,8 +243,99 @@ def send_notification(title: str, message: str) -> None:
         pass
 
 
+def save_html_fragment(options: list[dict], straddles: list[dict], path: str | Path) -> None:
+    """生成期权持仓的 HTML 片段 (供 generate_page.py 嵌入主页).
+
+    不输出完整 HTML/CSS, 只输出 <section> 内容, 用主页已有样式呈现.
+    """
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+    # 构造跨式行 (使用主页站点的 .up/.down/.strong/.weak 类名复用样式)
+    straddle_rows = []
+    for s in straddles:
+        pl_cls = "up" if s["pl_per_straddle"] >= 0 else "down"
+        spot = s["spot"]
+        dist_up = (s["breakeven_upper"] - spot) / spot * 100 if spot else 0
+        dist_dn = (spot - s["breakeven_lower"]) / spot * 100 if spot else 0
+        urgency_tag = ""
+        days = int(s["days_to_expiry"])
+        if days <= 7:
+            urgency_tag = '<span class="tag tag-up">到期近</span>'
+        elif days <= 14:
+            urgency_tag = '<span class="tag tag-neutral">注意</span>'
+        straddle_rows.append(f"""
+        <tr>
+          <td><strong>{s['underlying'].replace('US.','')}</strong> 跨式 Straddle</td>
+          <td>${s['strike']:.2f}</td>
+          <td>{s['expiry']} · {days}天 {urgency_tag}</td>
+          <td>${spot:.2f}</td>
+          <td><span class="down">↓${s['breakeven_lower']:.2f}</span> / <span class="up">↑${s['breakeven_upper']:.2f}</span><br><small>-{dist_dn:.1f}% / +{dist_up:.1f}%</small></td>
+          <td>${s['total_cost_per_contract']*100*s['qty']:.0f}</td>
+          <td class="{pl_cls}">{'' if s['pl_per_straddle']<0 else '+'}${s['pl_per_straddle']*s['qty']:.2f}<br><small>({s['pl_pct']:+.2f}%)</small></td>
+          <td>${s['theta_daily']*s['qty']:.2f}</td>
+          <td>{s['iv_avg']:.1f}%</td>
+        </tr>""")
+
+    straddle_codes = {s['call_code'] for s in straddles} | {s['put_code'] for s in straddles}
+    solo_rows = []
+    for o in options:
+        if o['code'] in straddle_codes:
+            continue
+        pl_val = o.get("pl_val") or 0
+        pl_ratio = (o.get("pl_ratio") or 0) * 100
+        pl_cls = "up" if pl_val >= 0 else "down"
+        days = int(o.get("days_to_expiry", 0))
+        urgency_tag = '<span class="tag tag-up">到期近</span>' if days <= 7 else ""
+        solo_rows.append(f"""
+        <tr>
+          <td><strong>{o['underlying'].replace('US.','')}</strong> {o['option_type']}</td>
+          <td>${o['strike']:.2f}</td>
+          <td>{o['expiry']} · {days}天 {urgency_tag}</td>
+          <td>${o.get('spot', 0):.2f}</td>
+          <td>Δ {o.get('delta', 0):+.3f} · θ {o.get('theta', 0):+.3f}</td>
+          <td>${o['cost_price']*100:.0f}</td>
+          <td class="{pl_cls}">{'' if pl_val<0 else '+'}${pl_val:.2f}<br><small>({pl_ratio:+.2f}%)</small></td>
+          <td>${(o.get('theta', 0))*100:.2f}</td>
+          <td>{o.get('iv', 0):.1f}%</td>
+        </tr>""")
+
+    has_content = bool(straddle_rows or solo_rows)
+
+    # 输出 HTML fragment (不含 <html>/<body>, 使用主页已有样式类)
+    parts = []
+    parts.append(f'<!-- 期权持仓 section, 由 option_monitor.py 生成于 {ts} -->')
+    parts.append('<section class="section">')
+    parts.append('  <div class="section-head">')
+    parts.append('    <div class="section-num">№ 09</div>')
+    parts.append('    <h2><em>Option</em> Positions<span class="cn">期权持仓</span></h2>')
+    parts.append(f'    <div class="section-meta">模拟盘 SIMULATE<br>更新 {ts.split()[1]}</div>')
+    parts.append('  </div>')
+    parts.append('  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 仅限模拟盘</p>')
+    if not has_content:
+        parts.append('  <div style="margin-left:128px; color:var(--muted); padding:20px;">当前无期权持仓</div>')
+    else:
+        if straddle_rows:
+            parts.append('  <div class="table-wrap" style="margin-bottom:24px;">')
+            parts.append('  <table>')
+            parts.append('  <thead><tr><th>组合</th><th>行权价</th><th>到期</th><th>现价</th><th>盈亏平衡</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th></tr></thead>')
+            parts.append('  <tbody>')
+            parts.extend(straddle_rows)
+            parts.append('  </tbody></table></div>')
+        if solo_rows:
+            parts.append('  <div class="table-wrap">')
+            parts.append('  <table>')
+            parts.append('  <thead><tr><th>合约</th><th>行权价</th><th>到期</th><th>现价</th><th>Greeks</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th></tr></thead>')
+            parts.append('  <tbody>')
+            parts.extend(solo_rows)
+            parts.append('  </tbody></table></div>')
+    parts.append('</section>')
+
+    Path(path).write_text('\n'.join(parts), encoding="utf-8")
+
+
 def run(quiet: bool = False, trd_env: str = "SIMULATE",
-        market_filter: bool = False) -> None:
+        market_filter: bool = False, html_output: str | None = None) -> None:
     # 如果启用市场过滤, 仅在美股盘中/盘前/盘后运行
     if market_filter:
         from fetch_futu import health_check
@@ -272,6 +363,14 @@ def run(quiet: bool = False, trd_env: str = "SIMULATE",
     # macOS 通知
     if not quiet and options:
         send_notification("期权持仓", summary[:200])
+
+    # HTML 片段输出 (默认写到 option_section.html, 供 generate_page.py 嵌入主页)
+    if html_output is None:
+        html_output = str(Path(__file__).parent / "option_section.html")
+    try:
+        save_html_fragment(options, straddles, html_output)
+    except Exception as e:
+        print(f"  [!] HTML 片段保存失败: {e}")
 
 
 if __name__ == "__main__":
