@@ -691,6 +691,14 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         html = html.replace('<div class="footer">', opt_html + '\n<div class="footer">')
         print(f"  [+] 期权持仓 section 已嵌入 ({len(opt_html)} 字节)")
 
+    # 真实盘观察 section (由 real_position_observer.py 本地生成)
+    real_section_path = "real_position_section.html"
+    if os.path.exists(real_section_path):
+        with open(real_section_path, encoding="utf-8") as f:
+            real_html = f.read()
+        html = html.replace('<div class="footer">', real_html + '\n<div class="footer">')
+        print(f"  [+] 真实盘观察 section 已嵌入 ({len(real_html)} 字节)")
+
     # 写到 docs/index.html (GitHub Pages 从 docs 目录读取)
     os.makedirs("docs", exist_ok=True)
     with open("docs/index.html", "w", encoding="utf-8") as f:
