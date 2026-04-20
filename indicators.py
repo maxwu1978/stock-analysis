@@ -117,36 +117,6 @@ def add_autocorr(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
     return df
 
 
-def add_autocorr_lag5_20d(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
-    """5期滞后的自相关 (20日窗口) — 中周期记忆效应
-    度量当前收益率与5日前收益率的相关性, 捕获周频反转/动量
-    """
-    ret = df["close"].pct_change()
-    df["autocorr_lag5_20d"] = ret.rolling(window=period).apply(
-        lambda x: x.autocorr(lag=5) if len(x) == period else 0, raw=False)
-    return df
-
-
-def add_autocorr_abs_20d(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
-    """绝对收益率的滞后1自相关 (20日窗口) — 波动聚集性
-    |r_t| 与 |r_{t-1}| 的相关, 度量 GARCH 式波动持续性, 非方向
-    """
-    abs_ret = df["close"].pct_change().abs()
-    df["autocorr_abs_20d"] = abs_ret.rolling(window=period).apply(
-        lambda x: x.autocorr(lag=1) if len(x) == period else 0, raw=False)
-    return df
-
-
-def add_autocorr_sign_20d(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
-    """符号收益率的滞后1自相关 (20日窗口) — 纯方向记忆
-    sign(r_t) 与 sign(r_{t-1}) 的相关, 剥离幅度只看方向连续性
-    """
-    sign_ret = np.sign(df["close"].pct_change())
-    df["autocorr_sign_20d"] = sign_ret.rolling(window=period).apply(
-        lambda x: x.autocorr(lag=1) if len(x) == period else 0, raw=False)
-    return df
-
-
 def add_support_resistance(df: pd.DataFrame, period: int = 20) -> pd.DataFrame:
     """计算近期支撑位和阻力位"""
     df["resist"] = df["high"].rolling(window=period).max()
@@ -367,9 +337,6 @@ def compute_all(df: pd.DataFrame, fundamental_df: pd.DataFrame = None) -> pd.Dat
     df = add_roc(df)
     df = add_vol_price_divergence(df)
     df = add_autocorr(df)
-    df = add_autocorr_lag5_20d(df)
-    df = add_autocorr_abs_20d(df)
-    df = add_autocorr_sign_20d(df)
     df = add_support_resistance(df)
     df = add_high52w_pos(df)
     df = add_max_ret_20d(df)
