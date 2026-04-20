@@ -28,3 +28,6 @@ real_position_section.html
 iv_history.csv
 signal_hit_rate_*.csv
 btc_backtest_*.csv
+crypto_fractal_*.csv
+advisor_backtest_*.csv
+btc_4h_backtest_*.csv

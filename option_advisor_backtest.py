@@ -30,6 +30,8 @@ WATCHLISTS = {
     "nvda_only": ["NVDA"],
     "btc": ["BTC-USD"],
     "crypto": ["BTC-USD", "ETH-USD"],
+    "crypto_strong": ["ETH-USD", "XRP-USD", "DOT-USD"],  # 最佳带宽候选 asym 0.47-0.51
+    "eth_only": ["ETH-USD"],
     "mix": ["BTC-USD", "NVDA", "TSLA", "META"],  # 强分形资产 vs 中等分形
 }
 
