@@ -166,24 +166,25 @@ def add_gap_ret_10d(df: pd.DataFrame, period: int = 10) -> pd.DataFrame:
 
 def add_mfdfa_spectrum_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame:
     """120日滚动 MF-DFA 完整奇异谱特征
-    一次计算输出三个互补因子:
+    一次计算输出四个互补因子:
       mfdfa_width_120d  = Δα = α_max - α_min         (波动结构不均匀度)
       mfdfa_alpha0_120d = α_0 = (α_max + α_min)/2    (谱中心/典型长程依赖)
       hq2_120d          = h(q=2)                     (q=2广义Hurst, 稳健版)
+      mfdfa_asym_120d   = h(q=-4) - h(q=+4)          (分形非对称度: 大涨vs大跌的持续性差)
 
     算法: Kantelhardt et al. (2002) MF-DFA
       q阶矩 F_q(s) ∝ s^h(q), q∈{-4,-2,2,4}
       Legendre变换 α(q) = h(q) + q·h'(q)
-      一次遍历共用中间计算, 三因子成本≈单因子
+      一次遍历共用中间计算, 四因子成本≈单因子
     """
     log_ret = np.log(df["close"] / df["close"].shift(1))
     q_list = np.array([-4, -2, 2, 4])
     sub_lens = [10, 20, 30, 40]
 
     def _mfdfa_spectrum(x):
-        """返回 (width, alpha0, h_at_q2)"""
+        """返回 (width, alpha0, h_at_q2, asym)"""
         if len(x) < 50 or x.isna().any():
-            return (np.nan, np.nan, np.nan)
+            return (np.nan, np.nan, np.nan, np.nan)
         y = (x - x.mean()).cumsum().values
         h_q = []
         h_at_q2 = np.nan
@@ -209,7 +210,7 @@ def add_mfdfa_spectrum_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame
                 if F_q > 0:
                     log_F.append((np.log(n), np.log(F_q)))
             if len(log_F) < 2:
-                return (np.nan, np.nan, np.nan)
+                return (np.nan, np.nan, np.nan, np.nan)
             xs = np.array([p[0] for p in log_F])
             ys = np.array([p[1] for p in log_F])
             h = np.polyfit(xs, ys, 1)[0]
@@ -229,24 +230,28 @@ def add_mfdfa_spectrum_120d(df: pd.DataFrame, period: int = 120) -> pd.DataFrame
         alphas = np.array(alphas)
         width = alphas.max() - alphas.min()
         alpha0 = (alphas.max() + alphas.min()) / 2.0
-        return (width, alpha0, h_at_q2)
+        asym = h_q[0] - h_q[3]  # h(q=-4) - h(q=+4)
+        return (width, alpha0, h_at_q2, asym)
 
-    # 手动滚动避免三次rolling.apply的重复计算
+    # 手动滚动避免四次rolling.apply的重复计算
     n_rows = len(log_ret)
     widths = np.full(n_rows, np.nan)
     alpha0s = np.full(n_rows, np.nan)
     hq2s = np.full(n_rows, np.nan)
+    asyms = np.full(n_rows, np.nan)
     log_ret_vals = log_ret
     for i in range(period - 1, n_rows):
         window = log_ret_vals.iloc[i - period + 1 : i + 1]
-        w, a0, h2 = _mfdfa_spectrum(window)
+        w, a0, h2, asym = _mfdfa_spectrum(window)
         widths[i] = w
         alpha0s[i] = a0
         hq2s[i] = h2
+        asyms[i] = asym
 
     df["mfdfa_width_120d"] = widths
     df["mfdfa_alpha0_120d"] = alpha0s
     df["hq2_120d"] = hq2s
+    df["mfdfa_asym_120d"] = asyms
     return df
 
 

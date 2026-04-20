@@ -36,6 +36,7 @@ FACTOR_COLS = [
     "mfdfa_width_120d",    # 120日多重分形谱宽度Δα
     "mfdfa_alpha0_120d",   # 120日MF-DFA谱中心α_0
     "hq2_120d",            # 120日MF-DFA h(q=2) 稳健版Hurst
+    "mfdfa_asym_120d",     # 120日MF-DFA分形非对称度 h(q=-4)-h(q=+4) (大跌vs大涨持续性差)
     "mfdfa_x_roc20",       # Δα × ROC20 交互因子
     # 基本面因子
     "roe",              # ROE (净资产收益率)
