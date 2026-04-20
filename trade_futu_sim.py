@@ -39,6 +39,9 @@ TRD_ENV = _TrdEnv.SIMULATE   # ← 硬编码, 不从参数读取
 MAX_ORDER_VALUE_USD = 50000
 MAX_ORDER_VALUE_HKD = 400000
 
+# 期权单笔金额上限 (权利金 × 100 × 张数)
+MAX_OPTION_VALUE_USD = 5000
+
 # 日志文件
 LOG_PATH = Path(__file__).parent / "trade_sim_log.csv"
 
@@ -232,6 +235,94 @@ def sim_market_sell(code: str, qty: float, confirmed: bool = False) -> None:
         t.close()
 
 
+def _is_option(code: str) -> bool:
+    """判断是否期权合约代号 (US.XXX<YYMMDD>C/P<STRIKE>)."""
+    parts = code.split(".")
+    if len(parts) != 2:
+        return False
+    # 期权代号: 标的后跟 6 位日期 + C/P + 8 位行权价
+    body = parts[1]
+    return len(body) > 10 and ("C" in body or "P" in body) and any(c.isdigit() for c in body[-8:])
+
+
+def _check_option_limit(code: str, qty: float, premium: float) -> None:
+    """期权下单金额上限检查. premium 是每股权利金."""
+    contract_size = 100  # 标准美股期权 1 张 = 100 股
+    value = qty * contract_size * premium
+    if value > MAX_OPTION_VALUE_USD:
+        raise ValueError(
+            f"期权订单金额超限: {code} × {qty}张 × {contract_size} × ${premium} = ${value:,.0f} > ${MAX_OPTION_VALUE_USD:,.0f}"
+        )
+
+
+def sim_option_buy(code: str, qty: int, confirmed: bool = False) -> None:
+    """开多期权仓位 (买入 Call 做多 / 买入 Put 做空).
+    qty 单位: 张 (1张=100股).
+    """
+    if not confirmed:
+        print("未加 --confirm, 拒绝下单")
+        return
+    if not _is_option(code):
+        print(f"✗ 不是合法期权代号: {code}")
+        return
+    from futu import RET_OK, TrdSide, OrderType
+    premium = _get_last_price(code)
+    _check_option_limit(code, qty, premium)
+
+    t = _trade_ctx("US")
+    try:
+        ret, data = t.place_order(
+            price=premium, qty=qty, code=code,
+            trd_side=TrdSide.BUY,
+            order_type=OrderType.NORMAL,  # 期权用限价单
+            trd_env=TRD_ENV,
+        )
+        if ret == RET_OK:
+            order_id = data.iloc[0]["order_id"]
+            value = qty * 100 * premium
+            print(f"✓ 期权买入已提交: {code} × {qty}张  权利金 ${premium}/股  合约价值 ${value:,.0f}  order_id={order_id}")
+            _log_action("OPT_BUY", code, qty, premium, f"order_id={order_id}")
+        else:
+            print(f"✗ 下单失败: {data}")
+            _log_action("OPT_BUY_FAIL", code, qty, premium, str(data))
+    finally:
+        t.close()
+
+
+def sim_option_sell(code: str, qty: int, confirmed: bool = False) -> None:
+    """平仓期权 (卖出已持有合约).
+    qty 单位: 张.
+    """
+    if not confirmed:
+        print("未加 --confirm, 拒绝下单")
+        return
+    if not _is_option(code):
+        print(f"✗ 不是合法期权代号: {code}")
+        return
+    from futu import RET_OK, TrdSide, OrderType
+    premium = _get_last_price(code)
+    _check_option_limit(code, qty, premium)
+
+    t = _trade_ctx("US")
+    try:
+        ret, data = t.place_order(
+            price=premium, qty=qty, code=code,
+            trd_side=TrdSide.SELL,
+            order_type=OrderType.NORMAL,
+            trd_env=TRD_ENV,
+        )
+        if ret == RET_OK:
+            order_id = data.iloc[0]["order_id"]
+            value = qty * 100 * premium
+            print(f"✓ 期权卖出已提交: {code} × {qty}张  权利金 ${premium}/股  合约价值 ${value:,.0f}  order_id={order_id}")
+            _log_action("OPT_SELL", code, qty, premium, f"order_id={order_id}")
+        else:
+            print(f"✗ 下单失败: {data}")
+            _log_action("OPT_SELL_FAIL", code, qty, premium, str(data))
+    finally:
+        t.close()
+
+
 def sim_cancel(order_id: str, market: str = "US", confirmed: bool = False) -> None:
     if not confirmed:
         print("未加 --confirm, 拒绝撤单")
@@ -277,12 +368,19 @@ def main():
         if len(args) < 3:
             print("用法: buy <code> <qty> --confirm")
             return
-        sim_market_buy(args[1], float(args[2]), confirmed)
+        # 自动区分股票/期权
+        if _is_option(args[1]):
+            sim_option_buy(args[1], int(args[2]), confirmed)
+        else:
+            sim_market_buy(args[1], float(args[2]), confirmed)
     elif cmd == "sell":
         if len(args) < 3:
             print("用法: sell <code> <qty> --confirm")
             return
-        sim_market_sell(args[1], float(args[2]), confirmed)
+        if _is_option(args[1]):
+            sim_option_sell(args[1], int(args[2]), confirmed)
+        else:
+            sim_market_sell(args[1], float(args[2]), confirmed)
     elif cmd == "cancel":
         if len(args) < 2:
             print("用法: cancel <order_id> [--market US|HK] --confirm")

@@ -135,6 +135,138 @@ def get_position_codes() -> list[str]:
     return df["code"].tolist()
 
 
+# ==================== 期权 ====================
+
+def get_option_expirations(underlying: str) -> pd.DataFrame:
+    """获取标的股的期权到期日列表.
+
+    underlying: 'US.NVDA' / 'US.AAPL' 等
+    返回: DataFrame(strike_time, option_expiry_date_distance, expiration_cycle)
+    """
+    from futu import RET_OK
+    q = _quote_ctx()
+    try:
+        ret, data = q.get_option_expiration_date(underlying)
+        if ret != RET_OK:
+            raise RuntimeError(f"get_option_expiration_date failed: {data}")
+        return data
+    finally:
+        q.close()
+
+
+def get_option_chain_full(underlying: str, expiry: str) -> pd.DataFrame:
+    """获取指定到期日的完整期权链 + 实时报价 + 希腊字母.
+
+    underlying: 'US.NVDA'
+    expiry: '2026-04-24' (到期日, 来自 get_option_expirations)
+
+    返回 DataFrame 列:
+      code, name, option_type (CALL/PUT), strike_price, last_price, prev_close_price,
+      bid_price, ask_price, volume, open_interest,
+      iv, delta, gamma, theta, vega, days_to_expiry
+    """
+    from futu import RET_OK, SubType
+    q = _quote_ctx()
+    try:
+        # 1. 拉期权链 (基础结构)
+        ret, chain = q.get_option_chain(underlying, start=expiry, end=expiry)
+        if ret != RET_OK:
+            raise RuntimeError(f"get_option_chain failed: {chain}")
+        if chain.empty:
+            return pd.DataFrame()
+
+        codes = chain["code"].tolist()
+
+        # 2. 订阅并拉 snapshot (含希腊字母)
+        # 分批 subscribe 避免单次过多
+        BATCH = 50
+        snapshots = []
+        for i in range(0, len(codes), BATCH):
+            batch = codes[i:i + BATCH]
+            q.subscribe(batch, [SubType.QUOTE])
+            ret, snap = q.get_market_snapshot(batch)
+            if ret == RET_OK:
+                snapshots.append(snap)
+        if not snapshots:
+            return pd.DataFrame()
+
+        snap_df = pd.concat(snapshots, ignore_index=True)
+
+        # 3. 合并 + 筛选核心列
+        core_cols = {
+            "code": "code",
+            "name": "name",
+            "option_type": "option_type",
+            "option_strike_price": "strike_price",
+            "last_price": "last_price",
+            "prev_close_price": "prev_close",
+            "bid_price": "bid",
+            "ask_price": "ask",
+            "volume": "volume",
+            "option_open_interest": "open_interest",
+            "option_implied_volatility": "iv",
+            "option_delta": "delta",
+            "option_gamma": "gamma",
+            "option_theta": "theta",
+            "option_vega": "vega",
+            "option_expiry_date_distance": "days_to_expiry",
+            "strike_time": "expiry",
+        }
+        df = snap_df[[k for k in core_cols if k in snap_df.columns]].copy()
+        df.rename(columns=core_cols, inplace=True)
+        # 变化率
+        if "last_price" in df.columns and "prev_close" in df.columns:
+            df["chg_pct"] = (df["last_price"] / df["prev_close"] - 1) * 100
+        return df.sort_values(["option_type", "strike_price"]).reset_index(drop=True)
+    finally:
+        q.close()
+
+
+def find_atm_options(underlying: str, days_to_expiry: int = 7,
+                     strike_band: float = 0.05) -> pd.DataFrame:
+    """按到期距离和 moneyness 查找 ATM 附近的期权.
+
+    underlying: 'US.NVDA'
+    days_to_expiry: 期望天数 (匹配最接近的到期日)
+    strike_band: 行权价偏离现价的比例 (默认 ±5% → 显示现价±5% 范围)
+
+    返回: ATM 附近的 Call + Put 列表 (可用于策略决策)
+    """
+    from futu import RET_OK, SubType
+    # 获取底层现价
+    q = _quote_ctx()
+    try:
+        q.subscribe([underlying], [SubType.QUOTE])
+        ret, data = q.get_stock_quote([underlying])
+        if ret != RET_OK or data.empty:
+            raise RuntimeError(f"无法获取 {underlying} 现价")
+        spot = float(data.iloc[0]["last_price"])
+    finally:
+        q.close()
+
+    # 找最接近目标天数的到期日
+    exps = get_option_expirations(underlying)
+    if exps.empty:
+        return pd.DataFrame()
+    exps = exps.copy()
+    exps["dist"] = (exps["option_expiry_date_distance"] - days_to_expiry).abs()
+    target_expiry = exps.loc[exps["dist"].idxmin(), "strike_time"]
+
+    # 拉全链
+    chain = get_option_chain_full(underlying, target_expiry)
+    if chain.empty:
+        return pd.DataFrame()
+
+    # 筛选 strike 在 spot × (1 ± strike_band) 范围
+    k_lo = spot * (1 - strike_band)
+    k_hi = spot * (1 + strike_band)
+    mask = (chain["strike_price"] >= k_lo) & (chain["strike_price"] <= k_hi)
+    filtered = chain[mask].copy()
+    filtered["spot"] = spot
+    filtered["moneyness_pct"] = (filtered["strike_price"] / spot - 1) * 100
+    return filtered.reset_index(drop=True)
+
+
 if __name__ == "__main__":
     # 简单自检
     print("=== Health Check ===")
