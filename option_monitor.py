@@ -106,6 +106,80 @@ def analyze_positions(trd_env: str = "SIMULATE") -> list[dict]:
     return options
 
 
+def classify_straddle_action(s: dict) -> dict:
+    """根据当前状态给出跨式平仓建议.
+
+    基于专业期权交易规则 (优先级从高到低):
+      1. 利润锁: PnL ≥ +50% → 平仓锁利
+      2. 突破: 股价越过 breakeven → 已入盈利区, 获利了结
+      3. 紧急: 剩余 ≤3天 且亏损 → 立即平仓止血
+      4. 止损: PnL ≤ -50% → 止损
+      5. 提前获利: 盈利 ≥30% 且 ≤10 天 → 考虑平仓
+      6. 21天警戒: 剩余 ≤21 天进入 theta 加速区
+      7. 其他: 继续持有
+    """
+    pl_pct = s.get("pl_pct", 0) or 0
+    days = int(s.get("days_to_expiry", 0))
+    spot = s.get("spot", 0)
+    be_up = s.get("breakeven_upper", 0)
+    be_dn = s.get("breakeven_lower", 0)
+
+    beyond_be = spot > be_up or spot < be_dn
+
+    if pl_pct >= 50:
+        return {"action": "TAKE_PROFIT", "level": "ACT",
+                "reason": f"盈利 {pl_pct:+.1f}% ≥ 50%, 50%法则建议平仓锁利"}
+    if beyond_be and pl_pct > 15:
+        return {"action": "TAKE_PROFIT", "level": "ACT",
+                "reason": f"股价 ${spot:.2f} 已越过盈亏平衡, 锁利出场"}
+    if days <= 3 and pl_pct < -5:
+        return {"action": "CLOSE_URGENT", "level": "ACT",
+                "reason": f"到期仅 {days} 天且亏损 {pl_pct:+.1f}%, 紧急平仓"}
+    if pl_pct <= -50:
+        return {"action": "STOP_LOSS", "level": "ACT",
+                "reason": f"亏损 {pl_pct:+.1f}% ≤ -50%, 止损出场"}
+    if pl_pct >= 30 and days <= 10:
+        return {"action": "CONSIDER_CLOSE", "level": "WARN",
+                "reason": f"盈利 {pl_pct:+.1f}% 且剩 {days} 天, 可考虑提前了结"}
+    if days <= 7 and pl_pct < -20:
+        return {"action": "STOP_LOSS", "level": "WARN",
+                "reason": f"剩 {days} 天+亏损 {pl_pct:+.1f}%, 建议止损"}
+    if days <= 7:
+        return {"action": "WATCH_CLOSE", "level": "WARN",
+                "reason": f"剩 {days} 天, theta 加速区, 每日监控"}
+    if days <= 21:
+        return {"action": "HOLD_CAUTION", "level": "NOTE",
+                "reason": f"剩 {days} 天, 进入 21天警戒区"}
+    return {"action": "HOLD", "level": "OK",
+            "reason": f"剩 {days} 天, PnL {pl_pct:+.1f}%, 继续持有"}
+
+
+def classify_solo_option_action(o: dict) -> dict:
+    """独腿期权平仓建议 (买入方向, Call/Put 做多). 单腿更简单."""
+    pl_ratio = (o.get("pl_ratio") or 0) * 100
+    days = int(o.get("days_to_expiry", 0))
+
+    if pl_ratio >= 100:
+        return {"action": "TAKE_PROFIT", "level": "ACT",
+                "reason": f"翻倍+ ({pl_ratio:+.1f}%), 强烈建议部分平仓锁利"}
+    if pl_ratio >= 50:
+        return {"action": "TAKE_PROFIT", "level": "ACT",
+                "reason": f"盈利 {pl_ratio:+.1f}%, 可考虑平仓"}
+    if days <= 2 and pl_ratio < 0:
+        return {"action": "CLOSE_URGENT", "level": "ACT",
+                "reason": f"到期仅 {days} 天且亏损, 紧急平仓"}
+    if pl_ratio <= -60:
+        return {"action": "STOP_LOSS", "level": "ACT",
+                "reason": f"亏损 {pl_ratio:+.1f}%, 建议止损"}
+    if days <= 5 and pl_ratio < -20:
+        return {"action": "STOP_LOSS", "level": "WARN",
+                "reason": f"剩 {days} 天+亏损, 建议离场"}
+    if days <= 3:
+        return {"action": "WATCH_CLOSE", "level": "WARN",
+                "reason": f"剩 {days} 天, theta 加速"}
+    return {"action": "HOLD", "level": "OK", "reason": "继续持有"}
+
+
 def detect_straddles(options: list[dict]) -> list[dict]:
     """识别跨式组合: 同 underlying + 同 expiry + 同 strike 的 Call+Put."""
     df = pd.DataFrame(options) if options else pd.DataFrame()
@@ -123,7 +197,7 @@ def detect_straddles(options: list[dict]) -> list[dict]:
             be_upper = strike + total_cost
             be_lower = strike - total_cost
             theta_daily = (call["theta"] + put["theta"]) * 100 if pd.notna(call.get("theta")) else 0
-            straddles.append({
+            straddle = {
                 "underlying": und,
                 "expiry": exp,
                 "strike": strike,
@@ -144,7 +218,10 @@ def detect_straddles(options: list[dict]) -> list[dict]:
                 "days_to_expiry": call.get("days_to_expiry", 0),
                 "theta_daily": theta_daily,
                 "iv_avg": ((call.get("iv", 0) + put.get("iv", 0)) / 2) if pd.notna(call.get("iv")) else 0,
-            })
+            }
+            # 附上平仓建议
+            straddle.update(classify_straddle_action(straddle))
+            straddles.append(straddle)
     return straddles
 
 
@@ -213,20 +290,46 @@ def format_report(options: list[dict], straddles: list[dict]) -> tuple[str, str]
 
     lines.append(f"\n{'─' * 88}")
 
-    # 汇总 (macOS 通知用)
+    # 在完整报告里也加"建议动作"行
+    if straddles or solo:
+        lines.append("\n  [建议动作]")
+        for s in straddles:
+            action = s.get("action", "HOLD")
+            reason = s.get("reason", "")
+            marker = "⚠️" if s.get("level") == "ACT" else ("⚡" if s.get("level") == "WARN" else " ")
+            lines.append(f"    {marker} {s['underlying']} Straddle: {action} — {reason}")
+        for o in solo:
+            act = classify_solo_option_action(o)
+            marker = "⚠️" if act.get("level") == "ACT" else ("⚡" if act.get("level") == "WARN" else " ")
+            lines.append(f"    {marker} {o['code']}: {act['action']} — {act['reason']}")
+
+    # 汇总 (macOS 通知用) — 高优先级动作前置
     summary = []
+    urgent_items = []
+    normal_items = []
     for s in straddles:
         pl_sign = "+" if s["pl_per_straddle"] >= 0 else ""
-        summary.append(
-            f"{s['underlying']} Straddle @${s['strike']:.0f} "
-            f"剩{int(s['days_to_expiry'])}天  {pl_sign}${s['pl_per_straddle']*s['qty']:.0f} ({pl_sign}{s['pl_pct']:+.1f}%)"
+        item = (
+            f"{s['underlying'].replace('US.','')} Strd @${s['strike']:.0f} "
+            f"{int(s['days_to_expiry'])}d {pl_sign}${s['pl_per_straddle']*s['qty']:.0f} ({pl_sign}{s['pl_pct']:+.0f}%)"
         )
+        if s.get("level") == "ACT":
+            urgent_items.append(f"⚠️ {s.get('action')}: {item}")
+        else:
+            normal_items.append(item)
     for o in solo:
+        act = classify_solo_option_action(o)
         pl_sign = "+" if (o.get("pl_val") or 0) >= 0 else ""
-        summary.append(
-            f"{o['underlying']} {o['option_type'][0]} ${o['strike']:.0f} "
-            f"剩{int(o.get('days_to_expiry', 0))}天  {pl_sign}${o.get('pl_val', 0):.0f}"
+        item = (
+            f"{o['underlying'].replace('US.','')} {o['option_type'][0]}${o['strike']:.0f} "
+            f"{int(o.get('days_to_expiry', 0))}d {pl_sign}${o.get('pl_val', 0):.0f}"
         )
+        if act.get("level") == "ACT":
+            urgent_items.append(f"⚠️ {act['action']}: {item}")
+        else:
+            normal_items.append(item)
+    # 紧急排前面, 正常排后面
+    summary = urgent_items + normal_items
     notification_text = " | ".join(summary) if summary else "无期权持仓"
 
     full_report = "\n".join(lines)
@@ -251,7 +354,26 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
-    # 构造跨式行 (使用主页站点的 .up/.down/.strong/.weak 类名复用样式)
+    def _action_tag(level: str, action: str) -> str:
+        """根据 action level 渲染 tag HTML."""
+        action_cn = {
+            "TAKE_PROFIT": "🟢 获利平仓",
+            "CLOSE_URGENT": "🔴 紧急平仓",
+            "STOP_LOSS": "🔴 止损",
+            "CONSIDER_CLOSE": "🟡 考虑平仓",
+            "WATCH_CLOSE": "🟡 密切监控",
+            "HOLD_CAUTION": "⚪ 警戒持有",
+            "HOLD": "⚪ 继续持有",
+        }.get(action, action)
+        tag_cls = {
+            "ACT": "tag tag-up",       # 红色强提示 (行动)
+            "WARN": "tag tag-neutral", # 中性 (警告)
+            "NOTE": "tag tag-neutral",
+            "OK": "tag tag-down",      # 绿色 (OK)
+        }.get(level, "tag tag-neutral")
+        return f'<span class="{tag_cls}">{action_cn}</span>'
+
+    # 构造跨式行
     straddle_rows = []
     for s in straddles:
         pl_cls = "up" if s["pl_per_straddle"] >= 0 else "down"
@@ -264,6 +386,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
             urgency_tag = '<span class="tag tag-up">到期近</span>'
         elif days <= 14:
             urgency_tag = '<span class="tag tag-neutral">注意</span>'
+        action_tag = _action_tag(s.get("level", "OK"), s.get("action", "HOLD"))
         straddle_rows.append(f"""
         <tr>
           <td><strong>{s['underlying'].replace('US.','')}</strong> 跨式 Straddle</td>
@@ -275,6 +398,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if s['pl_per_straddle']<0 else '+'}${s['pl_per_straddle']*s['qty']:.2f}<br><small>({s['pl_pct']:+.2f}%)</small></td>
           <td>${s['theta_daily']*s['qty']:.2f}</td>
           <td>{s['iv_avg']:.1f}%</td>
+          <td>{action_tag}<br><small style="color:var(--muted);">{s.get('reason', '')}</small></td>
         </tr>""")
 
     straddle_codes = {s['call_code'] for s in straddles} | {s['put_code'] for s in straddles}
@@ -287,6 +411,8 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         pl_cls = "up" if pl_val >= 0 else "down"
         days = int(o.get("days_to_expiry", 0))
         urgency_tag = '<span class="tag tag-up">到期近</span>' if days <= 7 else ""
+        solo_act = classify_solo_option_action(o)
+        solo_tag_html = _action_tag(solo_act["level"], solo_act["action"])
         solo_rows.append(f"""
         <tr>
           <td><strong>{o['underlying'].replace('US.','')}</strong> {o['option_type']}</td>
@@ -298,6 +424,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if pl_val<0 else '+'}${pl_val:.2f}<br><small>({pl_ratio:+.2f}%)</small></td>
           <td>${(o.get('theta', 0))*100:.2f}</td>
           <td>{o.get('iv', 0):.1f}%</td>
+          <td>{solo_tag_html}<br><small style="color:var(--muted);">{solo_act.get('reason', '')}</small></td>
         </tr>""")
 
     has_content = bool(straddle_rows or solo_rows)
@@ -318,14 +445,14 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         if straddle_rows:
             parts.append('  <div class="table-wrap" style="margin-bottom:24px;">')
             parts.append('  <table>')
-            parts.append('  <thead><tr><th>组合</th><th>行权价</th><th>到期</th><th>现价</th><th>盈亏平衡</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th></tr></thead>')
+            parts.append('  <thead><tr><th>组合</th><th>行权价</th><th>到期</th><th>现价</th><th>盈亏平衡</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th><th>建议动作</th></tr></thead>')
             parts.append('  <tbody>')
             parts.extend(straddle_rows)
             parts.append('  </tbody></table></div>')
         if solo_rows:
             parts.append('  <div class="table-wrap">')
             parts.append('  <table>')
-            parts.append('  <thead><tr><th>合约</th><th>行权价</th><th>到期</th><th>现价</th><th>Greeks</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th></tr></thead>')
+            parts.append('  <thead><tr><th>合约</th><th>行权价</th><th>到期</th><th>现价</th><th>Greeks</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th><th>建议动作</th></tr></thead>')
             parts.append('  <tbody>')
             parts.extend(solo_rows)
             parts.append('  </tbody></table></div>')
