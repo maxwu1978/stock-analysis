@@ -23,6 +23,12 @@ from fractal_survey import mfdfa_spectrum
 
 WATCHLISTS = {
     "tech": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META", "US.AMZN"],
+    "tech_plus": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
+                   "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR", "US.UBER"],
+    "etf": ["US.SPY", "US.QQQ", "US.IWM", "US.DIA", "US.VOO"],
+    "all_watch": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
+                   "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR",
+                   "US.SPY", "US.QQQ", "US.IWM"],
     "nvda_only": ["US.NVDA"],
     "default": ["US.NVDA", "US.AAPL", "US.TSLA"],
 }
