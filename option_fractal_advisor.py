@@ -19,6 +19,7 @@ from datetime import datetime
 
 from fetch_futu import realtime_quotes, get_kline, find_atm_options, health_check
 from fractal_survey import mfdfa_spectrum
+from macro_events import get_risk_warnings, get_vix_level
 
 
 WATCHLISTS = {
@@ -105,6 +106,55 @@ def analyze_underlying(code: str) -> dict:
     rs = gain / loss
     out["rsi6"] = float((100 - 100 / (1 + rs)).iloc[-1])
     return out
+
+
+def apply_macro_override(regime: dict, symbol: str) -> dict:
+    """根据宏观事件风险覆盖分形信号建议.
+
+    规则:
+      - VIX >= 30 恐慌市 → 所有买方都降级 WAIT
+      - 财报 ≤ 3天 → 买跨式 禁止 (IV crush), Call/Put 买方降级 WAIT
+      - 财报 4-7 天 → 买跨式 降级 WEAK (IV 已含event premium)
+      - FOMC/CPI/NFP ≤ 3天 → 买方降级 (IV 高)
+    """
+    strategy = regime.get("strategy", "")
+    warnings = get_risk_warnings(symbol, days_ahead=10)
+
+    override = None
+    reason_add = []
+    is_buy_signal = strategy.startswith("BUY_")
+    is_straddle = "STRADDLE" in strategy
+
+    for w in warnings:
+        if "🔴" in w:
+            # 财报 ≤ 3天: 禁止所有买方 (跨式会被 IV crush, 单腿风险也极高)
+            if "财报" in w and is_buy_signal:
+                override = "WAIT_EARNINGS"
+                reason_add.append("财报临近(≤3天), 避免期权买方 IV crush")
+            # VIX 高: 期权贵, 买方降级
+            if "VIX" in w and is_buy_signal:
+                override = "WAIT_VIX_HIGH"
+                reason_add.append("VIX 恐慌, 期权买方极贵")
+            # FOMC/CPI/NFP ≤ 3天: 买方降级 (IV 已上升)
+            if any(ev in w for ev in ("FOMC", "CPI", "NFP")) and is_buy_signal:
+                override = "WAIT_EVENT"
+                reason_add.append("宏观事件临近(≤3天), 期权 IV 偏贵")
+        elif "🟡" in w:
+            # 4-7 天: 跨式降级 (IV 已含事件 premium), 单腿可继续但标低 confidence
+            if "财报" in w and is_straddle:
+                override = "WAIT_EARNINGS_SOON"
+                reason_add.append("财报4-7天内, 跨式 IV 已定价事件")
+
+    if override:
+        regime = dict(regime)
+        regime["strategy_original"] = strategy
+        regime["strategy"] = override
+        regime["reason"] = regime.get("reason", "") + " | " + " + ".join(reason_add)
+        regime["confidence"] = None
+        regime["macro_warnings"] = warnings
+    else:
+        regime["macro_warnings"] = warnings
+    return regime
 
 
 def classify_regime(feat: dict) -> dict:
@@ -216,6 +266,13 @@ def format_recommendation(feat: dict, regime_info: dict, picks: pd.DataFrame) ->
     conf = regime_info.get("confidence")
     conf_str = f"  置信度: {conf}" if conf else ""
     lines.append(f"  建议:  {regime_info['strategy']}   到期天数目标={regime_info['days_to_expiry']}{conf_str}")
+    # 宏观风险 - 按紧急度排序 (🔴 最先显示, 最多 3 条)
+    warnings = regime_info.get("macro_warnings", [])
+    if warnings:
+        def _prio(w: str) -> int:
+            return 0 if "🔴" in w else (1 if "🟡" in w else 2)
+        sorted_w = sorted(warnings, key=_prio)
+        lines.append(f"  宏观:  {'; '.join(sorted_w[:3])}")
 
     if picks.empty:
         lines.append(f"  → 观望, 无期权建议")
@@ -257,6 +314,8 @@ def run(watchlist: list[str]) -> None:
         try:
             feat = analyze_underlying(code)
             regime = classify_regime(feat)
+            # 应用宏观事件覆盖
+            regime = apply_macro_override(regime, code)
             picks = pick_option_contract(code, regime["strategy"], regime["days_to_expiry"])
             print(format_recommendation(feat, regime, picks))
         except Exception as e:

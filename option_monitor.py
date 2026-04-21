@@ -624,6 +624,56 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
     parts.append(f'    <div class="section-meta">模拟盘 SIMULATE<br>更新 {ts.split()[1]}</div>')
     parts.append('  </div>')
 
+    # 宏观事件警告条 (VIX + 未来 14 天关键事件)
+    try:
+        from macro_events import get_vix_level, get_upcoming_macro_events, get_earnings_date
+        vix = get_vix_level()
+        macro_events = get_upcoming_macro_events(days_ahead=14)
+        vix_cur = vix.get("current") if "error" not in vix else None
+        vix_desc = vix.get("level_desc", "?") if "error" not in vix else "?"
+
+        # 收集持仓股的财报
+        held_symbols = set()
+        for s in straddles:
+            held_symbols.add(s["underlying"])
+        for o in options:
+            held_symbols.add(o["underlying"])
+
+        earnings_rows = []
+        for sym in held_symbols:
+            ed = get_earnings_date(sym)
+            if ed:
+                from datetime import datetime as _dt
+                days = (_dt.strptime(ed, "%Y-%m-%d") - _dt.now()).days + 1
+                if 0 < days <= 14:
+                    earnings_rows.append((sym, ed, days))
+
+        if macro_events or earnings_rows or (vix_cur and vix_cur >= 20):
+            items = []
+            if vix_cur:
+                vix_cls = "up" if vix_cur >= 25 else ""
+                items.append(f'<span class="{vix_cls}"><strong>VIX {vix_cur:.1f}</strong> {vix_desc}</span>')
+            for e in macro_events[:5]:
+                marker = "🔴" if e["days_until"] <= 3 else ("🟡" if e["days_until"] <= 7 else "⚪")
+                items.append(f"{marker} {e['type']} <small>{e['date']} ({e['days_until']}天)</small>")
+            for sym, ed, days in earnings_rows:
+                marker = "🔴" if days <= 3 else ("🟡" if days <= 7 else "⚪")
+                items.append(f'{marker} {sym.replace("US.","")} 财报 <small>{ed} ({days}天)</small>')
+
+            parts.append(f"""
+  <div style="margin-left:128px; margin-bottom:20px; padding:12px 18px;
+              background:var(--paper-2); border-left:3px solid var(--muted);
+              font-family:'JetBrains Mono', monospace; font-size:12px;">
+    <div style="font-size:10px; letter-spacing:0.14em; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">
+      🌐 宏观风险 · 未来 14 天
+    </div>
+    <div style="display:flex; flex-wrap:wrap; gap:14px;">
+      {''.join(f'<div>{x}</div>' for x in items)}
+    </div>
+  </div>""")
+    except Exception:
+        pass  # 宏观模块失败不影响主流程
+
     # 账户汇总栏 (所有期权持仓合计)
     if options:
         total_cost = sum(o["cost_price"] * 100 * o["qty"] for o in options)
