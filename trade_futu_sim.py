@@ -289,6 +289,91 @@ def sim_option_buy(code: str, qty: int, confirmed: bool = False) -> None:
         t.close()
 
 
+def sim_option_limit_sell(code: str, qty: int, price: float,
+                          time_in_force: str = "GTC",
+                          confirmed: bool = False) -> None:
+    """挂期权**限价卖单**, GTC (Good Till Cancelled) 有效.
+
+    用法: 买入后立即挂高于成本的止盈单, 富途服务器自动监控到价成交.
+    qty: 张
+    price: 目标权利金卖出价 (高于当前价)
+    time_in_force: GTC 或 DAY
+
+    例: 成本 $3.10/股, 想 30% 盈利平仓 → price=$4.03
+        成本 $3.10 × 100 × 1.3 = $403/张 平仓时总得 $403
+    """
+    if not confirmed:
+        print("未加 --confirm, 拒绝挂单")
+        return
+    if not _is_option(code):
+        print(f"✗ 不是合法期权代号: {code}")
+        return
+    from futu import RET_OK, TrdSide, OrderType, TimeInForce
+    _check_option_limit(code, qty, price)
+
+    tif_map = {"GTC": TimeInForce.GTC, "DAY": TimeInForce.DAY}
+    tif = tif_map.get(time_in_force, TimeInForce.GTC)
+
+    t = _trade_ctx("US")
+    try:
+        ret, data = t.place_order(
+            price=price, qty=qty, code=code,
+            trd_side=TrdSide.SELL,
+            order_type=OrderType.NORMAL,  # 限价
+            time_in_force=tif,
+            trd_env=TRD_ENV,
+        )
+        if ret == RET_OK:
+            order_id = data.iloc[0]["order_id"]
+            print(f"✓ 限价卖挂单 {time_in_force}: {code} × {qty}张 @${price:.2f}  order_id={order_id}")
+            _log_action("OPT_LIMIT_SELL_GTC", code, qty, price, f"order_id={order_id}, tif={time_in_force}")
+        else:
+            print(f"✗ 挂单失败: {data}")
+            _log_action("OPT_LIMIT_SELL_FAIL", code, qty, price, str(data))
+    finally:
+        t.close()
+
+
+def sim_option_stop_sell(code: str, qty: int, stop_price: float,
+                         confirmed: bool = False) -> None:
+    """挂期权**STOP 止损单** - 期权价跌破 stop_price 时触发市价卖.
+
+    用法: 买入后立即挂止损, 跌破 stop_price 时市价强平, 限制最大损失.
+    qty: 张
+    stop_price: 触发止损的权利金价位 (低于当前价)
+
+    例: 成本 $3.10, 接受 50% 止损 → stop_price=$1.55
+        跌到 $1.55 时市价卖出平仓
+    """
+    if not confirmed:
+        print("未加 --confirm, 拒绝挂单")
+        return
+    if not _is_option(code):
+        print(f"✗ 不是合法期权代号: {code}")
+        return
+    from futu import RET_OK, TrdSide, OrderType
+    _check_option_limit(code, qty, stop_price)
+
+    t = _trade_ctx("US")
+    try:
+        ret, data = t.place_order(
+            price=stop_price,  # STOP 单的触发价
+            qty=qty, code=code,
+            trd_side=TrdSide.SELL,
+            order_type=OrderType.STOP,  # 跌破触发市价单
+            trd_env=TRD_ENV,
+        )
+        if ret == RET_OK:
+            order_id = data.iloc[0]["order_id"]
+            print(f"✓ STOP 止损挂单: {code} × {qty}张 触发价${stop_price:.2f}  order_id={order_id}")
+            _log_action("OPT_STOP_SELL", code, qty, stop_price, f"order_id={order_id}")
+        else:
+            print(f"✗ STOP 挂单失败 (可能模拟盘不支持期权STOP): {data}")
+            _log_action("OPT_STOP_SELL_FAIL", code, qty, stop_price, str(data))
+    finally:
+        t.close()
+
+
 def sim_option_sell(code: str, qty: int, confirmed: bool = False) -> None:
     """平仓期权 (卖出已持有合约).
     qty 单位: 张.
@@ -381,6 +466,18 @@ def main():
             sim_option_sell(args[1], int(args[2]), confirmed)
         else:
             sim_market_sell(args[1], float(args[2]), confirmed)
+    elif cmd == "limit_sell":
+        # 限价 GTC 卖单 (止盈挂单)
+        if len(args) < 4:
+            print("用法: limit_sell <option_code> <qty> <target_price> --confirm")
+            return
+        sim_option_limit_sell(args[1], int(args[2]), float(args[3]), "GTC", confirmed)
+    elif cmd == "stop_sell":
+        # STOP 止损单
+        if len(args) < 4:
+            print("用法: stop_sell <option_code> <qty> <stop_price> --confirm")
+            return
+        sim_option_stop_sell(args[1], int(args[2]), float(args[3]), confirmed)
     elif cmd == "cancel":
         if len(args) < 2:
             print("用法: cancel <order_id> [--market US|HK] --confirm")

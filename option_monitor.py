@@ -373,19 +373,39 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         }.get(level, "tag tag-neutral")
         return f'<span class="{tag_cls}">{action_cn}</span>'
 
+    def _cmd_button(cmd: str, button_label: str) -> str:
+        """生成"复制命令"按钮 (单条命令或多条 \\n 分隔)."""
+        safe_cmd = cmd.replace('"', '&quot;').replace("'", "\\'")
+        return (
+            f'<button onclick="navigator.clipboard.writeText(\'{safe_cmd}\')'
+            f'.then(()=>{{this.textContent=\'✓ 已复制\';setTimeout(()=>this.textContent=\'{button_label}\',2000)}})" '
+            f'style="font-family:inherit;font-size:11px;padding:4px 8px;margin-right:4px;margin-top:4px;'
+            f'border:1px solid currentColor;background:var(--paper);cursor:pointer;">{button_label}</button>'
+        )
+
     def _close_cmd_button(codes_qty: list[tuple[str, int]], button_label: str) -> str:
         """生成"复制平仓命令"按钮 (多腿一次复制)."""
         cmds = "\\n".join(
             f"./venv/bin/python trade_futu_sim.py sell {c} {q} --confirm"
             for c, q in codes_qty
         )
-        safe_cmds = cmds.replace('"', '&quot;').replace("'", "\\'")
-        return (
-            f'<button onclick="navigator.clipboard.writeText(\'{safe_cmds}\')'
-            f'.then(()=>{{this.textContent=\'✓ 已复制\';setTimeout(()=>this.textContent=\'{button_label}\',2000)}})" '
-            f'style="font-family:inherit;font-size:11px;padding:4px 8px;'
-            f'border:1px solid currentColor;background:var(--paper);cursor:pointer;">{button_label}</button>'
+        return _cmd_button(cmds, button_label)
+
+    def _limit_gtc_button(codes_qty_price: list[tuple[str, int, float]], label: str) -> str:
+        """生成"复制 GTC 止盈挂单命令"按钮."""
+        cmds = "\\n".join(
+            f"./venv/bin/python trade_futu_sim.py limit_sell {c} {q} {p:.2f} --confirm"
+            for c, q, p in codes_qty_price
         )
+        return _cmd_button(cmds, label)
+
+    def _stop_button(codes_qty_price: list[tuple[str, int, float]], label: str) -> str:
+        """生成"复制 STOP 止损单命令"按钮."""
+        cmds = "\\n".join(
+            f"./venv/bin/python trade_futu_sim.py stop_sell {c} {q} {p:.2f} --confirm"
+            for c, q, p in codes_qty_price
+        )
+        return _cmd_button(cmds, label)
 
     # 构造跨式行
     straddle_rows = []
@@ -404,7 +424,23 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         # 平仓命令按钮 (跨式两腿)
         close_btn = _close_cmd_button(
             [(s['call_code'], int(s['qty'])), (s['put_code'], int(s['qty']))],
-            "📋 复制平仓命令"
+            "📋 立即平仓"
+        )
+        # 止盈挂单: 两腿各按 +30% 挂 GTC 卖单
+        call_tp = s['call_cost'] * 1.30
+        put_tp = s['put_cost'] * 1.30
+        tp_btn = _limit_gtc_button(
+            [(s['call_code'], int(s['qty']), call_tp),
+             (s['put_code'], int(s['qty']), put_tp)],
+            f"🎯 挂止盈 +30%"
+        )
+        # 止损挂单: 两腿各按 -50% 挂 STOP 单
+        call_sl = s['call_cost'] * 0.50
+        put_sl = s['put_cost'] * 0.50
+        sl_btn = _stop_button(
+            [(s['call_code'], int(s['qty']), call_sl),
+             (s['put_code'], int(s['qty']), put_sl)],
+            f"🛡 挂止损 -50%"
         )
         # 高优先级行高亮整行
         row_style = ' style="background:rgba(203,0,0,0.08);"' if s.get("level") == "ACT" else ""
@@ -419,7 +455,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if s['pl_per_straddle']<0 else '+'}${s['pl_per_straddle']*s['qty']:.2f}<br><small>({s['pl_pct']:+.2f}%)</small></td>
           <td>${s['theta_daily']*s['qty']:.2f}</td>
           <td>{s['iv_avg']:.1f}%</td>
-          <td>{action_tag}<br><small style="color:var(--muted);">{s.get('reason', '')}</small><br>{close_btn}</td>
+          <td>{action_tag}<br><small style="color:var(--muted);">{s.get('reason', '')}</small><br>{close_btn}{tp_btn}{sl_btn}</td>
         </tr>""")
 
     straddle_codes = {s['call_code'] for s in straddles} | {s['put_code'] for s in straddles}
@@ -434,7 +470,11 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         urgency_tag = '<span class="tag tag-up">到期近</span>' if days <= 7 else ""
         solo_act = classify_solo_option_action(o)
         solo_tag_html = _action_tag(solo_act["level"], solo_act["action"])
-        solo_close_btn = _close_cmd_button([(o['code'], int(o['qty']))], "📋 复制平仓命令")
+        solo_close_btn = _close_cmd_button([(o['code'], int(o['qty']))], "📋 立即平仓")
+        solo_tp = o['cost_price'] * 1.30
+        solo_sl = o['cost_price'] * 0.50
+        solo_tp_btn = _limit_gtc_button([(o['code'], int(o['qty']), solo_tp)], "🎯 挂止盈 +30%")
+        solo_sl_btn = _stop_button([(o['code'], int(o['qty']), solo_sl)], "🛡 挂止损 -50%")
         solo_row_style = ' style="background:rgba(203,0,0,0.08);"' if solo_act.get("level") == "ACT" else ""
         solo_rows.append(f"""
         <tr{solo_row_style}>
@@ -447,7 +487,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if pl_val<0 else '+'}${pl_val:.2f}<br><small>({pl_ratio:+.2f}%)</small></td>
           <td>${(o.get('theta', 0))*100:.2f}</td>
           <td>{o.get('iv', 0):.1f}%</td>
-          <td>{solo_tag_html}<br><small style="color:var(--muted);">{solo_act.get('reason', '')}</small><br>{solo_close_btn}</td>
+          <td>{solo_tag_html}<br><small style="color:var(--muted);">{solo_act.get('reason', '')}</small><br>{solo_close_btn}{solo_tp_btn}{solo_sl_btn}</td>
         </tr>""")
 
     has_content = bool(straddle_rows or solo_rows)
