@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.maxwu.auto-hedge</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Volumes/MaxRelocated/主力分析/auto_hedge_daily.sh</string>
+    </array>
+
+    <!-- 工作日 15:30 CEST = 09:30 EDT 美股开盘 30 分钟前后
+         DAY 挂单在富途系统有效到 22:00 CEST 收盘 -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>30</integer>
+            <key>Weekday</key><integer>1</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>30</integer>
+            <key>Weekday</key><integer>2</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>30</integer>
+            <key>Weekday</key><integer>3</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>30</integer>
+            <key>Weekday</key><integer>4</integer>
+        </dict>
+        <dict>
+            <key>Hour</key><integer>15</integer>
+            <key>Minute</key><integer>30</integer>
+            <key>Weekday</key><integer>5</integer>
+        </dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Volumes/MaxRelocated/主力分析/launchd_hedge_stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Volumes/MaxRelocated/主力分析/launchd_hedge_stderr.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Volumes/MaxRelocated/主力分析</string>
+</dict>
+</plist>

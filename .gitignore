@@ -31,3 +31,6 @@ btc_backtest_*.csv
 crypto_fractal_*.csv
 advisor_backtest_*.csv
 btc_4h_backtest_*.csv
+auto_hedge.log
+launchd_hedge_stdout.log
+launchd_hedge_stderr.log

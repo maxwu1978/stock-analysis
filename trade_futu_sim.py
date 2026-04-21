@@ -290,17 +290,18 @@ def sim_option_buy(code: str, qty: int, confirmed: bool = False) -> None:
 
 
 def sim_option_limit_sell(code: str, qty: int, price: float,
-                          time_in_force: str = "GTC",
+                          time_in_force: str = "DAY",
                           confirmed: bool = False) -> None:
-    """挂期权**限价卖单**, GTC (Good Till Cancelled) 有效.
+    """挂期权**限价卖单**, 默认 DAY 有效期 (富途模拟盘不支持 GTC).
 
-    用法: 买入后立即挂高于成本的止盈单, 富途服务器自动监控到价成交.
+    ⚠ 模拟盘限制: GTC / STOP 均不支持, 只能用 DAY.
+       DAY = 当日有效, 到美股收盘 (16:00 ET) 未成交会被撤销.
+       需要每日美股盘前重新挂一次 (可用 launchd 自动化).
+
+    用法: 买入后立即挂高于成本的止盈单, 盘中自动监控到价成交.
     qty: 张
     price: 目标权利金卖出价 (高于当前价)
-    time_in_force: GTC 或 DAY
-
-    例: 成本 $3.10/股, 想 30% 盈利平仓 → price=$4.03
-        成本 $3.10 × 100 × 1.3 = $403/张 平仓时总得 $403
+    time_in_force: DAY (默认, 模拟盘唯一支持) 或 GTC (仅实盘)
     """
     if not confirmed:
         print("未加 --confirm, 拒绝挂单")
@@ -312,7 +313,7 @@ def sim_option_limit_sell(code: str, qty: int, price: float,
     _check_option_limit(code, qty, price)
 
     tif_map = {"GTC": TimeInForce.GTC, "DAY": TimeInForce.DAY}
-    tif = tif_map.get(time_in_force, TimeInForce.GTC)
+    tif = tif_map.get(time_in_force, TimeInForce.DAY)
 
     t = _trade_ctx("US")
     try:
@@ -467,11 +468,11 @@ def main():
         else:
             sim_market_sell(args[1], float(args[2]), confirmed)
     elif cmd == "limit_sell":
-        # 限价 GTC 卖单 (止盈挂单)
+        # 限价 DAY 卖单 (止盈挂单, 模拟盘唯一支持的 TIF)
         if len(args) < 4:
             print("用法: limit_sell <option_code> <qty> <target_price> --confirm")
             return
-        sim_option_limit_sell(args[1], int(args[2]), float(args[3]), "GTC", confirmed)
+        sim_option_limit_sell(args[1], int(args[2]), float(args[3]), "DAY", confirmed)
     elif cmd == "stop_sell":
         # STOP 止损单
         if len(args) < 4:

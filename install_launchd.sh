@@ -13,6 +13,7 @@ LAUNCH_AGENTS="$HOME/Library/LaunchAgents"
 JOBS=(
     "com.maxwu.fractal-advisor"  # 工作日 15:00/22:00 跑策略推荐
     "com.maxwu.option-monitor"   # 每小时跑期权持仓监控 (自带市场过滤)
+    "com.maxwu.auto-hedge"       # 工作日 15:30 每日自动挂 DAY 止盈单
 )
 
 cmd="${1:-install}"
