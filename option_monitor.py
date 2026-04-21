@@ -346,6 +346,85 @@ def send_notification(title: str, message: str) -> None:
         pass
 
 
+def _compute_realized_pnl() -> tuple[str, str]:
+    """从 trade_sim_log.csv 读 OPT_BUY/OPT_SELL 配对, 计算已实现盈亏.
+    返回 (金额字符串, 描述).
+    """
+    log_path = Path(__file__).parent / "trade_sim_log.csv"
+    if not log_path.exists():
+        return "-", "无交易记录"
+    try:
+        df = pd.read_csv(log_path)
+        df = df[df["action"].isin(["OPT_BUY", "OPT_SELL"])].copy()
+        if df.empty:
+            return "$0", "无期权交易"
+
+        # 按 code 分组, 匹配 BUY/SELL 配对
+        total_pnl = 0.0
+        total_trades = 0
+        for code, group in df.groupby("code"):
+            buys = group[group["action"] == "OPT_BUY"]
+            sells = group[group["action"] == "OPT_SELL"]
+            # 按时间顺序配对 (FIFO)
+            sell_list = [(r["qty"], r["price"]) for _, r in sells.iterrows()]
+            buy_list = [(r["qty"], r["price"]) for _, r in buys.iterrows()]
+            # 只算"卖出量" × 100 × 价差 (简化)
+            total_sell_qty = sum(q for q, _ in sell_list)
+            if total_sell_qty == 0:
+                continue
+            avg_buy = sum(q * p for q, p in buy_list) / sum(q for q, _ in buy_list) if buy_list else 0
+            avg_sell = sum(q * p for q, p in sell_list) / total_sell_qty
+            pnl = (avg_sell - avg_buy) * 100 * total_sell_qty
+            total_pnl += pnl
+            total_trades += 1
+
+        sign = "+" if total_pnl >= 0 else ""
+        if total_trades == 0:
+            return "$0", "持仓未平仓"
+        return f"{sign}${total_pnl:.2f}", f"{total_trades} 笔已平仓"
+    except Exception:
+        return "-", "计算失败"
+
+
+def _compute_pending_profit(options: list[dict]) -> tuple[str, str]:
+    """查 SIMULATE 账户的未成交 SELL 挂单, 计算如果全部成交的潜在盈利."""
+    try:
+        from futu import OpenSecTradeContext, RET_OK, TrdEnv, TrdMarket, SecurityFirm
+        t = OpenSecTradeContext(
+            filter_trdmarket=TrdMarket.US, host="127.0.0.1", port=11111,
+            security_firm=SecurityFirm.FUTUSECURITIES,
+        )
+        try:
+            ret, orders = t.order_list_query(trd_env=TrdEnv.SIMULATE)
+            if ret != RET_OK or orders.empty:
+                return "$0", "无挂单"
+            active = orders[
+                (orders["trd_side"] == "SELL") &
+                (orders["order_status"].isin(["SUBMITTED", "SUBMITTING", "WAITING"]))
+            ]
+            if active.empty:
+                return "$0", "无挂单"
+
+            cost_by_code = {o["code"]: o["cost_price"] for o in options}
+            total_profit = 0
+            for _, r in active.iterrows():
+                code = r["code"]
+                sell_price = float(r["price"])
+                qty = float(r["qty"])
+                cost = cost_by_code.get(code)
+                if cost is None:
+                    continue
+                profit_per_contract = (sell_price - cost) * 100
+                total_profit += profit_per_contract * qty
+
+            sign = "+" if total_profit >= 0 else ""
+            return f"{sign}${total_profit:.0f}", f"{len(active)} 挂单"
+        finally:
+            t.close()
+    except Exception:
+        return "-", "查询失败"
+
+
 def save_html_fragment(options: list[dict], straddles: list[dict], path: str | Path) -> None:
     """生成期权持仓的 HTML 片段 (供 generate_page.py 嵌入主页).
 
@@ -444,6 +523,18 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         )
         # 高优先级行高亮整行
         row_style = ' style="background:rgba(203,0,0,0.08);"' if s.get("level") == "ACT" else ""
+        # 各腿单独盈亏
+        call_pnl = (s['call_now'] - s['call_cost']) * 100 * s['qty']
+        put_pnl = (s['put_now'] - s['put_cost']) * 100 * s['qty']
+        call_pnl_cls = "up" if call_pnl >= 0 else "down"
+        put_pnl_cls = "up" if put_pnl >= 0 else "down"
+        call_sign = "+" if call_pnl >= 0 else ""
+        put_sign = "+" if put_pnl >= 0 else ""
+        legs_pnl_html = (
+            f'<small>Call <span class="{call_pnl_cls}">{call_sign}${call_pnl:.0f}</span></small><br>'
+            f'<small>Put&nbsp; <span class="{put_pnl_cls}">{put_sign}${put_pnl:.0f}</span></small>'
+        )
+
         straddle_rows.append(f"""
         <tr{row_style}>
           <td><strong>{s['underlying'].replace('US.','')}</strong> 跨式 Straddle</td>
@@ -452,7 +543,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td>${spot:.2f}</td>
           <td><span class="down">↓${s['breakeven_lower']:.2f}</span> / <span class="up">↑${s['breakeven_upper']:.2f}</span><br><small>-{dist_dn:.1f}% / +{dist_up:.1f}%</small></td>
           <td>${s['total_cost_per_contract']*100*s['qty']:.0f}</td>
-          <td class="{pl_cls}">{'' if s['pl_per_straddle']<0 else '+'}${s['pl_per_straddle']*s['qty']:.2f}<br><small>({s['pl_pct']:+.2f}%)</small></td>
+          <td class="{pl_cls}">{'' if s['pl_per_straddle']<0 else '+'}${s['pl_per_straddle']*s['qty']:.2f}<br><small>({s['pl_pct']:+.2f}%)</small><br>{legs_pnl_html}</td>
           <td>${s['theta_daily']*s['qty']:.2f}</td>
           <td>{s['iv_avg']:.1f}%</td>
           <td>{action_tag}<br><small style="color:var(--muted);">{s.get('reason', '')}</small><br>{close_btn}{tp_btn}{sl_btn}</td>
@@ -532,6 +623,60 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
     parts.append('    <h2><em>Option</em> Positions<span class="cn">期权持仓</span></h2>')
     parts.append(f'    <div class="section-meta">模拟盘 SIMULATE<br>更新 {ts.split()[1]}</div>')
     parts.append('  </div>')
+
+    # 账户汇总栏 (所有期权持仓合计)
+    if options:
+        total_cost = sum(o["cost_price"] * 100 * o["qty"] for o in options)
+        total_value = sum(o["current_price"] * 100 * o["qty"] for o in options)
+        total_pnl = total_value - total_cost
+        total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
+        pnl_color = "var(--up)" if total_pnl >= 0 else "var(--down)"
+        pnl_sign = "+" if total_pnl >= 0 else ""
+        n_legs = len(options)
+
+        # 累计已实现盈亏 (从 trade_sim_log.csv 读 OPT_BUY/OPT_SELL 配对)
+        realized_pnl, realized_note = _compute_realized_pnl()
+
+        # 止盈挂单潜在盈利 (如全部成交)
+        pending_profit, pending_note = _compute_pending_profit(options)
+
+        parts.append(f"""
+  <div style="margin-left:128px; margin-bottom:20px; padding:14px 18px;
+              background:var(--paper-2); border-left:3px solid {pnl_color};
+              font-family:'JetBrains Mono', monospace; font-size:13px;">
+    <div style="font-size:11px; letter-spacing:0.12em; color:var(--muted); text-transform:uppercase; margin-bottom:6px;">
+      📊 账户汇总 · Options
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px;">
+      <div>
+        <div style="color:var(--muted); font-size:10px;">总持仓成本</div>
+        <div style="font-size:16px; font-weight:600;">${total_cost:,.0f}</div>
+        <div style="color:var(--muted); font-size:10px;">{n_legs} 腿期权</div>
+      </div>
+      <div>
+        <div style="color:var(--muted); font-size:10px;">当前市值</div>
+        <div style="font-size:16px; font-weight:600;">${total_value:,.0f}</div>
+      </div>
+      <div>
+        <div style="color:var(--muted); font-size:10px;">浮动盈亏</div>
+        <div style="font-size:18px; font-weight:700; color:{pnl_color};">
+          {pnl_sign}${total_pnl:,.2f}
+        </div>
+        <div style="color:{pnl_color}; font-size:11px;">{pnl_sign}{total_pnl_pct:+.2f}%</div>
+      </div>
+      <div>
+        <div style="color:var(--muted); font-size:10px;">累计已实现</div>
+        <div style="font-size:14px; font-weight:600;">{realized_pnl}</div>
+        <div style="color:var(--muted); font-size:10px;">{realized_note}</div>
+      </div>
+      <div>
+        <div style="color:var(--muted); font-size:10px;">挂单潜在盈利</div>
+        <div style="font-size:14px; font-weight:600; color:var(--up);">{pending_profit}</div>
+        <div style="color:var(--muted); font-size:10px;">{pending_note}</div>
+      </div>
+    </div>
+  </div>""")
+
     parts.append('  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 点"📋 复制平仓命令"复制到终端执行</p>')
     if not has_content:
         parts.append('  <div style="margin-left:128px; color:var(--muted); padding:20px;">当前无期权持仓</div>')
