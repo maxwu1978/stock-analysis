@@ -168,8 +168,8 @@ def fetch_us_financials() -> dict[str, pd.DataFrame]:
 
             # 计算同比增长率 (对比4个季度前)
             if len(df) >= 5:
-                df["rev_growth"] = df["revenue"].pct_change(4) * 100
-                df["profit_growth"] = df["net_income"].pct_change(4) * 100
+                df["rev_growth"] = df["revenue"].pct_change(4, fill_method=None) * 100
+                df["profit_growth"] = df["net_income"].pct_change(4, fill_method=None) * 100
             else:
                 df["rev_growth"] = pd.NA
                 df["profit_growth"] = pd.NA

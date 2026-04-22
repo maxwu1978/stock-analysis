@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """生成静态HTML页面, 用于GitHub Pages部署"""
 
+import argparse
 import os
+import sys
 from datetime import datetime
 import pandas as pd
 
@@ -14,6 +16,23 @@ from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_u
 
 A_SIGNAL_RELIABILITY = {"300750": "强", "600519": "弱", "601600": "强", "300274": "弱", "600745": "中"}
 US_SIGNAL_RELIABILITY = {"NVDA": "中", "TSLA": "强", "GOOGL": "弱", "AAPL": "中", "TCOM": "?", "FUTU": "?"}
+
+
+def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
+    """关键标的缺失时直接失败，避免发布残缺页面。"""
+    missing = [f"{name}({code})" for code, name in expected.items() if code not in all_hist]
+    if missing:
+        raise RuntimeError(f"{label}历史数据缺失: {', '.join(missing)}")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="生成 GitHub Pages 静态页面")
+    parser.add_argument(
+        "--allow-partial",
+        action="store_true",
+        help="允许部分标的缺失，仅用于本地预览；默认严格模式会直接失败",
+    )
+    return parser.parse_args()
 
 
 def direction_tag(hp):
@@ -53,7 +72,7 @@ def chg_td(val):
     return f'<td class="{cls}">{sign}{val:.2f}%</td>'
 
 
-def generate():
+def generate(allow_partial: bool = False):
     print("获取实时行情...")
     try:
         rt = fetch_realtime_quotes()
@@ -74,6 +93,12 @@ def generate():
     except Exception as e:
         print(f"  [!] {e}")
         all_hist = {}
+    if allow_partial:
+        missing = [name for code, name in STOCKS.items() if code not in all_hist]
+        if missing:
+            print(f"  [!] A股历史数据缺失，继续本地预览: {', '.join(missing)}")
+    else:
+        ensure_complete_dataset(all_hist, "A股", STOCKS)
 
     # 行情
     quote_html = ""
@@ -527,6 +552,12 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     except Exception as e:
         print(f"  [!] {e}")
         us_hist = {}
+    if allow_partial:
+        missing = [name for ticker, name in US_STOCKS.items() if ticker not in us_hist]
+        if missing:
+            print(f"  [!] 美股历史数据缺失，继续本地预览: {', '.join(missing)}")
+    else:
+        ensure_complete_dataset(us_hist, "美股", US_STOCKS)
 
     us_quote_html = ""
     if not us_rt.empty:
@@ -733,4 +764,9 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
 
 
 if __name__ == "__main__":
-    generate()
+    args = parse_args()
+    try:
+        generate(allow_partial=args.allow_partial)
+    except Exception as e:
+        print(f"\n[FAIL] 页面生成失败: {e}", file=sys.stderr)
+        sys.exit(1)

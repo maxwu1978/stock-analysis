@@ -2,6 +2,7 @@
 """A股技术分析 - 网页版 (启动时预加载数据, 页面秒开)"""
 
 import os
+import socket
 import threading
 from flask import Flask
 from datetime import datetime
@@ -16,6 +17,21 @@ app = Flask(__name__)
 
 # 全局缓存
 _cache = {"html": None, "loading": False}
+
+
+def choose_port(default: int = 5000) -> int:
+    """优先使用默认端口; 如被占用则回退到下一个可用端口。"""
+    for port in range(default, default + 20):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.2)
+            try:
+                in_use = sock.connect_ex(("127.0.0.1", port)) == 0
+                if in_use:
+                    continue
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"无法找到可用端口，起始范围: {default}-{default + 19}")
 
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="zh-CN">
@@ -257,6 +273,7 @@ if __name__ == "__main__":
     print("正在预加载数据...")
     threading.Thread(target=build_page, daemon=True).start()
 
-    port = int(os.environ.get("PORT", 5000))
+    env_port = os.environ.get("PORT")
+    port = int(env_port) if env_port else choose_port(5000)
     print(f"启动网页服务: http://localhost:{port}")
     app.run(host="0.0.0.0", port=port, debug=False)

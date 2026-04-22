@@ -11,6 +11,7 @@
 7. 实际可操作性: 加入交易成本后是否仍然盈利
 """
 
+import argparse
 import time
 import json
 import numpy as np
@@ -331,7 +332,7 @@ def test_7_with_costs(signals, name, horizon=30, cost_pct=0.15):
         print("  -> 扣费后亏损!")
 
 
-def run_full_test(name, signals):
+def run_full_test(name, signals, n_shuffles=100):
     """对一只股票运行所有测试"""
     print(f"\n{'=' * 60}")
     print(f"  {name}  样本: {len(signals)}天  {signals.index[0].date()} ~ {signals.index[-1].date()}")
@@ -342,14 +343,32 @@ def run_full_test(name, signals):
     test_3_rolling_quarterly(signals, name)
     test_4_market_regime(signals, name)
     test_5_statistical_significance(signals, name)
-    test_6_overfit_check(signals, name)
+    test_6_overfit_check(signals, name, n_shuffles=n_shuffles)
     test_7_with_costs(signals, name)
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="系统有效性验证")
+    parser.add_argument("--quick", action="store_true", help="快速模式：仅抽样少量A股/美股做冒烟验证")
+    parser.add_argument("--shuffles", type=int, default=100, help="过拟合检测的随机次数")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    a_universe = STOCKS
+    us_universe = US_STOCKS
+    if args.quick:
+        # 保持覆盖面，但把执行时间控制到适合作为日常回归
+        a_universe = dict(list(STOCKS.items())[:2])
+        us_universe = dict(list(US_STOCKS.items())[:2])
+
     print(f"\n{'#' * 60}")
     print(f"  系统有效性验证报告  {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    print(f"  7项测试 x 9只股票 (5只A股 + 4只美股)")
+    if args.quick:
+        print(f"  快速模式 · 7项测试 x 4只股票 (2只A股 + 2只美股)")
+    else:
+        print(f"  7项测试 x 11只股票 (5只A股 + 6只美股)")
     print(f"{'#' * 60}")
 
     # A股
@@ -358,19 +377,19 @@ def main():
     print(f"{'=' * 60}")
 
     a_fund = {}
-    for code, name in STOCKS.items():
+    for code, name in a_universe.items():
         try:
             a_fund[code] = fetch_financial(code)
         except:
             pass
         time.sleep(0.3)
 
-    for code, name in STOCKS.items():
+    for code, name in a_universe.items():
         try:
             df = fetch_sina_history(code, 1500)
             signals = generate_signals(df, score_trend, a_fund.get(code))
             if len(signals) > 100:
-                run_full_test(f"A股-{name}({code})", signals)
+                run_full_test(f"A股-{name}({code})", signals, n_shuffles=args.shuffles)
         except Exception as e:
             print(f"  [!] {name} 失败: {e}")
         time.sleep(0.3)
@@ -386,12 +405,12 @@ def main():
     except:
         pass
 
-    for ticker, name in US_STOCKS.items():
+    for ticker, name in us_universe.items():
         try:
             df = fetch_us_history(ticker, "10y")
             signals = generate_signals(df, score_trend_us, us_fund.get(ticker))
             if len(signals) > 100:
-                run_full_test(f"美股-{name}({ticker})", signals)
+                run_full_test(f"美股-{name}({ticker})", signals, n_shuffles=args.shuffles)
         except Exception as e:
             print(f"  [!] {name} 失败: {e}")
         time.sleep(0.3)
