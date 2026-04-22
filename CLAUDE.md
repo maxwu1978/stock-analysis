@@ -70,10 +70,10 @@ Flow is strictly layered; each layer only imports from layers above it.
 - `fetch_futures_yf.py` → US futures daily bars via yfinance (research only; no execution path).
 - `fundamental.py` → A-share financial statements (akshare).
 
-**Analysis layer** — pure pandas, no I/O:
-- `indicators.py` → ~40 factors: classic TA (MA/MACD/RSI/BOLL/ADX/ROC), fat-tail precursors (BOLL width, vol compression, vol surge, ADX acceleration, 20d kurtosis), MF-DFA spectrum features (`mfdfa_width_120d`, `mfdfa_alpha0_120d`, `hq2_120d`, `mfdfa_asym_120d`), plus amihud illiquidity and overnight gap return. `compute_all(df, fund_df=None)` is the single entry; `summarize(df)` emits the display row.
+**Analysis layer** — `indicators.py` and `probability*.py` are pure pandas, no I/O; `fractal_survey.py` exposes a pure kernel (`mfdfa_spectrum`) but also has a script path that fetches data when run directly:
+- `indicators.py` → 39 factors (see `PROJECT_STATUS.md`): classic TA (MA/MACD/RSI/BOLL/ADX/ROC), fat-tail precursors (BOLL width, vol compression, vol surge, ADX acceleration, 20d kurtosis), MF-DFA spectrum features (`mfdfa_width_120d`, `mfdfa_alpha0_120d`, `hq2_120d`, `mfdfa_asym_120d`), plus amihud illiquidity and overnight gap return. `compute_all(df, fund_df=None)` is the single entry; `summarize(df)` emits the display row.
 - `fractal_survey.py` → MF-DFA spectrum kernel (`mfdfa_spectrum`) consumed by every fractal-related script (`option_fractal_advisor`, `industry_fractal`, `crypto_fractal_survey`, `temporal_fractal`, `us_fractal`, …). Q list `[-4,-2,2,4]`, window 120d.
-- `probability.py` / `probability_us.py` → **IC-adaptive weighting model**. Rolling 120-day Spearman IC of each factor vs. forward 5-day return is used as both weight *and* sign, so the model auto-switches between momentum and mean-reversion regimes per stock without human priors. `FACTOR_COLS` at top defines the enabled factor set. Adding a factor = add to `indicators.py` + add symbol to `FACTOR_COLS`.
+- `probability.py` / `probability_us.py` → **IC-adaptive weighting model**. Rolling 120-day IC (Pearson, via `pd.Series.rolling(...).corr(fwd)`) of each factor vs. forward 5-day return is used as both weight *and* sign, so the model auto-switches between momentum and mean-reversion regimes per stock without human priors. `FACTOR_COLS` at top defines the enabled factor set. Adding a factor = add to `indicators.py` + add symbol to `FACTOR_COLS`.
 - `iv_rank.py` → IV rank via realized-vol proxy, accumulates real IV into `iv_history.csv` toward the 252-day threshold for switching to true IV Rank (per `PROJECT_STATUS.md`, target ~July).
 - `macro_events.py` → Fed/CPI/earnings calendar + VIX gate used by advisor scripts to suppress signals around risk events.
 
@@ -104,7 +104,7 @@ Plists hardcode `WorkingDirectory=/Volumes/MaxRelocated/主力分析` — that i
 ## Conventions to follow
 
 - Column names in DataFrames and printed headers are Chinese (`最新价`, `涨跌幅`, `成交额`, …). Stay consistent.
-- Option codes follow Futu's format: `US.AAPL260424P200000` = `US.AAPL` / `2026-04-24` / `PUT` / strike `200.000`. Use `option_monitor.parse_option_code` rather than re-parsing.
+- Option codes follow Futu's format: `US.<TICKER><YYMMDD><C|P><STRIKE*1000>`, where the strike field is the strike in millis with **no zero padding** (so $337.5 → `337500`, $200 → `200000`, $2000 → `2000000`). Example: `US.NVDA260424P200000`. Use `option_monitor.parse_option_code` rather than re-parsing.
 - Market prefixes: `US.` / `HK.` / `SH.` / `SZ.`. A-share fetchers use the bare 6-digit code and translate via `_sina_symbol` (`3xxxxx`/`0xxxxx` → `sz`, else `sh`).
 - Adding a stock to the public page = add to `fetch_data.STOCKS` or `fetch_us.US_STOCKS` *and* to the matching `*_SIGNAL_RELIABILITY` dict in `generate_page.py` / `analyze.py`.
 - Adding a stock to the advisor's rotation = add to a `WATCHLISTS` entry in `option_fractal_advisor.py`.
