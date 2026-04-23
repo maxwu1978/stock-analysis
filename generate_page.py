@@ -84,7 +84,9 @@ def replace_section_by_id(html: str, section_id: str, replacement: str) -> str:
 
 
 def load_old_page() -> str:
-    old_page_path = "docs/index.html"
+    old_page_path = "docs/dashboard_full.html"
+    if not os.path.exists(old_page_path):
+        old_page_path = "docs/index.html"
     if not os.path.exists(old_page_path):
         return ""
     with open(old_page_path, encoding="utf-8") as f:
@@ -204,6 +206,89 @@ def render_review_section() -> str:
 """
 
 
+def extract_style_block(page_html: str) -> str:
+    match = re.search(r"<style>([\s\S]*?)</style>", page_html)
+    return match.group(1) if match else ""
+
+
+def extract_footer_block(page_html: str) -> str:
+    match = re.search(r'(<div class="footer" id="method-block">[\s\S]*?</div>)\s*</div>\s*</body>', page_html)
+    return match.group(1) if match else '<div class="footer" id="method-block"></div>'
+
+
+def extract_summary_strip_html(page_html: str) -> str:
+    match = re.search(r'<section class="summary-strip">([\s\S]*?)</section>', page_html)
+    return match.group(1).strip() if match else ""
+
+
+def render_subpage(
+    *,
+    title: str,
+    hero_kicker: str,
+    hero_title_html: str,
+    eyebrow: str,
+    now: str,
+    style_block: str,
+    summary_cards_html: str,
+    nav_links_html: str,
+    body_html: str,
+    footer_html: str,
+) -> str:
+    summary_section_html = (
+        f"""
+<section class="summary-strip">
+{summary_cards_html}
+</section>
+"""
+        if summary_cards_html.strip()
+        else ""
+    )
+    return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{title}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+{style_block}
+</style>
+</head>
+<body>
+
+<div class="tape">
+  <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
+  <div class="muted">STATIC SUBPAGE · OPTIONS / REVIEW</div>
+  <div class="muted">{now}</div>
+</div>
+
+<div class="container">
+
+<header class="hero">
+  <div class="hero-kicker">{hero_kicker}</div>
+  <h1>{hero_title_html}<span class="eyebrow">{eyebrow}</span></h1>
+  <div class="hero-meta">
+    <span class="pill">Last Sync · {now}</span>
+    <span class="pill">Linked from index.html</span>
+  </div>
+</header>
+
+{summary_section_html}
+
+<nav class="anchor-nav">
+{nav_links_html}
+</nav>
+
+{body_html}
+
+{footer_html}
+
+</div>
+</body></html>"""
+
+
 def summarize_execution_strip(signals: list[dict], trades: pd.DataFrame) -> tuple[str, str]:
     executable_actions = {"BUILD_LONG", "PROBE_LONG"}
     watch_actions = {"WATCHLIST", "OBSERVE", "WAIT"}
@@ -232,6 +317,264 @@ def summarize_execution_strip(signals: list[dict], trades: pd.DataFrame) -> tupl
     value = f"{exec_count} 可执行 / {watch_count} 观察"
     sub = f"STD {standard_count} · PROBE {probe_count} · MICRO {micro_count} · {win_summary}"
     return value, sub
+
+
+def build_us_page(full_page_html: str, now: str, us_section: str, macro_headline: str) -> str:
+    style_block = extract_style_block(full_page_html)
+    footer_html = extract_footer_block(full_page_html)
+    summary_cards_html = f"""
+  <article class="summary-card">
+    <div class="label">Market Focus</div>
+    <div class="value">U.S. Desk</div>
+    <div class="sub">美股独立详情页</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Macro Window</div>
+    <div class="value">{macro_headline}</div>
+    <div class="sub">事件风控优先显示</div>
+  </article>
+"""
+    nav_links_html = """
+  <a class="major" href="./index.html">Overview</a>
+  <a class="minor" href="#us-quote">US Quote</a>
+  <a class="minor" href="#us-trend">US Trend</a>
+  <a class="minor" href="#us-tech">US Tech</a>
+  <a class="minor" href="#us-fund">US Fund</a>
+"""
+    return render_subpage(
+        title="主力分析 · U.S. Desk",
+        hero_kicker="Issue № US · Research Bulletin · New York / Nasdaq",
+        hero_title_html="美股<em>子页</em>",
+        eyebrow="U.S. Quote, Trend, Tech & Filing Monitor",
+        now=now,
+        style_block=style_block,
+        summary_cards_html=summary_cards_html,
+        nav_links_html=nav_links_html,
+        body_html=us_section,
+        footer_html=footer_html,
+    )
+
+
+def build_cn_page(full_page_html: str, now: str, cn_section: str) -> str:
+    style_block = extract_style_block(full_page_html)
+    footer_html = extract_footer_block(full_page_html)
+    if not cn_section:
+        match = re.search(
+            r'(<div class="market-block cn-block" id="cn-block">[\s\S]*?)\s*(?=<div class="market-block us-block"|<div class="position-panel" id="option-block"|<section class="section" id="review-block"|<div class="footer" id="method-block")',
+            full_page_html,
+        )
+        cn_section = match.group(1) if match else ""
+    summary_cards_html = ""
+    nav_links_html = """
+  <a class="major" href="#cn-block">A-Share</a>
+  <a class="minor" href="#cn-quote">CN Quote</a>
+  <a class="minor" href="#cn-trend">CN Trend</a>
+  <a class="minor" href="#cn-tech">CN Tech</a>
+  <a class="minor" href="#cn-fund">CN Fund</a>
+  <a class="minor" href="./index.html">Overview</a>
+"""
+    return render_subpage(
+        title="主力分析 · A-Share Desk",
+        hero_kicker="Issue № CN · Research Bulletin · 上海 / 深圳",
+        hero_title_html="A股<em>子页</em>",
+        eyebrow="A-Share Quote, Trend, Tech & Filing Monitor",
+        now=now,
+        style_block=style_block,
+        summary_cards_html=summary_cards_html,
+        nav_links_html=nav_links_html,
+        body_html=cn_section,
+        footer_html=footer_html,
+    )
+
+
+def build_overview_page(
+    *,
+    full_page_html: str,
+    now: str,
+    summary_cards_html: str,
+    a_weak: int,
+    a_total: int,
+    us_mid_summary: str,
+    option_summary: str,
+    execution_summary_value: str,
+    execution_summary_sub: str,
+) -> str:
+    style_block = extract_style_block(full_page_html)
+    footer_html = extract_footer_block(full_page_html)
+    nav_links_html = """
+  <a class="major" href="./cn.html">A-Share</a>
+  <a class="major" href="./us.html">U.S.</a>
+  <a class="major" href="./options.html">Options</a>
+  <a class="major" href="./review.html">Review</a>
+  <a class="major" href="#overview-hub">Overview</a>
+"""
+    body_html = f"""
+<section class="section" id="overview-hub">
+  <div class="section-head">
+    <div class="section-num">№ 01</div>
+    <h2>Overview <em>Hub</em><span class="cn">总览导航</span></h2>
+    <div class="section-meta">Multi-page<br>Fast Browse</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>模块</th><th>当前摘要</th><th>入口</th></tr></thead>
+      <tbody>
+        <tr><td>A股</td><td>{a_weak}/{a_total} 弱，主模型偏研究参考</td><td><a href="./cn.html">打开 A股子页</a></td></tr>
+        <tr><td>美股</td><td>{us_mid_summary} 相对居前，宏观覆盖已接入</td><td><a href="./us.html">打开 美股子页</a></td></tr>
+        <tr><td>期权</td><td>{option_summary}，退出模板状态单独查看</td><td><a href="./options.html">打开 期权子页</a></td></tr>
+        <tr><td>复盘</td><td>{execution_summary_value}，{execution_summary_sub}</td><td><a href="./review.html">打开 复盘子页</a></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+"""
+    return render_subpage(
+        title="主力分析 · Overview",
+        hero_kicker="Issue № 01 · Control Deck · Overview",
+        hero_title_html="主力<em>总览</em>",
+        eyebrow="Overview, Navigation & Execution Pulse",
+        now=now,
+        style_block=style_block,
+        summary_cards_html=summary_cards_html,
+        nav_links_html=nav_links_html,
+        body_html=body_html,
+        footer_html=footer_html,
+    )
+
+
+def build_options_page(
+    full_page_html: str,
+    now: str,
+    option_html: str | None,
+    option_summary: str,
+    execution_summary_value: str,
+    execution_summary_sub: str,
+    macro_headline: str,
+) -> str:
+    style_block = extract_style_block(full_page_html)
+    footer_match = re.search(r'(<div class="footer" id="method-block">[\s\S]*?</div>)', full_page_html)
+    footer_html = footer_match.group(1) if footer_match else ""
+    if option_html:
+        body_html = option_html if 'id="option-block"' in option_html else f'<div class="position-panel" id="option-block">{option_html}</div>'
+    else:
+        body_html = """
+<div class="position-panel" id="option-block">
+  <section class="section">
+    <div class="section-head">
+      <div class="section-num">№ 09</div>
+      <h2><em>Option</em> Positions<span class="cn">期权持仓</span></h2>
+      <div class="section-meta">SIMULATE<br>暂无片段</div>
+    </div>
+    <p class="note">当前未找到 option_section.html，期权子页保留占位。</p>
+  </section>
+</div>
+"""
+    summary_cards_html = f"""
+  <article class="summary-card">
+    <div class="label">Option PnL</div>
+    <div class="value">{option_summary}</div>
+    <div class="sub">来自最新期权监控片段</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Execution Pulse</div>
+    <div class="value">{execution_summary_value}</div>
+    <div class="sub">{execution_summary_sub}</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Macro Window</div>
+    <div class="value">{macro_headline}</div>
+    <div class="sub">用于解释波动兑现与收缩</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Navigation</div>
+    <div class="value">Home / Review</div>
+    <div class="sub">回主面板或执行评分卡</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Scope</div>
+    <div class="value">№ 09</div>
+    <div class="sub">仅期权区，不混入研究主表</div>
+  </article>
+"""
+    nav_links_html = """
+  <a class="major" href="./index.html">Home</a>
+  <a class="major" href="#option-block">Options</a>
+  <a class="major" href="./review.html">Review</a>
+  <a class="major" href="./index.html#method-block">Method</a>
+"""
+    return render_subpage(
+        title="期权持仓 · QUANT DESK",
+        hero_kicker="Issue № 09 · Options Sidecar · Monitor Panel",
+        hero_title_html="期权<em>持仓</em>",
+        eyebrow="Option Positions & Exit Tracking",
+        now=now,
+        style_block=style_block,
+        summary_cards_html=summary_cards_html,
+        nav_links_html=nav_links_html,
+        body_html=body_html,
+        footer_html=footer_html,
+    )
+
+
+def build_review_page(
+    full_page_html: str,
+    now: str,
+    review_html: str,
+    option_summary: str,
+    execution_summary_value: str,
+    execution_summary_sub: str,
+    macro_headline: str,
+    a_weak: int,
+    a_total: int,
+) -> str:
+    style_block = extract_style_block(full_page_html)
+    footer_match = re.search(r'(<div class="footer" id="method-block">[\s\S]*?</div>)', full_page_html)
+    footer_html = footer_match.group(1) if footer_match else ""
+    summary_cards_html = f"""
+  <article class="summary-card">
+    <div class="label">Execution Pulse</div>
+    <div class="value">{execution_summary_value}</div>
+    <div class="sub">{execution_summary_sub}</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Option PnL</div>
+    <div class="value">{option_summary}</div>
+    <div class="sub">用于对照执行动作后结果</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">A-Share Reliability</div>
+    <div class="value">{a_weak}/{a_total} 弱</div>
+    <div class="sub">主模型偏弱，复盘更看执行一致性</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Macro Window</div>
+    <div class="value">{macro_headline}</div>
+    <div class="sub">帮助解释收缩、等待与错失</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Scope</div>
+    <div class="value">Scorecard</div>
+    <div class="sub">仅执行评分卡与必要摘要导航</div>
+  </article>
+"""
+    nav_links_html = """
+  <a class="major" href="./index.html">Home</a>
+  <a class="major" href="./options.html">Options</a>
+  <a class="major" href="#review-block">Review</a>
+  <a class="major" href="./index.html#method-block">Method</a>
+"""
+    return render_subpage(
+        title="执行复盘 · QUANT DESK",
+        hero_kicker="Issue № 10 · Execution Review · Scorecard",
+        hero_title_html="执行<em>复盘</em>",
+        eyebrow="Production Review & Scorecard",
+        now=now,
+        style_block=style_block,
+        summary_cards_html=summary_cards_html,
+        nav_links_html=nav_links_html,
+        body_html=review_html,
+        footer_html=footer_html,
+    )
 
 
 def generate(allow_partial: bool = False):
@@ -1145,6 +1488,10 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             if old_fund:
                 html = replace_section_by_id(html, "cn-fund", old_fund)
                 print("  [!] A股财报区块为空，保留旧页面内容")
+    cn_section = extract_old_block(
+        html,
+        r'(<div class="market-block cn-block" id="cn-block">[\s\S]*?</div>)\s*<div class="footer" id="method-block">',
+    ) or ""
 
     # ==================== 美股部分 ====================
     print("获取美股行情...")
@@ -1451,11 +1798,72 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     if os.path.exists(real_section_path):
         print(f"  [!] 检测到 {real_section_path} 但**不会嵌入公开主页**以保护真实持仓隐私")
 
-    # 写到 docs/index.html (GitHub Pages 从 docs 目录读取)
+    # 写到 docs/ 多页面结构 (index 收敛为总览, dashboard_full 作为完整快照与回退底稿)
     os.makedirs("docs", exist_ok=True)
-    with open("docs/index.html", "w", encoding="utf-8") as f:
+    with open("docs/dashboard_full.html", "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"\n页面已生成: docs/index.html ({len(html)} 字节)")
+
+    cn_match = re.search(r'(<div class="market-block cn-block" id="cn-block">[\s\S]*?</div>)\s*<div class="market-block us-block"', html)
+    cn_section = cn_match.group(1) if cn_match else ""
+    us_match = re.search(r'(<div class="market-block us-block" id="us-block">[\s\S]*?</div>)\s*(<div class="position-panel"|<section class="section" id="review-block"|<div class="footer")', html)
+    us_section_final = us_match.group(1) if us_match else us_section
+    option_match = re.search(r'(<div class="position-panel" id="option-block">[\s\S]*?</div>)\s*(<section class="section" id="review-block"|<div class="footer")', html)
+    option_block_html = option_match.group(1) if option_match else (
+        f'<div class="position-panel" id="option-block">{opt_html}</div>' if opt_html else ""
+    )
+    review_section_match = re.search(r'(<section class="section" id="review-block">[\s\S]*?</section>)\s*<div class="footer"', html)
+    review_section_html = review_section_match.group(1) if review_section_match else review_html
+    summary_cards_html = extract_summary_strip_html(html)
+
+    overview_html = build_overview_page(
+        full_page_html=html,
+        now=now,
+        summary_cards_html=summary_cards_html,
+        a_weak=a_weak,
+        a_total=a_total,
+        us_mid_summary=us_mid_summary,
+        option_summary=option_summary,
+        execution_summary_value=execution_summary_value,
+        execution_summary_sub=execution_summary_sub,
+    )
+    with open("docs/index.html", "w", encoding="utf-8") as f:
+        f.write(overview_html)
+    cn_page_html = build_cn_page(html, now, cn_section)
+    with open("docs/cn.html", "w", encoding="utf-8") as f:
+        f.write(cn_page_html)
+    us_page_html = build_us_page(html, now, us_section_final, macro_headline)
+    with open("docs/us.html", "w", encoding="utf-8") as f:
+        f.write(us_page_html)
+    options_page_html = build_options_page(
+        html,
+        now,
+        option_block_html,
+        option_summary,
+        execution_summary_value,
+        execution_summary_sub,
+        macro_headline,
+    )
+    with open("docs/options.html", "w", encoding="utf-8") as f:
+        f.write(options_page_html)
+    review_page_html = build_review_page(
+        html,
+        now,
+        review_section_html,
+        option_summary,
+        execution_summary_value,
+        execution_summary_sub,
+        macro_headline,
+        a_weak,
+        a_total,
+    )
+    with open("docs/review.html", "w", encoding="utf-8") as f:
+        f.write(review_page_html)
+    print(f"\n总览页已生成: docs/index.html ({len(overview_html)} 字节)")
+    print(f"A股子页已生成: docs/cn.html ({len(cn_page_html)} 字节)")
+    print(f"美股子页已生成: docs/us.html ({len(us_page_html)} 字节)")
+    print(f"期权子页已生成: docs/options.html ({len(options_page_html)} 字节)")
+    print(f"复盘子页已生成: docs/review.html ({len(review_page_html)} 字节)")
+    print(f"完整快照已生成: docs/dashboard_full.html ({len(html)} 字节)")
     print("下一步: git add docs && git commit && git push")
 
 
