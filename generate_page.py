@@ -399,7 +399,7 @@ def collect_option_strategy_signals() -> list[dict]:
                     continue
                 symbol = symbol_match.group(1)
                 action = advice_match.group(1)
-                if action == "OBSERVE":
+                if action in {"OBSERVE", "WAIT"}:
                     signals.append({
                         "kind": "single",
                         "symbol": symbol,
@@ -407,7 +407,7 @@ def collect_option_strategy_signals() -> list[dict]:
                         "action": action,
                         "strength": "无机会",
                         "plan": "当前无明确信号",
-                        "note": "分形单腿策略当前仅给出观望，不建议开新仓。",
+                        "note": "分形单腿策略当前仅给出观望/等待，不建议开新仓。",
                     })
                 else:
                     signals.append({

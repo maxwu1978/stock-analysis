@@ -26,14 +26,17 @@ from trade_plan import build_trade_plan_meta
 
 
 WATCHLISTS = {
-    "tech": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META", "US.AMZN"],
+    "tech": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META", "US.AMZN",
+              "US.AMD", "US.AVGO", "US.TSM", "US.MU", "US.WDC"],
     "tech_plus": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
-                   "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR", "US.UBER",
+                   "US.AMZN", "US.AMD", "US.AVGO", "US.TSM", "US.MU", "US.WDC",
+                   "US.NFLX", "US.CRM", "US.PLTR", "US.UBER",
                    "US.FUTU"],  # 富途控股 (元: 用富途API 研究富途股票)
     "etf": ["US.SPY", "US.QQQ", "US.IWM", "US.DIA", "US.VOO"],
     "crypto_etf": ["US.IBIT", "US.FBTC", "US.BITB"],  # BTC 现货 ETF
     "all_watch": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META",
-                   "US.AMZN", "US.AMD", "US.NFLX", "US.CRM", "US.PLTR",
+                   "US.AMZN", "US.AMD", "US.AVGO", "US.TSM", "US.MU", "US.WDC",
+                   "US.NFLX", "US.CRM", "US.PLTR",
                    "US.SPY", "US.QQQ", "US.IWM",
                    "US.IBIT"],  # 含 BTC 敞口
     "nvda_only": ["US.NVDA"],

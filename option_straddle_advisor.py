@@ -31,7 +31,8 @@ from trade_plan import build_trade_plan_meta
 
 
 WATCHLISTS = {
-    "tech": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META", "US.AMZN"],
+    "tech": ["US.NVDA", "US.AAPL", "US.MSFT", "US.GOOGL", "US.TSLA", "US.META", "US.AMZN",
+              "US.AMD", "US.AVGO", "US.TSM", "US.MU", "US.WDC"],
     "default": ["US.NVDA", "US.AAPL", "US.TSLA"],
     "nvda_only": ["US.NVDA"],
 }
