@@ -108,6 +108,33 @@ def generate(allow_partial: bool = False):
     reliability_labels = load_reliability_labels()
     ensure_complete_reliability_labels(reliability_labels, allow_partial)
     old_page_html = load_old_page()
+
+    a_labels = reliability_labels.get("a_share", {})
+    us_labels = reliability_labels.get("us", {})
+    a_weak = sum(1 for v in a_labels.values() if v.get("label") == "弱")
+    a_total = len(STOCKS)
+    us_mid_names = [US_STOCKS[k] for k, v in us_labels.items() if v.get("label") == "中"]
+    us_mid_summary = " / ".join(us_mid_names) if us_mid_names else "暂无"
+
+    try:
+        from macro_events import get_risk_warnings
+        macro_headline = " / ".join(w.split("—")[0].replace("🟡 ", "").replace("⚪ ", "").replace("🔴 ", "").strip()
+                                    for w in get_risk_warnings(days_ahead=14)[:2]) or "无显著事件"
+    except Exception:
+        macro_headline = "事件窗口未知"
+
+    option_summary = "N/A"
+    if os.path.exists("option_section.html"):
+        try:
+            option_text = open("option_section.html", encoding="utf-8").read()
+            m = re.search(r'浮动盈亏.*?(\$[+-]?\d+(?:\.\d+)?)', option_text, re.S)
+            if not m:
+                m = re.search(r'(\$[+-]?\d+(?:\.\d+)?)', option_text)
+            if m:
+                option_summary = m.group(1)
+        except Exception:
+            pass
+
     print("获取实时行情...")
     try:
         rt = fetch_realtime_quotes()
@@ -267,9 +294,9 @@ def generate(allow_partial: bool = False):
   .tape .muted {{ color: var(--muted); }}
   @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.35; }} }}
   .container {{ max-width: 1180px; margin: 0 auto; padding: 0 28px 80px; }}
-  .hero {{ padding: 72px 0 56px; border-bottom: 2px solid var(--ink); }}
+  .hero {{ padding: 48px 0 34px; border-bottom: 2px solid var(--ink); }}
   .hero-kicker {{
-    display: flex; gap: 16px; align-items: center; margin-bottom: 28px;
+    display: flex; gap: 16px; align-items: center; margin-bottom: 18px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
     color: var(--muted);
@@ -278,7 +305,7 @@ def generate(allow_partial: bool = False):
   .hero h1 {{
     font-family: 'DM Serif Display', 'Noto Serif SC', serif;
     font-weight: 400;
-    font-size: clamp(56px, 10vw, 148px);
+    font-size: clamp(48px, 8vw, 118px);
     line-height: 0.88;
     letter-spacing: -0.028em;
   }}
@@ -287,13 +314,127 @@ def generate(allow_partial: bool = False):
     display: block; font-size: 0.14em; letter-spacing: 0.26em;
     text-transform: uppercase; color: var(--muted);
     font-family: 'JetBrains Mono', monospace; font-style: normal;
-    margin-top: 28px; font-weight: 400;
+    margin-top: 18px; font-weight: 400;
   }}
   .hero-meta {{
-    margin-top: 44px;
+    margin-top: 26px;
     display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px; letter-spacing: 0.1em; color: var(--muted);
+  }}
+  .summary-strip {{
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin: 18px 0 26px;
+  }}
+  .summary-card {{
+    background: linear-gradient(180deg, rgba(232,223,205,0.9), rgba(242,237,226,0.92));
+    border-top: 2px solid var(--ink);
+    border-left: 1px solid var(--hair);
+    padding: 14px 16px 16px;
+    min-height: 92px;
+  }}
+  .summary-card .label {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }}
+  .summary-card .value {{
+    font-family: 'DM Serif Display', 'Noto Serif SC', serif;
+    font-size: clamp(24px, 3vw, 34px);
+    line-height: 1;
+  }}
+  .summary-card .sub {{
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }}
+  .anchor-nav {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 18px;
+  }}
+  .anchor-nav a {{
+    text-decoration: none;
+    color: var(--ink);
+    border: 1px solid var(--hair);
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.22);
+  }}
+  .anchor-nav a:hover {{ border-color: var(--ink); transform: translateY(-1px); }}
+  .market-block {{
+    margin: 24px 0 0;
+    padding: 24px 20px 14px;
+    border: 1px solid var(--hair);
+    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(232,223,205,0.35));
+    position: relative;
+  }}
+  .market-block + .market-block {{ margin-top: 42px; }}
+  .market-label {{
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--hair);
+    margin-bottom: 12px;
+  }}
+  .market-label strong {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }}
+  .market-label span {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }}
+  .macro-banner {{
+    margin: 4px 0 20px 128px;
+    padding: 12px 14px;
+    border-left: 6px solid var(--up);
+    background: rgba(184,37,31,0.06);
+    display: grid;
+    grid-template-columns: 160px 1fr auto;
+    gap: 14px;
+    align-items: start;
+  }}
+  .macro-banner .banner-kicker,
+  .macro-banner .banner-meta {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }}
+  .macro-banner .banner-body {{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+  }}
+  .position-panel {{
+    margin-top: 30px;
+    padding: 18px 18px 8px;
+    border: 2px solid var(--ink);
+    background: linear-gradient(180deg, rgba(20,18,17,0.03), rgba(232,223,205,0.50));
+  }}
+  .position-panel .section:first-child {{
+    padding-top: 28px;
   }}
   .pill {{
     border: 1px solid var(--ink); padding: 7px 13px;
@@ -395,7 +536,7 @@ def generate(allow_partial: bool = False):
   .tag-down {{ color: var(--down); background: rgba(42,95,74,0.08); }}
   .tag-neutral {{ color: var(--muted); background: transparent; }}
   .us-divider {{
-    margin: 104px 0 0; padding-top: 72px;
+    margin: 36px 0 0; padding-top: 20px;
     border-top: 6px double var(--ink); position: relative;
   }}
   .us-divider .stamp {{
@@ -421,7 +562,14 @@ def generate(allow_partial: bool = False):
   @media (max-width: 640px) {{
     .footer {{ grid-template-columns: 1fr; }}
     .footer .colophon {{ text-align: left; }}
-    .hero {{ padding: 48px 0 40px; }}
+    .hero {{ padding: 36px 0 26px; }}
+    .summary-strip {{ grid-template-columns: 1fr 1fr; }}
+    .macro-banner {{ grid-template-columns: 1fr; margin-left: 0; }}
+    .market-block {{ padding: 18px 12px 6px; }}
+  }}
+  @media (max-width: 820px) {{
+    .summary-strip {{ grid-template-columns: 1fr 1fr; }}
+    .anchor-nav {{ margin-bottom: 8px; }}
   }}
 </style>
 </head>
@@ -444,6 +592,35 @@ def generate(allow_partial: bool = False):
     <span class="refresh-msg" id="refreshMsg"></span>
   </div>
 </header>
+
+<section class="summary-strip">
+  <article class="summary-card">
+    <div class="label">A-Share Reliability</div>
+    <div class="value">{a_weak}/{a_total} 弱</div>
+    <div class="sub">当前主模型整体偏弱</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">US Relative Leader</div>
+    <div class="value">{us_mid_summary}</div>
+    <div class="sub">当前自动标签相对最强</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Macro Window</div>
+    <div class="value">{macro_headline}</div>
+    <div class="sub">事件风控已接入美股预测</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Option Panel</div>
+    <div class="value">{option_summary}</div>
+    <div class="sub">持仓盈亏快照</div>
+  </article>
+</section>
+
+<nav class="anchor-nav">
+  <a href="#cn-block">A-Share</a>
+  <a href="#us-block">U.S.</a>
+  <a href="#option-block">Options</a>
+</nav>
 
 <script>
 async function triggerRefresh() {{
@@ -485,6 +662,8 @@ async function triggerRefresh() {{
 }}
 </script>
 
+<div class="market-block cn-block" id="cn-block">
+<div class="market-label"><strong>China Block</strong><span>A-Share Core Board · Quote / Trend / Tech / Filing</span></div>
 <section class="section">
   <div class="section-head">
     <div class="section-num">№ 01</div>
@@ -549,6 +728,7 @@ async function triggerRefresh() {{
   </table>
   </div>
 </section>
+</div>
 
 <div class="footer">
 <div>
@@ -712,9 +892,19 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     us_macro_note_html = ""
     if us_macro_notes:
         summary = " · ".join(dict.fromkeys(us_macro_notes))
-        us_macro_note_html = f'<p class="note">Macro Overlay · {summary}</p>'
+        affected = sum(1 for row in us_prob_html.split("</tr>") if 'class="weak">-' in row)
+        max_penalty = max([int(x) for x in re.findall(r">-(\d+) <small>", us_prob_html)] or [0])
+        us_macro_note_html = (
+            f'<div class="macro-banner">'
+            f'<div class="banner-kicker">Macro Overlay</div>'
+            f'<div class="banner-body">{summary}</div>'
+            f'<div class="banner-meta">{affected} names affected · max -{max_penalty}</div>'
+            f'</div>'
+        )
 
     us_section = f"""
+<div class="market-block us-block" id="us-block">
+<div class="market-label"><strong>U.S. Block</strong><span>Macro-aware Model · Quote / Trend / Tech / Filing</span></div>
 <section class="us-divider">
   <span class="stamp">U.S. Equities · <em>美股研判</em> · NVDA · TSLA · GOOGL · AAPL · FUTU</span>
 </section>
@@ -775,6 +965,8 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </table>
   </div>
 </section>
+
+</div>
 """
 
     if allow_partial and not any([us_quote_html.strip(), us_prob_html.strip(), us_tech_html.strip(), us_fund_html.strip()]) and old_page_html:
@@ -818,7 +1010,10 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
                 print(f"  [+] 期权持仓 section 从旧页保留 ({len(opt_html)} 字节, 预计 Actions 环境)")
 
     if opt_html:
-        html = html.replace('<div class="footer">', opt_html + '\n<div class="footer">')
+        html = html.replace(
+            '<div class="footer">',
+            f'<div class="position-panel" id="option-block">{opt_html}</div>\n<div class="footer">'
+        )
 
     # 真实盘 section **不嵌入公开主页** (隐私保护)
     # 如果存在 real_position_section.html, 说明本地生成了, 但 docs/ 是公开的,
