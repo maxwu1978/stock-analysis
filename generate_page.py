@@ -49,6 +49,27 @@ def extract_old_block(old_html: str, pattern: str) -> str | None:
     return match.group(1) if match else None
 
 
+def refresh_cn_macro_banner(section_html: str, banner_html: str) -> str:
+    """Keep the latest CN macro banner even when reusing old A-share sections."""
+    trend_pattern = r'(<section class="section" id="cn-trend">[\s\S]*?<div class="section-head">[\s\S]*?</div>)'
+
+    cleaned = re.sub(
+        r'\s*<div class="macro-banner">[\s\S]*?</div>\s*(?=<p class="note">)',
+        "\n",
+        section_html,
+        count=1,
+    )
+    if not banner_html:
+        return cleaned
+
+    return re.sub(
+        trend_pattern,
+        r"\1\n  " + banner_html,
+        cleaned,
+        count=1,
+    )
+
+
 def load_old_page() -> str:
     old_page_path = "docs/index.html"
     if not os.path.exists(old_page_path):
@@ -791,6 +812,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             r'((?:<section class="section">[\s\S]*?){4})\s*<section class="us-divider">'
         )
         if old_a_share:
+            old_a_share = refresh_cn_macro_banner(old_a_share, cn_macro_note_html)
             html = re.sub(
                 r'((?:<section class="section">[\s\S]*?){4})(?=\s*<div class="footer" id="method-block">)',
                 old_a_share,
