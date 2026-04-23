@@ -117,15 +117,22 @@ def direction_tag(hp):
 
 def fmt_prob_cell(d):
     if not d:
-        return '<td>-</td>'
+        return '<td class="prob-cell prob-empty">-</td>'
     p = int(d["上涨概率"].replace("%", ""))
     avg = d["平均收益"]
     n = d["样本数"]
+    cls = "prob-cell"
     if p >= 60:
-        return f'<td class="strong">{p}% {avg} <small>(n={n})</small></td>'
-    if p <= 40:
-        return f'<td class="weak">{p}% {avg} <small>(n={n})</small></td>'
-    return f'<td>{p}% {avg} <small>(n={n})</small></td>'
+        cls += " strong"
+    elif p <= 40:
+        cls += " weak"
+    return (
+        f'<td class="{cls}">'
+        f'<span class="prob-main">{p}%</span>'
+        f'<span class="prob-return">{avg}</span>'
+        f'<small>n={n}</small>'
+        f'</td>'
+    )
 
 
 def chg_td(val):
@@ -250,7 +257,7 @@ def generate(allow_partial: bool = False):
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(ft_score): ft_score = 0
         ft_score = int(ft_score)
-        ft_html = f'<td class="strong">{"⚡" * ft_score}</td>' if ft_score >= 3 else '<td>-</td>'
+        ft_html = f'<td class="tail-cell strong">{"⚡" * ft_score}</td>' if ft_score >= 3 else '<td class="tail-cell">-</td>'
 
         prob_html += f'<tr><td>{name}</td><td>{direction_tag(hp)}</td><td class="{rel_cls}">{reliability}</td>{ft_html}'
         for period in ["5日", "10日", "30日", "180日"]:
@@ -599,6 +606,70 @@ def generate(allow_partial: bool = False):
   .tag-up {{ color: var(--up); background: rgba(184,37,31,0.08); }}
   .tag-down {{ color: var(--down); background: rgba(42,95,74,0.08); }}
   .tag-neutral {{ color: var(--muted); background: transparent; }}
+  .trend-table {{
+    min-width: 1120px;
+  }}
+  .trend-table thead th,
+  .trend-table tbody td {{
+    text-align: center;
+    vertical-align: top;
+  }}
+  .trend-table thead th:first-child,
+  .trend-table tbody td:first-child {{
+    text-align: left;
+  }}
+  .trend-table tbody td:nth-child(2),
+  .trend-table tbody td:nth-child(3),
+  .trend-table tbody td:nth-child(4) {{
+    vertical-align: middle;
+  }}
+  .trend-table .prob-cell {{
+    min-width: 110px;
+    white-space: normal;
+    line-height: 1.25;
+  }}
+  .trend-table .prob-main {{
+    display: block;
+    font-size: 17px;
+    font-weight: 600;
+  }}
+  .trend-table .prob-return {{
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--ink);
+  }}
+  .trend-table .prob-cell strong,
+  .trend-table .prob-cell .prob-main {{
+    color: inherit;
+  }}
+  .trend-table .prob-cell small {{
+    display: block;
+    margin: 5px 0 0;
+    font-size: 11px;
+  }}
+  .trend-table .prob-empty {{
+    color: var(--muted);
+    vertical-align: middle;
+  }}
+  .trend-table .macro-cell {{
+    min-width: 126px;
+    white-space: normal;
+    line-height: 1.25;
+  }}
+  .trend-table .macro-cell .penalty {{
+    display: block;
+    font-size: 17px;
+    font-weight: 600;
+  }}
+  .trend-table .macro-cell small {{
+    display: block;
+    margin: 4px 0 0;
+  }}
+  .trend-table .tail-cell {{
+    min-width: 76px;
+    vertical-align: middle;
+  }}
   .us-divider {{
     margin: 36px 0 0; padding-top: 20px;
     border-top: 6px double var(--ink); position: relative;
@@ -630,6 +701,9 @@ def generate(allow_partial: bool = False):
     .summary-strip {{ grid-template-columns: 1fr 1fr; }}
     .macro-banner {{ grid-template-columns: 1fr; margin-left: 0; }}
     .market-block {{ padding: 18px 12px 6px; }}
+    .trend-table {{
+      min-width: 980px;
+    }}
   }}
   @media (max-width: 820px) {{
     .summary-strip {{ grid-template-columns: 1fr 1fr; }}
@@ -740,7 +814,7 @@ async function triggerRefresh() {{
     <div class="section-meta">Realtime Tape<br>CN · A-Share</div>
   </div>
   <div class="table-wrap">
-  <table>
+  <table class="trend-table">
   <thead><tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交额</th><th>最高</th><th>最低</th></tr></thead>
   <tbody>
   {quote_html}
@@ -758,7 +832,7 @@ async function triggerRefresh() {{
   {cn_macro_note_html}
   <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short</p>
   <div class="table-wrap">
-  <table>
+  <table class="trend-table">
   <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
   <tbody>
   {prob_html}
@@ -904,14 +978,19 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         if penalty > 0:
             us_macro_notes.extend(macro.get("warnings", []))
             reason_text = "/".join(dict.fromkeys(reasons)) if reasons else "宏观收缩"
-            us_macro_html = f'<td class="weak">-{penalty} <small>{reason_text}</small></td>'
+            us_macro_html = (
+                f'<td class="macro-cell weak">'
+                f'<span class="penalty">-{penalty}</span>'
+                f'<small>{reason_text}</small>'
+                f'</td>'
+            )
         else:
-            us_macro_html = '<td>-</td>'
+            us_macro_html = '<td class="macro-cell">-</td>'
 
         us_ft = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(us_ft): us_ft = 0
         us_ft = int(us_ft)
-        us_ft_html = f'<td class="strong">{"⚡" * us_ft}</td>' if us_ft >= 3 else '<td>-</td>'
+        us_ft_html = f'<td class="tail-cell strong">{"⚡" * us_ft}</td>' if us_ft >= 3 else '<td class="tail-cell">-</td>'
 
         us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td><td class="{us_rel_cls}">{us_rel}</td>{us_macro_html}{us_ft_html}'
         for period in ["5日", "10日", "30日", "180日"]:
