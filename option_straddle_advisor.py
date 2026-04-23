@@ -25,6 +25,8 @@ from datetime import datetime
 from fetch_futu import realtime_quotes, get_kline, find_atm_options, health_check
 from fractal_survey import mfdfa_spectrum
 from iv_rank import get_iv_rank_best_effort, describe_rank, log_iv
+from position_sizing import recommend_straddle_position
+from exit_rules import build_straddle_exit, format_exit_plan
 
 
 WATCHLISTS = {
@@ -32,6 +34,17 @@ WATCHLISTS = {
     "default": ["US.NVDA", "US.AAPL", "US.TSLA"],
     "nvda_only": ["US.NVDA"],
 }
+
+REFERENCE_ACCOUNT_EQUITY = 1_000_000
+
+
+def _plan_exit_token(exit_plan) -> str:
+    return (
+        f"TP1_{exit_plan.take_profit_partial:.2f}_"
+        f"TP2_{exit_plan.take_profit_full:.2f}_"
+        f"SL_{exit_plan.hard_stop:.2f}_"
+        f"TSTOP_{exit_plan.time_stop_days}d"
+    )
 
 
 def compute_iv_rank(historical_iv: pd.Series, current_iv: float) -> float:
@@ -201,6 +214,17 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
             print(f"  信号: {sc['signal']}  置信度: {sc.get('confidence', '-')}")
 
             if sc["signal"].startswith("BUY_STRADDLE"):
+                pos = recommend_straddle_position(
+                    total_premium=float(sc["straddle_cost"]),
+                    account_equity=REFERENCE_ACCOUNT_EQUITY,
+                    confidence=sc.get("confidence"),
+                    macro_penalty=0,
+                )
+                exit_plan = build_straddle_exit(
+                    total_premium=float(sc["straddle_cost"]),
+                    days_to_expiry=int(sc["days_to_expiry"]),
+                    confidence=sc.get("confidence"),
+                )
                 print(f"")
                 print(f"  跨式构造:")
                 print(f"    Call: {sc['call_code']} @ ${sc['call_premium']:.2f}")
@@ -208,10 +232,23 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
                 print(f"    总成本/张: ${sc['straddle_cost']:.2f}  名义金额: ${sc['straddle_cost']*100:.0f}")
                 print(f"    盈亏平衡: ${sc['breakeven_lower']:.2f} 以下 或 ${sc['breakeven_upper']:.2f} 以上")
                 print(f"    需要 {sc['days_to_expiry']} 天内股价变动 ≥{sc['move_needed_pct']:.2f}%")
+                print(
+                    f"    仓位: {pos.position_tier} · 建议 {pos.qty} 套 · 风险预算 ${pos.risk_budget:,.0f} · "
+                    f"名义资金 ${pos.notional_value:,.0f}"
+                )
+                print(f"    退出: {format_exit_plan(exit_plan)}")
+                print(f"    说明: {pos.sizing_note}")
                 print(f"")
                 print(f"  下单命令 (两腿各执行一次, 各 1 张):")
-                print(f"    ./venv/bin/python trade_futu_sim.py buy {sc['call_code']} 1 --confirm")
-                print(f"    ./venv/bin/python trade_futu_sim.py buy {sc['put_code']} 1 --confirm")
+                signal_id = f"{code.replace('US.','')}_{sc['signal']}_{datetime.now().strftime('%Y%m%d')}"
+                plan_flags = (
+                    f"--signal-id {signal_id} "
+                    f"--plan-tier {pos.position_tier} "
+                    f"--plan-risk {int(pos.risk_budget)} "
+                    f"--plan-exit {_plan_exit_token(exit_plan)}"
+                )
+                print(f"    ./venv/bin/python trade_futu_sim.py buy {sc['call_code']} 1 --confirm {plan_flags}")
+                print(f"    ./venv/bin/python trade_futu_sim.py buy {sc['put_code']} 1 --confirm {plan_flags}")
             else:
                 print(f"    → {sc['signal']}, 无跨式机会")
         except Exception as e:

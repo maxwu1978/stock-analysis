@@ -20,6 +20,8 @@ from datetime import datetime
 from fetch_futu import realtime_quotes, get_kline, find_atm_options, health_check
 from fractal_survey import mfdfa_spectrum
 from macro_events import get_risk_warnings, get_vix_level
+from position_sizing import recommend_long_option_position, recommend_straddle_position
+from exit_rules import build_long_option_exit, build_straddle_exit, format_exit_plan
 
 
 WATCHLISTS = {
@@ -38,6 +40,8 @@ WATCHLISTS = {
     "default": ["US.NVDA", "US.AAPL", "US.TSLA"],  # 不含 IBIT: BTC 策略回测失败
 }
 
+REFERENCE_ACCOUNT_EQUITY = 1_000_000
+
 # IBIT/FBTC/BITB 作为 BTC 现货 ETF, 分形特征用 BTC-USD 计算更准确
 # 因为 ETF 日线样本少(上市不足2年) 且持有量大时可能有轻微溢价
 BTC_ETF_UNDERLYING = {
@@ -45,6 +49,15 @@ BTC_ETF_UNDERLYING = {
     "US.FBTC": "BTC-USD",
     "US.BITB": "BTC-USD",
 }
+
+
+def _plan_exit_token(exit_plan) -> str:
+    return (
+        f"TP1_{exit_plan.take_profit_partial:.2f}_"
+        f"TP2_{exit_plan.take_profit_full:.2f}_"
+        f"SL_{exit_plan.hard_stop:.2f}_"
+        f"TSTOP_{exit_plan.time_stop_days}d"
+    )
 
 
 def analyze_underlying(code: str) -> dict:
@@ -277,6 +290,11 @@ def format_recommendation(feat: dict, regime_info: dict, picks: pd.DataFrame) ->
     if picks.empty:
         lines.append(f"  → 观望, 无期权建议")
     else:
+        macro_penalty = 0
+        if any("🔴" in w for w in warnings):
+            macro_penalty = 12
+        elif any("🟡" in w for w in warnings):
+            macro_penalty = 4
         lines.append(f"")
         lines.append(f"  推荐期权合约:")
         for _, r in picks.iterrows():
@@ -285,14 +303,83 @@ def format_recommendation(feat: dict, regime_info: dict, picks: pd.DataFrame) ->
                 f"strike=${r['strike_price']:<7.1f} premium=${r['last_price']:<6.2f} "
                 f"Δ={r['delta']:+.3f} θ={r['theta']:+.3f} IV={r['iv']:.1f}% OI={r['open_interest']:,}"
             )
+            if regime_info["strategy"] in ("BUY_CALL", "BUY_PUT"):
+                pos = recommend_long_option_position(
+                    premium=float(r["last_price"]),
+                    account_equity=REFERENCE_ACCOUNT_EQUITY,
+                    reliability="中" if conf == "HIGH" else "弱",
+                    confidence=conf,
+                    macro_penalty=macro_penalty,
+                )
+                exit_plan = build_long_option_exit(
+                    premium=float(r["last_price"]),
+                    days_to_expiry=regime_info["days_to_expiry"],
+                    confidence=conf,
+                )
+                lines.append(
+                    f"      仓位: {pos.position_tier} · 建议 {pos.qty} 张 · 风险预算 ${pos.risk_budget:,.0f} · "
+                    f"名义资金 ${pos.notional_value:,.0f}"
+                )
+                lines.append(f"      退出: {format_exit_plan(exit_plan)}")
+                lines.append(f"      说明: {pos.sizing_note}")
+            elif regime_info["strategy"] == "BUY_STRADDLE":
+                pos = recommend_straddle_position(
+                    total_premium=float(r["last_price"]),
+                    account_equity=REFERENCE_ACCOUNT_EQUITY,
+                    confidence=conf,
+                    macro_penalty=macro_penalty,
+                )
+                exit_plan = build_straddle_exit(
+                    total_premium=float(r["last_price"]),
+                    days_to_expiry=regime_info["days_to_expiry"],
+                    confidence=conf,
+                )
+                lines.append(
+                    f"      仓位: {pos.position_tier} · 建议 {pos.qty} 套 · 风险预算 ${pos.risk_budget:,.0f} · "
+                    f"名义资金 ${pos.notional_value:,.0f}"
+                )
+                lines.append(f"      退出: {format_exit_plan(exit_plan)}")
+                lines.append(f"      说明: {pos.sizing_note}")
         lines.append(f"")
         lines.append(f"  下单命令 (你本人执行, 不会自动执行):")
         for _, r in picks.iterrows():
             # 每单买 1 张, 约 $100-500 成本
             premium = float(r["last_price"])
             cost_per_contract = premium * 100
+            signal_id = f"{code.replace('US.','')}_{regime_info['strategy']}_{datetime.now().strftime('%Y%m%d')}"
+            if regime_info["strategy"] in ("BUY_CALL", "BUY_PUT"):
+                pos = recommend_long_option_position(
+                    premium=float(r["last_price"]),
+                    account_equity=REFERENCE_ACCOUNT_EQUITY,
+                    reliability="中" if conf == "HIGH" else "弱",
+                    confidence=conf,
+                    macro_penalty=macro_penalty,
+                )
+                exit_plan = build_long_option_exit(
+                    premium=float(r["last_price"]),
+                    days_to_expiry=regime_info["days_to_expiry"],
+                    confidence=conf,
+                )
+            else:
+                pos = recommend_straddle_position(
+                    total_premium=float(r["last_price"]),
+                    account_equity=REFERENCE_ACCOUNT_EQUITY,
+                    confidence=conf,
+                    macro_penalty=macro_penalty,
+                )
+                exit_plan = build_straddle_exit(
+                    total_premium=float(r["last_price"]),
+                    days_to_expiry=regime_info["days_to_expiry"],
+                    confidence=conf,
+                )
+            plan_flags = (
+                f"--signal-id {signal_id} "
+                f"--plan-tier {pos.position_tier} "
+                f"--plan-risk {int(pos.risk_budget)} "
+                f"--plan-exit {_plan_exit_token(exit_plan)}"
+            )
             lines.append(
-                f"    ./venv/bin/python trade_futu_sim.py buy {r['code']} 1 --confirm  "
+                f"    ./venv/bin/python trade_futu_sim.py buy {r['code']} 1 --confirm {plan_flags}  "
                 f"# 成本约 ${cost_per_contract:.0f}/张"
             )
 
