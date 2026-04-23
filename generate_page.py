@@ -370,8 +370,8 @@ def collect_option_strategy_signals() -> list[dict]:
             pass
 
     advisor_specs = [
-        ("single", ["python3", "option_fractal_advisor.py", "nvda_only"]),
-        ("straddle", ["python3", "option_straddle_advisor.py", "nvda_only"]),
+        ("single", ["python3", "option_fractal_advisor.py", "tech"]),
+        ("straddle", ["python3", "option_straddle_advisor.py", "tech"]),
     ]
     for kind, cmd in advisor_specs:
         try:
@@ -382,7 +382,7 @@ def collect_option_strategy_signals() -> list[dict]:
                 encoding="utf-8",
                 errors="ignore",
                 cwd=os.getcwd(),
-                timeout=20,
+                timeout=45,
             )
         except Exception:
             continue
@@ -390,63 +390,84 @@ def collect_option_strategy_signals() -> list[dict]:
         if not out:
             continue
 
-        symbol_match = re.search(r"US\.([A-Z]+)", out)
-        symbol = symbol_match.group(1) if symbol_match else "US"
         if kind == "single":
-            advice_match = re.search(r"建议:\s+([A-Z_]+)", out)
-            action = advice_match.group(1) if advice_match else "OBSERVE"
-            if action == "OBSERVE":
-                signals.append({
-                    "kind": "single",
-                    "symbol": symbol,
-                    "label": f"{symbol} 单腿分形",
-                    "action": action,
-                    "strength": "无机会",
-                    "plan": "当前无明确信号",
-                    "note": "分形单腿策略当前仅给出观望，不建议开新仓。",
-                })
-            else:
-                signals.append({
-                    "kind": "single",
-                    "symbol": symbol,
-                    "label": f"{symbol} 单腿分形",
-                    "action": action,
-                    "strength": "强机会",
-                    "plan": "按顾问输出执行",
-                    "note": "出现单腿明确信号，可优先关注。",
-                })
+            blocks = re.findall(r"─+\n(.*?)(?=\n─+\n|\n═+|\Z)", out, re.S)
+            for block in blocks:
+                symbol_match = re.search(r"US\.([A-Z]+)", block)
+                advice_match = re.search(r"建议:\s+([A-Z_]+)", block)
+                if not symbol_match or not advice_match:
+                    continue
+                symbol = symbol_match.group(1)
+                action = advice_match.group(1)
+                if action == "OBSERVE":
+                    signals.append({
+                        "kind": "single",
+                        "symbol": symbol,
+                        "label": f"{symbol} 单腿分形",
+                        "action": action,
+                        "strength": "无机会",
+                        "plan": "当前无明确信号",
+                        "note": "分形单腿策略当前仅给出观望，不建议开新仓。",
+                    })
+                else:
+                    signals.append({
+                        "kind": "single",
+                        "symbol": symbol,
+                        "label": f"{symbol} 单腿分形",
+                        "action": action,
+                        "strength": "强机会",
+                        "plan": "按顾问输出执行",
+                        "note": "出现单腿明确信号，可优先关注。",
+                    })
         else:
-            signal_match = re.search(r"信号:\s+([A-Z_]+)\s+置信度:\s+([A-Z]+)", out)
-            if not signal_match:
-                continue
-            action = signal_match.group(1)
-            confidence = signal_match.group(2)
-            plan_match = re.search(r"仓位:\s+([^\n]+)", out)
-            plan = plan_match.group(1).strip() if plan_match else "按顾问输出执行"
-            strength = "弱机会" if "WEAK" in action or confidence == "LOW" else "强机会"
-            note = (
-                "跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。"
-                if strength == "弱机会"
-                else "跨式出现较清晰波动信号。"
-            )
-            signals.append({
-                "kind": "straddle",
-                "symbol": symbol,
-                "label": f"{symbol} 跨式策略",
-                "action": action,
-                "strength": strength,
-                "plan": plan,
-                "note": note,
-            })
+            blocks = re.findall(r"─+\n(.*?)(?=\n─+\n|\n═+|\Z)", out, re.S)
+            for block in blocks:
+                symbol_match = re.search(r"US\.([A-Z]+)", block)
+                signal_match = re.search(r"信号:\s+([A-Z_]+)\s+置信度:\s+([A-Z]+|None)", block)
+                if not symbol_match or not signal_match:
+                    continue
+                symbol = symbol_match.group(1)
+                action = signal_match.group(1)
+                confidence = signal_match.group(2)
+                if action in {"WAIT", "WAIT_IV_HIGH", "WAIT_IV_HIGH_SELL_CANDIDATE"}:
+                    signals.append({
+                        "kind": "straddle",
+                        "symbol": symbol,
+                        "label": f"{symbol} 跨式策略",
+                        "action": action,
+                        "strength": "无机会",
+                        "plan": "当前无跨式机会",
+                        "note": "当前波动/IV 结构不支持新开跨式。",
+                    })
+                    continue
+                plan_match = re.search(r"仓位:\s+([^\n]+)", block)
+                plan = plan_match.group(1).strip() if plan_match else "按顾问输出执行"
+                strength = "弱机会" if "WEAK" in action or confidence == "LOW" else "强机会"
+                note = (
+                    "跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。"
+                    if strength == "弱机会"
+                    else "跨式出现较清晰波动信号。"
+                )
+                signals.append({
+                    "kind": "straddle",
+                    "symbol": symbol,
+                    "label": f"{symbol} 跨式策略",
+                    "action": action,
+                    "strength": strength,
+                    "plan": plan,
+                    "note": note,
+                })
 
     deduped: list[dict] = []
     seen: set[tuple[str, str]] = set()
     for item in signals:
-        key = (item.get("kind", ""), item.get("action", ""))
+        key = (item.get("kind", ""), item.get("symbol", ""))
         if key in seen:
             continue
         seen.add(key)
         deduped.append(item)
+    strength_rank = {"强机会": 0, "弱机会": 1, "持仓管理": 2, "无机会": 3}
+    deduped.sort(key=lambda x: (strength_rank.get(x.get("strength", ""), 9), x.get("symbol", "")))
     return deduped
 
 
@@ -535,7 +556,7 @@ def build_strategy_page(
   <article class="summary-card">
     <div class="label">Option Setup</div>
     <div class="value">{sum(1 for row in option_signals if row.get('strength') in {'强机会', '弱机会'})}</div>
-    <div class="sub">期权强/弱机会与持仓管理分开显示</div>
+    <div class="sub">全池扫描后按强/弱机会与持仓管理分开显示</div>
   </article>
 """
     nav_links_html = """
@@ -572,7 +593,7 @@ def build_strategy_page(
     <h2>Option <em>Setups</em><span class="cn">今日期权机会</span></h2>
     <div class="section-meta">Strong / Weak<br>Hold Mgmt</div>
   </div>
-  <p class="note">这里单独区分强机会、弱机会和仅持仓管理。弱信号存在并不等于要交易，默认仍以轻仓或不交易为主。</p>
+  <p class="note">这里基于期权顾问关注池做全池扫描，单独区分强机会、弱机会和仅持仓管理。弱信号存在并不等于要交易，默认仍以轻仓或不交易为主。</p>
   {option_html}
 </section>
 """
