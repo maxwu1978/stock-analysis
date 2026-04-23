@@ -115,9 +115,9 @@ def direction_tag(hp):
     return '<span class="tag tag-neutral">震荡</span>'
 
 
-def fmt_prob_cell(d):
+def fmt_prob_cell(label, d):
     if not d:
-        return '<td class="prob-cell prob-empty">-</td>'
+        return f'<td class="prob-cell prob-empty" data-label="{label}">-</td>'
     p = int(d["上涨概率"].replace("%", ""))
     avg = d["平均收益"]
     n = d["样本数"]
@@ -127,7 +127,7 @@ def fmt_prob_cell(d):
     elif p <= 40:
         cls += " weak"
     return (
-        f'<td class="{cls}">'
+        f'<td class="{cls}" data-label="{label}">'
         f'<span class="prob-main">{p}%</span>'
         f'<span class="prob-return">{avg}</span>'
         f'<small>n={n}</small>'
@@ -257,11 +257,17 @@ def generate(allow_partial: bool = False):
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(ft_score): ft_score = 0
         ft_score = int(ft_score)
-        ft_html = f'<td class="tail-cell strong">{"⚡" * ft_score}</td>' if ft_score >= 3 else '<td class="tail-cell">-</td>'
+        ft_html = f'<td class="tail-cell strong" data-label="肥尾">{"⚡" * ft_score}</td>' if ft_score >= 3 else '<td class="tail-cell" data-label="肥尾">-</td>'
 
-        prob_html += f'<tr><td>{name}</td><td>{direction_tag(hp)}</td><td class="{rel_cls}">{reliability}</td>{ft_html}'
+        prob_html += (
+            f'<tr>'
+            f'<td data-label="股票">{name}</td>'
+            f'<td data-label="方向">{direction_tag(hp)}</td>'
+            f'<td class="{rel_cls}" data-label="可靠度">{reliability}</td>'
+            f'{ft_html}'
+        )
         for period in ["5日", "10日", "30日", "180日"]:
-            prob_html += fmt_prob_cell(hp.get(period))
+            prob_html += fmt_prob_cell(period, hp.get(period))
         prob_html += '</tr>\n'
 
         stype = {"momentum": "动量", "mean_revert": "回归", "mixed": "混合"}.get(rg.get("stock_type"), "?")
@@ -759,6 +765,75 @@ def generate(allow_partial: bool = False):
   @media (max-width: 820px) {{
     .summary-strip {{ grid-template-columns: 1fr 1fr; }}
     .anchor-nav {{ margin-bottom: 8px; }}
+    .trend-table {{
+      min-width: 0;
+      width: 100%;
+      border-collapse: separate;
+    }}
+    .trend-table thead {{
+      display: none;
+    }}
+    .trend-table,
+    .trend-table tbody,
+    .trend-table tr,
+    .trend-table td {{
+      display: block;
+      width: 100%;
+    }}
+    .trend-table tr {{
+      margin: 0 0 16px;
+      padding: 14px 14px 8px;
+      border: 1px solid var(--hair);
+      background: linear-gradient(180deg, rgba(242,237,226,0.98), rgba(232,223,205,0.92));
+    }}
+    .trend-table thead th:nth-child(-n+4),
+    .trend-table tbody td:nth-child(-n+4),
+    .trend-table thead th:nth-child(n+5),
+    .trend-table tbody td:nth-child(n+5) {{
+      position: static;
+      left: auto;
+      min-width: 0;
+      box-shadow: none;
+      background: transparent;
+    }}
+    .trend-table tbody td {{
+      border-bottom: 1px dashed var(--hair);
+      padding: 9px 0;
+      text-align: left;
+      white-space: normal;
+    }}
+    .trend-table tbody td::before {{
+      content: attr(data-label);
+      display: block;
+      margin-bottom: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }}
+    .trend-table tbody td:first-child {{
+      padding-top: 0;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--ink);
+      font-size: 22px;
+    }}
+    .trend-table tbody td:first-child::before {{
+      display: none;
+    }}
+    .trend-table tbody td:last-child {{
+      border-bottom: 0;
+      padding-bottom: 2px;
+    }}
+    .trend-table .prob-cell,
+    .trend-table .macro-cell,
+    .trend-table .tail-cell {{
+      min-width: 0;
+    }}
+    .trend-table .prob-main,
+    .trend-table .macro-cell .penalty {{
+      font-size: 18px;
+    }}
   }}
 </style>
 </head>
@@ -1030,22 +1105,28 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             us_macro_notes.extend(macro.get("warnings", []))
             reason_text = "/".join(dict.fromkeys(reasons)) if reasons else "宏观收缩"
             us_macro_html = (
-                f'<td class="macro-cell weak">'
+                f'<td class="macro-cell weak" data-label="宏观覆盖">'
                 f'<span class="penalty">-{penalty}</span>'
                 f'<small>{reason_text}</small>'
                 f'</td>'
             )
         else:
-            us_macro_html = '<td class="macro-cell">-</td>'
+            us_macro_html = '<td class="macro-cell" data-label="宏观覆盖">-</td>'
 
         us_ft = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(us_ft): us_ft = 0
         us_ft = int(us_ft)
-        us_ft_html = f'<td class="tail-cell strong">{"⚡" * us_ft}</td>' if us_ft >= 3 else '<td class="tail-cell">-</td>'
+        us_ft_html = f'<td class="tail-cell strong" data-label="肥尾">{"⚡" * us_ft}</td>' if us_ft >= 3 else '<td class="tail-cell" data-label="肥尾">-</td>'
 
-        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td><td class="{us_rel_cls}">{us_rel}</td>{us_macro_html}{us_ft_html}'
+        us_prob_html += (
+            f'<tr>'
+            f'<td data-label="股票">{uname}</td>'
+            f'<td data-label="方向">{direction_tag(hp)}</td>'
+            f'<td class="{us_rel_cls}" data-label="可靠度">{us_rel}</td>'
+            f'{us_macro_html}{us_ft_html}'
+        )
         for period in ["5日", "10日", "30日", "180日"]:
-            us_prob_html += fmt_prob_cell(hp.get(period))
+            us_prob_html += fmt_prob_cell(period, hp.get(period))
         us_prob_html += '</tr>\n'
 
         stype = {"momentum": "动量", "mean_revert": "回归", "mixed": "混合"}.get(rg.get("stock_type"), "?")
