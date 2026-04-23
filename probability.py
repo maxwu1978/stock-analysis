@@ -9,16 +9,19 @@
 
 import pandas as pd
 import numpy as np
+from factor_weighting import infer_factor_family, load_family_weight_multipliers
 
 # 使用的因子 — 技术因子 + 基本面因子
+# 2026-04 因子瘦身:
+# - 保留在 tear sheet 中更稳定的分形 / 波动 / 基本面主干
+# - 移除近期信息量弱且与强因子高度重叠的项
 FACTOR_COLS = [
     # 技术因子
-    "RSI6", "RSI12",
-    "DIF", "DEA", "MACD",
+    "RSI12",
+    "DIF", "MACD",
     "ADX", "+DI", "-DI",
     "ROC5", "ROC10", "ROC20",
     "autocorr",
-    "vol_price_div",
     "price_position",
     "ma5_slope",
     "ma20_diff",
@@ -33,16 +36,11 @@ FACTOR_COLS = [
     "kurt_20",          # 20日峰度
     "gap_ret_10d",         # 10日隔夜跳空收益率均值 (overnight gap factor)
     "amihud_20d",          # 20日Amihud非流动性因子 (价格冲击/成交金额)
-    "mfdfa_width_120d",    # 120日多重分形谱宽度Δα
-    "mfdfa_alpha0_120d",   # 120日MF-DFA谱中心α_0
     "hq2_120d",            # 120日MF-DFA h(q=2) 稳健版Hurst
-    "mfdfa_asym_120d",     # 120日MF-DFA分形非对称度 h(q=-4)-h(q=+4) (大跌vs大涨持续性差)
     "mfdfa_x_roc20",       # Δα × ROC20 交互因子
     # 基本面因子
     "roe",              # ROE (净资产收益率)
-    "rev_growth",       # 营收同比增长率
     "profit_growth",    # 净利润同比增长率
-    "gross_margin",     # 毛利率
     "debt_ratio",       # 资产负债率
     "cash_flow_ps",     # 每股经营现金流
     "roe_chg",          # ROE环比变化
@@ -53,6 +51,22 @@ FACTOR_COLS = [
 IC_WINDOW = 120
 # 预测周期
 HORIZON = 5
+
+
+def _apply_family_priors(ic_weights: dict[str, float]) -> tuple[dict[str, float], dict[str, float]]:
+    """Use tear-sheet family quality as a mild prior on top of rolling IC weights."""
+    priors = load_family_weight_multipliers("a")
+    if not priors:
+        return ic_weights, {}
+
+    adjusted = {}
+    used = {}
+    for col, weight in ic_weights.items():
+        family = infer_factor_family(col)
+        mult = priors.get(family, 1.0)
+        adjusted[col] = weight * mult
+        used[family] = mult
+    return adjusted, used
 
 
 def _compute_rolling_ic(df: pd.DataFrame, window: int = IC_WINDOW, horizon: int = HORIZON, factor_cols: list = None) -> pd.DataFrame:
@@ -125,6 +139,8 @@ def score_trend(df: pd.DataFrame) -> dict:
 
     if not ic_weights:
         return {"error": "无法计算IC权重"}
+
+    ic_weights, family_overlay = _apply_family_priors(ic_weights)
 
     # 对因子值做标准化 (z-score, 用最近120天)
     recent = df.iloc[-(IC_WINDOW + HORIZON):-HORIZON] if len(df) > IC_WINDOW + HORIZON else df
@@ -215,6 +231,7 @@ def score_trend(df: pd.DataFrame) -> dict:
         "historical_prob": hist_prob,
         "raw_score": raw_score,
         "n_factors": n_factors,
+        "family_overlay": family_overlay,
     }
 
 

@@ -9,24 +9,19 @@
 
 import pandas as pd
 import numpy as np
+from factor_weighting import infer_factor_family, load_family_weight_multipliers
 from macro_events import add_us_macro_factors, get_risk_warnings, get_vix_level
 
 # 美股专用因子 — 去掉所有财报因子
+# 2026-04 因子瘦身:
+# - 强化分形 / 波动 / 52周位置 / 宏观波动因子
+# - 移除近期信息量弱的短周期传统指标与重复项
 US_FACTOR_COLS = [
-    "RSI6", "RSI12",
-    "DIF", "DEA", "MACD",
-    "ADX", "+DI", "-DI",
-    "ROC5", "ROC10", "ROC20",
+    "DIF", "-DI",
+    "ROC20",
     "autocorr",
-    "vol_price_div",
-    "price_position",
-    "ma5_slope",
-    "ma20_diff",
-    "ma60_diff",
     # 美股专用新增
     "atr_pct",        # ATR占比 (波动率)
-    "vol_change",     # 成交量变化率
-    "high_low_range", # 日内振幅
     "high52w_pos",    # 52周位置 (年度高低位置)
     # 肥尾前兆因子
     "boll_width",       # 布林带宽度
@@ -36,8 +31,6 @@ US_FACTOR_COLS = [
     "kurt_20",          # 20日峰度
     # 分形几何因子族 (来自A股验证, 第二轮)
     "mfdfa_width_120d",    # 120日多重分形谱宽度Δα
-    "mfdfa_alpha0_120d",   # 120日MF-DFA谱中心α_0
-    "hq2_120d",            # 120日MF-DFA h(q=2) 稳健版Hurst
     "mfdfa_x_roc20",       # Δα × ROC20 交互因子
     # 宏观波动因子 (可历史回测)
     "vix_close",           # VIX 绝对水平
@@ -48,6 +41,22 @@ US_FACTOR_COLS = [
 
 IC_WINDOW = 90   # 美股用更短窗口
 HORIZON = 5
+
+
+def _apply_family_priors(ic_weights: dict[str, float]) -> tuple[dict[str, float], dict[str, float]]:
+    """Use tear-sheet family quality as a mild prior on top of rolling IC weights."""
+    priors = load_family_weight_multipliers("us")
+    if not priors:
+        return ic_weights, {}
+
+    adjusted = {}
+    used = {}
+    for col, weight in ic_weights.items():
+        family = infer_factor_family(col)
+        mult = priors.get(family, 1.0)
+        adjusted[col] = weight * mult
+        used[family] = mult
+    return adjusted, used
 
 
 def _prepare_us_factors(df: pd.DataFrame) -> pd.DataFrame:
@@ -185,6 +194,8 @@ def score_trend_us(df: pd.DataFrame, symbol: str | None = None, apply_macro_over
     if not ic_weights:
         return {"error": "无法计算IC权重"}
 
+    ic_weights, family_overlay = _apply_family_priors(ic_weights)
+
     # z-score标准化 + IC加权
     recent = df.iloc[-(IC_WINDOW + HORIZON):-HORIZON] if len(df) > IC_WINDOW + HORIZON else df
     factor_scores = {}
@@ -253,6 +264,7 @@ def score_trend_us(df: pd.DataFrame, symbol: str | None = None, apply_macro_over
         "historical_prob": hist_prob,
         "n_factors": n_factors,
         "macro_overlay": macro_overlay,
+        "family_overlay": family_overlay,
     }
 
 

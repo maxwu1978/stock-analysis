@@ -361,6 +361,12 @@ def generate(allow_partial: bool = False):
     flex-wrap: wrap;
     gap: 10px;
     margin: 0 0 18px;
+    position: sticky;
+    top: 48px;
+    z-index: 9;
+    padding: 10px 0 12px;
+    background: linear-gradient(180deg, rgba(242,237,226,0.96), rgba(242,237,226,0.82));
+    backdrop-filter: blur(4px);
   }}
   .anchor-nav a {{
     text-decoration: none;
@@ -374,6 +380,14 @@ def generate(allow_partial: bool = False):
     background: rgba(255,255,255,0.22);
   }}
   .anchor-nav a:hover {{ border-color: var(--ink); transform: translateY(-1px); }}
+  .anchor-nav a.major {{
+    background: rgba(20,18,17,0.06);
+    border-color: var(--ink);
+  }}
+  .anchor-nav a.minor {{
+    color: var(--muted);
+    border-style: dashed;
+  }}
   .market-block {{
     margin: 24px 0 0;
     padding: 24px 20px 14px;
@@ -617,9 +631,14 @@ def generate(allow_partial: bool = False):
 </section>
 
 <nav class="anchor-nav">
-  <a href="#cn-block">A-Share</a>
-  <a href="#us-block">U.S.</a>
-  <a href="#option-block">Options</a>
+  <a class="major" href="#cn-block">A-Share</a>
+  <a class="minor" href="#cn-quote">CN Quote</a>
+  <a class="minor" href="#cn-trend">CN Trend</a>
+  <a class="major" href="#us-block">U.S.</a>
+  <a class="minor" href="#us-quote">US Quote</a>
+  <a class="minor" href="#us-trend">US Trend</a>
+  <a class="major" href="#option-block">Options</a>
+  <a class="major" href="#method-block">Method</a>
 </nav>
 
 <script>
@@ -664,7 +683,7 @@ async function triggerRefresh() {{
 
 <div class="market-block cn-block" id="cn-block">
 <div class="market-label"><strong>China Block</strong><span>A-Share Core Board · Quote / Trend / Tech / Filing</span></div>
-<section class="section">
+<section class="section" id="cn-quote">
   <div class="section-head">
     <div class="section-num">№ 01</div>
     <h2>Quote <em>Board</em><span class="cn">最新行情</span></h2>
@@ -680,7 +699,7 @@ async function triggerRefresh() {{
   </div>
 </section>
 
-<section class="section">
+<section class="section" id="cn-trend">
   <div class="section-head">
     <div class="section-num">№ 02</div>
     <h2>Trend <em>Probability</em><span class="cn">趋势概率</span></h2>
@@ -697,7 +716,7 @@ async function triggerRefresh() {{
   </div>
 </section>
 
-<section class="section">
+<section class="section" id="cn-tech">
   <div class="section-head">
     <div class="section-num">№ 03</div>
     <h2>Technical <em>Indicators</em><span class="cn">技术指标</span></h2>
@@ -713,7 +732,7 @@ async function triggerRefresh() {{
   </div>
 </section>
 
-<section class="section">
+<section class="section" id="cn-fund">
   <div class="section-head">
     <div class="section-num">№ 04</div>
     <h2><em>Fundamentals</em><span class="cn">最新财报</span></h2>
@@ -730,10 +749,10 @@ async function triggerRefresh() {{
 </section>
 </div>
 
-<div class="footer">
+<div class="footer" id="method-block">
 <div>
 <strong>Methodology</strong>
-Model · 25-factor stack (17 technical + 8 fundamental) × rolling IC weights<br>
+Model · slimmed multi-factor stack × rolling IC weights × tear-sheet family priors<br>
 Backtest · 5 800 samples / 6 years · multi-regime validation<br>
 Reliability · auto-labeled from structured backtests; current A-share / US model signals are mostly weak
 </div>
@@ -906,10 +925,10 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
 <div class="market-block us-block" id="us-block">
 <div class="market-label"><strong>U.S. Block</strong><span>Macro-aware Model · Quote / Trend / Tech / Filing</span></div>
 <section class="us-divider">
-  <span class="stamp">U.S. Equities · <em>美股研判</em> · NVDA · TSLA · GOOGL · AAPL · FUTU</span>
+  <span class="stamp">U.S. Equities · <em>美股研判</em> · NVDA · TSM · MU · WDC · GOOGL · AAPL</span>
 </section>
 
-<section class="section">
+<section class="section" id="us-quote">
   <div class="section-head">
     <div class="section-num">№ 05</div>
     <h2>Quote <em>Board</em><span class="cn">美股行情</span></h2>
@@ -923,7 +942,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
 </section>
 
-<section class="section">
+<section class="section" id="us-trend">
   <div class="section-head">
     <div class="section-num">№ 06</div>
     <h2>Trend <em>Probability</em><span class="cn">趋势概率</span></h2>
@@ -938,7 +957,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
 </section>
 
-<section class="section">
+<section class="section" id="us-tech">
   <div class="section-head">
     <div class="section-num">№ 07</div>
     <h2>Technical <em>Indicators</em><span class="cn">技术指标</span></h2>
@@ -952,7 +971,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
 </section>
 
-<section class="section">
+<section class="section" id="us-fund">
   <div class="section-head">
     <div class="section-num">№ 08</div>
     <h2><em>Fundamentals</em><span class="cn">最新财报</span></h2>
