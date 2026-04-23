@@ -15,6 +15,8 @@ from probability_us import score_trend_us
 from fundamental import fetch_all_financials
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 from reliability import get_reliability_label, load_reliability_labels
+from position_sizing import recommend_model_action
+from production_review import load_trade_log, summarize_execution_quality, summarize_plan_coverage
 
 
 def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
@@ -156,6 +158,52 @@ def chg_td(val):
     return f'<td class="{cls}">{sign}{val:.2f}%</td>'
 
 
+def render_review_section() -> str:
+    trades = load_trade_log()
+    execution_quality = summarize_execution_quality(trades)
+    plan_coverage = summarize_plan_coverage(trades)
+
+    metric_rows = ""
+    if execution_quality.empty:
+        metric_rows = '<tr><td colspan="2">暂无执行样本</td></tr>'
+    else:
+        for _, r in execution_quality.iterrows():
+            metric_rows += f"<tr><td>{r['metric']}</td><td>{r['value']}</td></tr>\n"
+
+    coverage_rows = ""
+    if plan_coverage.empty:
+        coverage_rows = '<tr><td colspan="3">暂无带计划字段的执行记录</td></tr>'
+    else:
+        for _, r in plan_coverage.head(8).iterrows():
+            coverage_rows += (
+                f"<tr><td>{r.get('plan_tier','-') or '-'}</td>"
+                f"<td>{r.get('plan_exit','-') or '-'}</td>"
+                f"<td>{r.get('actions',0)}</td></tr>\n"
+            )
+
+    return f"""
+<section class="section" id="review-block">
+  <div class="section-head">
+    <div class="section-num">№ 10</div>
+    <h2>Execution <em>Review</em><span class="cn">执行评分卡</span></h2>
+    <div class="section-meta">Trade Log<br>Plan Coverage</div>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>执行质量</th><th>数值</th></tr></thead>
+      <tbody>{metric_rows}</tbody>
+    </table>
+  </div>
+  <div class="table-wrap" style="margin-top:18px;">
+    <table>
+      <thead><tr><th>仓位层级</th><th>退出模板</th><th>动作数</th></tr></thead>
+      <tbody>{coverage_rows}</tbody>
+    </table>
+  </div>
+</section>
+"""
+
+
 def generate(allow_partial: bool = False):
     footer_marker = '<div class="footer" id="method-block">'
     reliability_labels = load_reliability_labels()
@@ -266,6 +314,21 @@ def generate(allow_partial: bool = False):
 
         reliability = get_reliability_label(reliability_labels, "a_share", code)
         rel_cls = "strong" if reliability == "强" else ("weak" if reliability == "弱" else "")
+        decision = recommend_model_action(
+            direction={
+                "5日": hp.get("5日"),
+                "10日": hp.get("10日"),
+                "30日": hp.get("30日"),
+                "180日": hp.get("180日"),
+            } and ("看涨" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) >= 60) else
+                     "偏涨" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) >= 55) else
+                     "看跌" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) <= 35) else
+                     "偏跌" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) <= 45) else "震荡"),
+            entry_price=float(df["close"].iloc[-1]),
+            score=prob.get("score"),
+            reliability=reliability,
+            macro_penalty=0,
+        )
 
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(ft_score):
@@ -278,6 +341,8 @@ def generate(allow_partial: bool = False):
             f'<div class="risk-stack">'
             f'<span class="risk-chip{ft_cls}"><strong>{ft_text}</strong></span>'
             f'<span class="risk-meta">Fat Tail</span>'
+            f'<span class="risk-chip"><strong>{decision.action}</strong></span>'
+            f'<span class="risk-meta">{decision.plan.position_tier} · {decision.plan.qty}股 · ${decision.plan.risk_budget:,.0f}</span>'
             f'</div>'
             f'</td>'
         )
@@ -886,6 +951,7 @@ def generate(allow_partial: bool = False):
   <a class="minor" href="#us-quote">US Quote</a>
   <a class="minor" href="#us-trend">US Trend</a>
   <a class="major" href="#option-block">Options</a>
+  <a class="major" href="#review-block">Review</a>
   <a class="major" href="#method-block">Method</a>
 </nav>
 
@@ -1098,6 +1164,19 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         us_rel_cls = "strong" if us_rel == "强" else ("weak" if us_rel == "弱" else "")
         macro = prob.get("macro_overlay", {})
         penalty = int(macro.get("penalty", 0) or 0)
+        direction = (
+            "看涨" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) >= 60) else
+            "偏涨" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) >= 55) else
+            "看跌" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) <= 35) else
+            "偏跌" if (hp.get("30日") and int(hp["30日"]["上涨概率"].replace("%", "")) <= 45) else "震荡"
+        )
+        decision = recommend_model_action(
+            direction=direction,
+            entry_price=float(df["close"].iloc[-1]),
+            score=prob.get("score"),
+            reliability=us_rel,
+            macro_penalty=penalty,
+        )
         reasons = macro.get("reasons", [])
         if penalty > 0:
             us_macro_notes.extend(macro.get("warnings", []))
@@ -1118,6 +1197,8 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             f'{macro_line}'
             f'<span class="risk-chip{us_ft_cls}"><strong>{us_ft_text}</strong></span>'
             f'<span class="risk-meta">Fat Tail</span>'
+            f'<span class="risk-chip"><strong>{decision.action}</strong></span>'
+            f'<span class="risk-meta">{decision.plan.position_tier} · {decision.plan.qty}股 · ${decision.plan.risk_budget:,.0f}</span>'
             f'</div>'
             f'</td>'
         )
@@ -1301,6 +1382,9 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             footer_marker,
             f'<div class="position-panel" id="option-block">{opt_html}</div>\n{footer_marker}'
         )
+
+    review_html = render_review_section()
+    html = html.replace(footer_marker, review_html + "\n" + footer_marker)
 
     # 真实盘 section **不嵌入公开主页** (隐私保护)
     # 如果存在 real_position_section.html, 说明本地生成了, 但 docs/ 是公开的,

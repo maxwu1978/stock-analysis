@@ -32,6 +32,20 @@ class PositionPlan:
         return asdict(self)
 
 
+@dataclass
+class SignalDecision:
+    action: str
+    rationale: str
+    plan: PositionPlan
+
+    def to_dict(self) -> dict:
+        return {
+            "action": self.action,
+            "rationale": self.rationale,
+            "plan": self.plan.to_dict(),
+        }
+
+
 def _reliability_mult(label: str | None) -> float:
     return {
         "强": 1.00,
@@ -126,6 +140,68 @@ def recommend_equity_position(
         notional_value=round(notional, 2),
         sizing_note=f"基于约 {hard_stop_pct:.0%} 硬止损估算，预算约占净值 {risk_ratio:.2%}。",
     )
+
+
+def recommend_model_action(
+    *,
+    direction: str,
+    entry_price: float,
+    score: int | float | None = None,
+    reliability: str | None = None,
+    macro_penalty: int | float | None = None,
+    account_equity: float = 1_000_000,
+    hard_stop_pct: float = 0.08,
+) -> SignalDecision:
+    """把主模型方向/可靠度转换成可执行的动作层。
+
+    设计原则：
+    - `弱` 默认不主动开仓
+    - 非偏多方向默认不主动做多
+    - 仓位计划只服务于“允许做多的股票候选”
+    """
+    actionable_long = direction in {"看涨", "偏涨"}
+    if not actionable_long:
+        plan = recommend_equity_position(
+            entry_price=entry_price,
+            account_equity=account_equity,
+            score=score,
+            reliability="弱",
+            macro_penalty=macro_penalty,
+            hard_stop_pct=hard_stop_pct,
+        )
+        return SignalDecision(
+            action="OBSERVE",
+            rationale="方向未进入偏多区间，默认只观察不主动做多。",
+            plan=plan,
+        )
+
+    plan = recommend_equity_position(
+        entry_price=entry_price,
+        account_equity=account_equity,
+        score=score,
+        reliability=reliability,
+        macro_penalty=macro_penalty,
+        hard_stop_pct=hard_stop_pct,
+    )
+    if not plan.allowed:
+        return SignalDecision(
+            action="WAIT",
+            rationale="可靠度或宏观折扣后预算不足，保留观察，不建议主动开仓。",
+            plan=plan,
+        )
+
+    action = {
+        "MICRO": "WATCHLIST",
+        "PROBE": "PROBE_LONG",
+        "STANDARD": "BUILD_LONG",
+    }.get(plan.position_tier, "WAIT")
+    rationale = {
+        "WATCHLIST": "信号偏多但预算较小，适合列入观察或试探仓。",
+        "PROBE_LONG": "信号允许试探性建仓，建议先小仓验证。",
+        "BUILD_LONG": "信号与风险折扣均通过，可按标准仓位执行。",
+        "WAIT": "预算不足，等待更好的信号或更低风险窗口。",
+    }[action]
+    return SignalDecision(action=action, rationale=rationale, plan=plan)
 
 
 def recommend_long_option_position(

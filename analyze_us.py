@@ -8,6 +8,7 @@ from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_u
 from indicators import compute_all, summarize
 from probability_us import score_trend_us as score_trend
 from reliability import get_reliability_label, load_reliability_labels
+from position_sizing import recommend_model_action
 
 def direction_from_prob(hp):
     p30 = hp.get("30日")
@@ -104,6 +105,13 @@ def main():
         reliability = get_reliability_label(reliability_labels, "us", ticker)
         macro = prob.get("macro_overlay", {})
         penalty = int(macro.get("penalty", 0) or 0)
+        decision = recommend_model_action(
+            direction=direction,
+            entry_price=float(df["close"].iloc[-1]),
+            score=prob.get("score"),
+            reliability=reliability,
+            macro_penalty=penalty,
+        )
         reasons = macro.get("reasons", [])
         if penalty > 0:
             reason_text = "/".join(dict.fromkeys(reasons)) if reasons else "宏观收缩"
@@ -119,6 +127,8 @@ def main():
 
         prob_rows.append([
             f"**{name}**", f"**{direction}**", f"**{reliability}**",
+            decision.action,
+            f"{decision.plan.position_tier} / {decision.plan.qty}股 / ${decision.plan.risk_budget:,.0f}",
             macro_text,
             ft_label if ft_label else "-",
             fmt_p(hp.get("5日")), fmt_p(hp.get("10日")),
@@ -149,7 +159,7 @@ def main():
     if macro_notes:
         summary = " | ".join(dict.fromkeys(macro_notes))
         print(f"当前宏观覆盖: {summary}\n")
-    print(md_table(["股票", "方向", "可靠度", "宏观覆盖", "肥尾", "5日", "10日", "30日", "180日"], prob_rows))
+    print(md_table(["股票", "方向", "可靠度", "动作", "仓位计划", "宏观覆盖", "肥尾", "5日", "10日", "30日", "180日"], prob_rows))
 
     print(f"\n### 技术指标\n")
     print(md_table(["股票", "RSI6", "MACD柱", "MA5", "MA20", "MA60", "ADX", "股性"], tech_rows))

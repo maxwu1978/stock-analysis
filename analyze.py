@@ -10,6 +10,7 @@ from probability import score_trend
 from fundamental import fetch_all_financials
 from reliability import get_reliability_label, load_reliability_labels
 from macro_events import get_cn_risk_warnings
+from position_sizing import recommend_model_action
 
 def direction_from_prob(hp):
     """用30日上涨概率决定方向"""
@@ -96,6 +97,13 @@ def main():
 
         hp = prob.get("historical_prob", {})
         direction = direction_from_prob(hp)
+        decision = recommend_model_action(
+            direction=direction,
+            entry_price=float(df["close"].iloc[-1]),
+            score=prob.get("score"),
+            reliability=get_reliability_label(reliability_labels, "a_share", code),
+            macro_penalty=0,
+        )
 
         def fmt_p(d):
             if not d: return "-"
@@ -118,6 +126,8 @@ def main():
             f"**{name}**",
             f"**{direction}**",
             f"**{reliability}**",
+            decision.action,
+            f"{decision.plan.position_tier} / {decision.plan.qty}股 / ${decision.plan.risk_budget:,.0f}",
             ft_label if ft_label else "-",
             fmt_p(hp.get("5日")),
             fmt_p(hp.get("10日")),
@@ -159,7 +169,7 @@ def main():
     print(f"\n### 趋势概率\n")
     print(f"方向由30日上涨概率决定: >55%偏涨, <45%偏跌\n")
     print(md_table(
-        ["股票", "方向", "可靠度", "肥尾", "5日", "10日", "30日", "180日"],
+        ["股票", "方向", "可靠度", "动作", "仓位计划", "肥尾", "5日", "10日", "30日", "180日"],
         prob_rows))
 
     print(f"\n### 技术指标\n")
