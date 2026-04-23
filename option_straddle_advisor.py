@@ -27,6 +27,7 @@ from fractal_survey import mfdfa_spectrum
 from iv_rank import get_iv_rank_best_effort, describe_rank, log_iv
 from position_sizing import recommend_straddle_position
 from exit_rules import build_straddle_exit, format_exit_plan
+from trade_plan import build_trade_plan_meta
 
 
 WATCHLISTS = {
@@ -240,13 +241,13 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
                 print(f"    说明: {pos.sizing_note}")
                 print(f"")
                 print(f"  下单命令 (两腿各执行一次, 各 1 张):")
-                signal_id = f"{code.replace('US.','')}_{sc['signal']}_{datetime.now().strftime('%Y%m%d')}"
-                plan_flags = (
-                    f"--signal-id {signal_id} "
-                    f"--plan-tier {pos.position_tier} "
-                    f"--plan-risk {int(pos.risk_budget)} "
-                    f"--plan-exit {_plan_exit_token(exit_plan)}"
-                )
+                plan_flags = build_trade_plan_meta(
+                    symbol=code,
+                    signal=sc["signal"],
+                    plan_tier=pos.position_tier,
+                    plan_risk=pos.risk_budget,
+                    plan_exit=_plan_exit_token(exit_plan),
+                ).to_flags()
                 print(f"    ./venv/bin/python trade_futu_sim.py buy {sc['call_code']} 1 --confirm {plan_flags}")
                 print(f"    ./venv/bin/python trade_futu_sim.py buy {sc['put_code']} 1 --confirm {plan_flags}")
             else:

@@ -21,10 +21,119 @@ from pathlib import Path
 import pandas as pd
 
 from fetch_futu import get_positions, realtime_quotes
+from exit_rules import build_long_option_exit, build_straddle_exit, format_exit_plan
 
 
 LOG_PATH = Path(__file__).parent / "option_status.log"
 LOG_TEXT_PATH = Path(__file__).parent / "option_status_latest.txt"
+
+
+def _safe_days(value) -> int:
+    try:
+        return max(0, int(float(value or 0)))
+    except Exception:
+        return 0
+
+
+def _format_delta(current: float, target: float, direction: str) -> str:
+    """格式化距离某个触发价还差多少."""
+    if current <= 0 or target <= 0:
+        return "-"
+    if direction == "up":
+        diff = target - current
+        pct = diff / current * 100
+        prefix = "+" if diff >= 0 else ""
+        return f"{prefix}${diff:.2f} ({prefix}{pct:.1f}%)"
+    diff = current - target
+    pct = diff / current * 100
+    prefix = "+" if diff >= 0 else ""
+    return f"{prefix}${diff:.2f} ({prefix}{pct:.1f}%)"
+
+
+def _long_exit_confidence(_: dict) -> str:
+    return "MEDIUM"
+
+
+def _straddle_exit_confidence(_: dict) -> str:
+    return "LOW"
+
+
+def attach_long_exit_template(o: dict) -> dict:
+    """为独腿期权附上退出模板和当前触发状态."""
+    days = _safe_days(o.get("days_to_expiry", 0))
+    plan = build_long_option_exit(
+        premium=float(o.get("cost_price") or 0),
+        days_to_expiry=days,
+        confidence=_long_exit_confidence(o),
+    )
+    current = float(o.get("current_price") or 0)
+    if current >= plan.take_profit_full:
+        trigger = "TP2"
+        state = f"已触发止盈二 @ ${plan.take_profit_full:.2f}"
+    elif current >= plan.take_profit_partial:
+        trigger = "TP1"
+        state = f"已触发止盈一 @ ${plan.take_profit_partial:.2f}"
+    elif current <= plan.hard_stop:
+        trigger = "HARD_STOP"
+        state = f"已触发硬止损 @ ${plan.hard_stop:.2f}"
+    elif current <= plan.soft_stop:
+        trigger = "SOFT_STOP"
+        state = f"已触发软止损 @ ${plan.soft_stop:.2f}"
+    elif days <= plan.time_stop_days:
+        trigger = "TIME_STOP"
+        state = f"进入时间止损窗 ({days}天 ≤ {plan.time_stop_days}天)"
+    else:
+        trigger = ""
+        state = (
+            f"距止盈一 {_format_delta(current, plan.take_profit_partial, 'up')} · "
+            f"距软止损 {_format_delta(current, plan.soft_stop, 'down')} · "
+            f"时间止损剩 {max(days - plan.time_stop_days, 0)} 天"
+        )
+    o["exit_plan"] = plan.to_dict()
+    o["exit_template"] = format_exit_plan(plan)
+    o["exit_trigger"] = trigger
+    o["exit_state"] = state
+    o["exit_triggered"] = bool(trigger)
+    return o
+
+
+def attach_straddle_exit_template(s: dict) -> dict:
+    """为跨式附上退出模板和当前触发状态."""
+    days = _safe_days(s.get("days_to_expiry", 0))
+    plan = build_straddle_exit(
+        total_premium=float(s.get("total_cost_per_contract") or 0),
+        days_to_expiry=days,
+        confidence=_straddle_exit_confidence(s),
+    )
+    current = float(s.get("current_value_per_contract") or 0)
+    if current >= plan.take_profit_full:
+        trigger = "TP2"
+        state = f"已触发止盈二 @ ${plan.take_profit_full:.2f}"
+    elif current >= plan.take_profit_partial:
+        trigger = "TP1"
+        state = f"已触发止盈一 @ ${plan.take_profit_partial:.2f}"
+    elif current <= plan.hard_stop:
+        trigger = "HARD_STOP"
+        state = f"已触发硬止损 @ ${plan.hard_stop:.2f}"
+    elif current <= plan.soft_stop:
+        trigger = "SOFT_STOP"
+        state = f"已触发软止损 @ ${plan.soft_stop:.2f}"
+    elif days <= plan.time_stop_days:
+        trigger = "TIME_STOP"
+        state = f"进入时间止损窗 ({days}天 ≤ {plan.time_stop_days}天)"
+    else:
+        trigger = ""
+        state = (
+            f"距止盈一 {_format_delta(current, plan.take_profit_partial, 'up')} · "
+            f"距软止损 {_format_delta(current, plan.soft_stop, 'down')} · "
+            f"时间止损剩 {max(days - plan.time_stop_days, 0)} 天"
+        )
+    s["exit_plan"] = plan.to_dict()
+    s["exit_template"] = format_exit_plan(plan)
+    s["exit_trigger"] = trigger
+    s["exit_state"] = state
+    s["exit_triggered"] = bool(trigger)
+    return s
 
 
 def parse_option_code(code: str) -> dict | None:
@@ -84,6 +193,15 @@ def analyze_positions(trd_env: str = "SIMULATE") -> list[dict]:
             for o in options:
                 if o["code"] in snap.index:
                     s = snap.loc[o["code"]]
+                    # 持仓里的 nominal_price 可能滞后于实时 snapshot。
+                    # 页面展示和组合估值应优先使用最新成交价，其次退回买卖价中位。
+                    last_price = s.get("last_price")
+                    bid_price = s.get("bid_price")
+                    ask_price = s.get("ask_price")
+                    if pd.notna(last_price) and float(last_price) > 0:
+                        o["current_price"] = float(last_price)
+                    elif pd.notna(bid_price) and pd.notna(ask_price) and float(bid_price) > 0 and float(ask_price) > 0:
+                        o["current_price"] = (float(bid_price) + float(ask_price)) / 2
                     o["iv"] = s.get("option_implied_volatility", 0)
                     o["delta"] = s.get("option_delta", 0)
                     o["gamma"] = s.get("option_gamma", 0)
@@ -221,6 +339,7 @@ def detect_straddles(options: list[dict]) -> list[dict]:
             }
             # 附上平仓建议
             straddle.update(classify_straddle_action(straddle))
+            attach_straddle_exit_template(straddle)
             straddles.append(straddle)
     return straddles
 
@@ -272,6 +391,12 @@ def format_report(options: list[dict], straddles: list[dict]) -> tuple[str, str]
                 f"      PnL: {pl_sign}${s['pl_per_straddle']*s['qty']:.2f} ({pl_sign}{s['pl_pct']:+.2f}%)  "
                 f"Theta日损 ${s['theta_daily']*s['qty']:.2f}  IV均值 {s['iv_avg']:.1f}%"
             )
+            lines.append(
+                f"      退出模板: {s.get('exit_template', '-')}"
+            )
+            lines.append(
+                f"      模板状态: {s.get('exit_state', '-')}"
+            )
 
     if solo:
         lines.append("\n  [独腿期权]")
@@ -287,6 +412,12 @@ def format_report(options: list[dict], straddles: list[dict]) -> tuple[str, str]
                 f"      Δ={o.get('delta', 0):+.3f} θ={o.get('theta', 0):+.3f} "
                 f"ν={o.get('vega', 0):+.3f} IV={o.get('iv', 0):.1f}%"
             )
+            lines.append(
+                f"      退出模板: {o.get('exit_template', '-')}"
+            )
+            lines.append(
+                f"      模板状态: {o.get('exit_state', '-')}"
+            )
 
     lines.append(f"\n{'─' * 88}")
 
@@ -297,11 +428,13 @@ def format_report(options: list[dict], straddles: list[dict]) -> tuple[str, str]
             action = s.get("action", "HOLD")
             reason = s.get("reason", "")
             marker = "⚠️" if s.get("level") == "ACT" else ("⚡" if s.get("level") == "WARN" else " ")
-            lines.append(f"    {marker} {s['underlying']} Straddle: {action} — {reason}")
+            exit_note = f"；退出模板 {s.get('exit_state', '-')}"
+            lines.append(f"    {marker} {s['underlying']} Straddle: {action} — {reason}{exit_note}")
         for o in solo:
             act = classify_solo_option_action(o)
             marker = "⚠️" if act.get("level") == "ACT" else ("⚡" if act.get("level") == "WARN" else " ")
-            lines.append(f"    {marker} {o['code']}: {act['action']} — {act['reason']}")
+            exit_note = f"；退出模板 {o.get('exit_state', '-')}"
+            lines.append(f"    {marker} {o['code']}: {act['action']} — {act['reason']}{exit_note}")
 
     # 汇总 (macOS 通知用) — 高优先级动作前置
     summary = []
@@ -500,6 +633,9 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         elif days <= 14:
             urgency_tag = '<span class="tag tag-neutral">注意</span>'
         action_tag = _action_tag(s.get("level", "OK"), s.get("action", "HOLD"))
+        exit_badge = ""
+        if s.get("exit_triggered"):
+            exit_badge = '<span class="tag tag-up">退出模板触发</span>'
         # 平仓命令按钮 (跨式两腿)
         close_btn = _close_cmd_button(
             [(s['call_code'], int(s['qty'])), (s['put_code'], int(s['qty']))],
@@ -546,7 +682,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if s['pl_per_straddle']<0 else '+'}${s['pl_per_straddle']*s['qty']:.2f}<br><small>({s['pl_pct']:+.2f}%)</small><br>{legs_pnl_html}</td>
           <td>${s['theta_daily']*s['qty']:.2f}</td>
           <td>{s['iv_avg']:.1f}%</td>
-          <td>{action_tag}<br><small style="color:var(--muted);">{s.get('reason', '')}</small><br>{close_btn}{tp_btn}{sl_btn}</td>
+          <td>{action_tag} {exit_badge}<br><small style="color:var(--muted);">{s.get('reason', '')}</small><br><small style="color:var(--ink);">{s.get('exit_template', '')}</small><br><small style="color:var(--muted);">模板状态: {s.get('exit_state', '')}</small><br>{close_btn}{tp_btn}{sl_btn}</td>
         </tr>""")
 
     straddle_codes = {s['call_code'] for s in straddles} | {s['put_code'] for s in straddles}
@@ -561,6 +697,7 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         urgency_tag = '<span class="tag tag-up">到期近</span>' if days <= 7 else ""
         solo_act = classify_solo_option_action(o)
         solo_tag_html = _action_tag(solo_act["level"], solo_act["action"])
+        exit_badge = '<span class="tag tag-up">退出模板触发</span>' if o.get("exit_triggered") else ""
         solo_close_btn = _close_cmd_button([(o['code'], int(o['qty']))], "📋 立即平仓")
         solo_tp = o['cost_price'] * 1.30
         solo_sl = o['cost_price'] * 0.50
@@ -578,18 +715,24 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
           <td class="{pl_cls}">{'' if pl_val<0 else '+'}${pl_val:.2f}<br><small>({pl_ratio:+.2f}%)</small></td>
           <td>${(o.get('theta', 0))*100:.2f}</td>
           <td>{o.get('iv', 0):.1f}%</td>
-          <td>{solo_tag_html}<br><small style="color:var(--muted);">{solo_act.get('reason', '')}</small><br>{solo_close_btn}{solo_tp_btn}{solo_sl_btn}</td>
+          <td>{solo_tag_html} {exit_badge}<br><small style="color:var(--muted);">{solo_act.get('reason', '')}</small><br><small style="color:var(--ink);">{o.get('exit_template', '')}</small><br><small style="color:var(--muted);">模板状态: {o.get('exit_state', '')}</small><br>{solo_close_btn}{solo_tp_btn}{solo_sl_btn}</td>
         </tr>""")
 
     has_content = bool(straddle_rows or solo_rows)
 
     # 识别紧急 (ACT 级) 期权, 用于页首横幅
     urgent_items = [s for s in straddles if s.get("level") == "ACT"]
+    urgent_items.extend(s for s in straddles if s.get("exit_triggered") and s not in urgent_items)
     for o in options:
         if o["code"] in straddle_codes:
             continue
-        if classify_solo_option_action(o).get("level") == "ACT":
-            urgent_items.append({"underlying": o["underlying"], "action": classify_solo_option_action(o).get("action")})
+        solo_act = classify_solo_option_action(o)
+        if solo_act.get("level") == "ACT" or o.get("exit_triggered"):
+            urgent_items.append({
+                "underlying": o["underlying"],
+                "action": solo_act.get("action"),
+                "exit_trigger": o.get("exit_trigger"),
+            })
 
     # 输出 HTML fragment (不含 <html>/<body>, 使用主页已有样式类)
     parts = []
@@ -689,6 +832,9 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
 
         # 止盈挂单潜在盈利 (如全部成交)
         pending_profit, pending_note = _compute_pending_profit(options)
+        exit_trigger_count = sum(1 for s in straddles if s.get("exit_triggered")) + sum(
+            1 for o in options if o["code"] not in straddle_codes and o.get("exit_triggered")
+        )
 
         parts.append(f"""
   <div style="margin-left:128px; margin-bottom:20px; padding:14px 18px;
@@ -724,10 +870,15 @@ def save_html_fragment(options: list[dict], straddles: list[dict], path: str | P
         <div style="font-size:14px; font-weight:600; color:var(--up);">{pending_profit}</div>
         <div style="color:var(--muted); font-size:10px;">{pending_note}</div>
       </div>
+      <div>
+        <div style="color:var(--muted); font-size:10px;">退出模板触发</div>
+        <div style="font-size:14px; font-weight:600;">{exit_trigger_count}</div>
+        <div style="color:var(--muted); font-size:10px;">已触发模板/时间窗</div>
+      </div>
     </div>
   </div>""")
 
-    parts.append('  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 点"📋 复制平仓命令"复制到终端执行</p>')
+    parts.append('  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 退出模板显示已触发或距离触发状态 · 点"📋 复制平仓命令"复制到终端执行</p>')
     if not has_content:
         parts.append('  <div style="margin-left:128px; color:var(--muted); padding:20px;">当前无期权持仓</div>')
     else:
@@ -762,6 +913,8 @@ def run(quiet: bool = False, trd_env: str = "SIMULATE",
             return
 
     options = analyze_positions(trd_env=trd_env)
+    for o in options:
+        attach_long_exit_template(o)
     straddles = detect_straddles(options)
     report, summary = format_report(options, straddles)
 

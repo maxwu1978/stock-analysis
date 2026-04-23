@@ -204,11 +204,42 @@ def render_review_section() -> str:
 """
 
 
+def summarize_execution_strip(signals: list[dict], trades: pd.DataFrame) -> tuple[str, str]:
+    executable_actions = {"BUILD_LONG", "PROBE_LONG"}
+    watch_actions = {"WATCHLIST", "OBSERVE", "WAIT"}
+
+    exec_count = sum(1 for s in signals if s.get("action") in executable_actions)
+    standard_count = sum(1 for s in signals if s.get("tier") == "STANDARD")
+    probe_count = sum(1 for s in signals if s.get("tier") == "PROBE")
+    micro_count = sum(1 for s in signals if s.get("tier") == "MICRO")
+    watch_count = sum(1 for s in signals if s.get("action") in watch_actions)
+
+    win_summary = "胜率 N/A"
+    if not trades.empty and "timestamp" in trades.columns:
+        pnl_candidates = ["realized_pnl", "pnl", "profit", "net_pnl"]
+        pnl_col = next((c for c in pnl_candidates if c in trades.columns), None)
+        if pnl_col:
+            dated = trades.dropna(subset=["timestamp"]).copy()
+            now_ts = pd.Timestamp.now()
+            for label, days in [("7D", 7), ("30D", 30)]:
+                recent = dated[dated["timestamp"] >= now_ts - pd.Timedelta(days=days)]
+                realized = recent[recent[pnl_col].notna()]
+                if len(realized) >= 3:
+                    win_rate = (realized[pnl_col].astype(float) > 0).mean() * 100
+                    win_summary = f"{label} 胜率 {win_rate:.0f}%"
+                    break
+
+    value = f"{exec_count} 可执行 / {watch_count} 观察"
+    sub = f"STD {standard_count} · PROBE {probe_count} · MICRO {micro_count} · {win_summary}"
+    return value, sub
+
+
 def generate(allow_partial: bool = False):
     footer_marker = '<div class="footer" id="method-block">'
     reliability_labels = load_reliability_labels()
     ensure_complete_reliability_labels(reliability_labels, allow_partial)
     old_page_html = load_old_page()
+    trades = load_trade_log()
 
     a_labels = reliability_labels.get("a_share", {})
     us_labels = reliability_labels.get("us", {})
@@ -235,6 +266,10 @@ def generate(allow_partial: bool = False):
                 option_summary = m.group(1)
         except Exception:
             pass
+
+    execution_summary_value = "__EXECUTION_SUMMARY_VALUE__"
+    execution_summary_sub = "__EXECUTION_SUMMARY_SUB__"
+    signal_snapshots: list[dict] = []
 
     print("获取实时行情...")
     try:
@@ -329,6 +364,13 @@ def generate(allow_partial: bool = False):
             reliability=reliability,
             macro_penalty=0,
         )
+        signal_snapshots.append({
+            "market": "CN",
+            "symbol": code,
+            "action": decision.action,
+            "tier": decision.plan.position_tier,
+            "allowed": decision.plan.allowed,
+        })
 
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(ft_score):
@@ -474,7 +516,7 @@ def generate(allow_partial: bool = False):
   }}
   .summary-strip {{
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 14px;
     margin: 18px 0 26px;
   }}
@@ -941,6 +983,11 @@ def generate(allow_partial: bool = False):
     <div class="value">{option_summary}</div>
     <div class="sub">持仓盈亏快照</div>
   </article>
+  <article class="summary-card">
+    <div class="label">Execution Pulse</div>
+    <div class="value">{execution_summary_value}</div>
+    <div class="sub">{execution_summary_sub}</div>
+  </article>
 </section>
 
 <nav class="anchor-nav">
@@ -1177,6 +1224,13 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             reliability=us_rel,
             macro_penalty=penalty,
         )
+        signal_snapshots.append({
+            "market": "US",
+            "symbol": ticker,
+            "action": decision.action,
+            "tier": decision.plan.position_tier,
+            "allowed": decision.plan.allowed,
+        })
         reasons = macro.get("reasons", [])
         if penalty > 0:
             us_macro_notes.extend(macro.get("warnings", []))
@@ -1345,6 +1399,10 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         if old_us:
             us_section = old_us
             print("  [!] 美股区块本次为空，保留旧页面内容")
+
+    execution_summary_value, execution_summary_sub = summarize_execution_strip(signal_snapshots, trades)
+    html = html.replace("__EXECUTION_SUMMARY_VALUE__", execution_summary_value)
+    html = html.replace("__EXECUTION_SUMMARY_SUB__", execution_summary_sub)
 
     # 在A股footer前插入美股部分
     html = html.replace(footer_marker, us_section + '\n' + footer_marker)

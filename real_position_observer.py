@@ -10,6 +10,7 @@
   - 永远不调用 place_order / unlock_trade
   - 语言中性: 描述 "当前状态" 而非 "建议动作"
   - 风险提示用 "参考" / "观察" 字样, 不用 "应该/建议"
+  - 退出模板接在 option_monitor.py 的期权监控页；本文件仅明确真实盘股票观察页不适用
 """
 
 import sys
@@ -153,7 +154,7 @@ def save_html_fragment(positions: list[dict], path: str | Path) -> None:
         '    <h2><em>Real Account</em><span class="cn">真实盘观察</span></h2>',
         f'    <div class="section-meta">真实账户 REAL<br>{ts.split()[1]} · 只读</div>',
         '  </div>',
-        '  <p class="note">⚠ 仅观察描述当前分形/技术状态, 不含交易建议 · 所有交易决策由你本人在富途 App 执行</p>',
+        '  <p class="note">⚠ 仅观察描述当前分形/技术状态, 不含交易建议 · 股票观察页不适用期权退出模板；期权模板状态见 № 09 节</p>',
         '  <div class="table-wrap">',
         '  <table>',
         '  <thead><tr><th>标的</th><th>持仓</th><th>成本</th><th>现价/涨跌</th><th>市值</th><th>浮动盈亏</th><th>分形状态</th><th>技术状态</th><th>年化σ</th></tr></thead>',
@@ -196,6 +197,7 @@ def run(output_html: str | None = None) -> list[dict]:
 
     print("[3/3] 观察摘要")
     print()
+    print("  注: 退出模板已接入 №09 期权监控页；本节真实盘股票观察不应用期权模板。")
     for p in positions:
         if "error" in p:
             print(f"  {p['code']}: {p['error']}")

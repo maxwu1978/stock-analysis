@@ -22,6 +22,7 @@ from fractal_survey import mfdfa_spectrum
 from macro_events import get_risk_warnings, get_vix_level
 from position_sizing import recommend_long_option_position, recommend_straddle_position
 from exit_rules import build_long_option_exit, build_straddle_exit, format_exit_plan
+from trade_plan import build_trade_plan_meta
 
 
 WATCHLISTS = {
@@ -346,7 +347,6 @@ def format_recommendation(feat: dict, regime_info: dict, picks: pd.DataFrame) ->
             # 每单买 1 张, 约 $100-500 成本
             premium = float(r["last_price"])
             cost_per_contract = premium * 100
-            signal_id = f"{code.replace('US.','')}_{regime_info['strategy']}_{datetime.now().strftime('%Y%m%d')}"
             if regime_info["strategy"] in ("BUY_CALL", "BUY_PUT"):
                 pos = recommend_long_option_position(
                     premium=float(r["last_price"]),
@@ -372,12 +372,13 @@ def format_recommendation(feat: dict, regime_info: dict, picks: pd.DataFrame) ->
                     days_to_expiry=regime_info["days_to_expiry"],
                     confidence=conf,
                 )
-            plan_flags = (
-                f"--signal-id {signal_id} "
-                f"--plan-tier {pos.position_tier} "
-                f"--plan-risk {int(pos.risk_budget)} "
-                f"--plan-exit {_plan_exit_token(exit_plan)}"
-            )
+            plan_flags = build_trade_plan_meta(
+                symbol=code,
+                signal=regime_info["strategy"],
+                plan_tier=pos.position_tier,
+                plan_risk=pos.risk_budget,
+                plan_exit=_plan_exit_token(exit_plan),
+            ).to_flags()
             lines.append(
                 f"    ./venv/bin/python trade_futu_sim.py buy {r['code']} 1 --confirm {plan_flags}  "
                 f"# 成本约 ${cost_per_contract:.0f}/张"

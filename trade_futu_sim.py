@@ -24,11 +24,12 @@
 import sys
 import csv
 import logging
-import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
 logging.getLogger("futu").setLevel(logging.ERROR)
+
+from trade_plan import compose_note, extract_plan_metadata_from_args
 
 # ================== 硬锁定常量 ==================
 # TRD_ENV 不得修改: 全模块所有交易调用强制用模拟环境
@@ -46,38 +47,12 @@ MAX_OPTION_VALUE_USD = 5000
 # 日志文件
 LOG_PATH = Path(__file__).parent / "trade_sim_log.csv"
 
-
-def _get_opt_arg(args: list[str], flag: str, default: str = "") -> str:
-    if flag in args:
-        idx = args.index(flag)
-        if idx + 1 < len(args):
-            return args[idx + 1]
-    return default
-
-
 def _extract_plan_metadata(args: list[str]) -> dict[str, str]:
     """从命令行提取可选的交易计划元数据.
 
     兼容旧命令，不要求任何新增参数。
     """
-    return {
-        "signal_id": _get_opt_arg(args, "--signal-id"),
-        "plan_tier": _get_opt_arg(args, "--plan-tier"),
-        "plan_risk": _get_opt_arg(args, "--plan-risk"),
-        "plan_exit": _get_opt_arg(args, "--plan-exit"),
-        "plan_note": _get_opt_arg(args, "--plan-note"),
-    }
-
-
-def _compose_note(base_note: str = "", plan_meta: dict[str, str] | None = None) -> str:
-    parts = [base_note] if base_note else []
-    if plan_meta:
-        for key in ["signal_id", "plan_tier", "plan_risk", "plan_exit", "plan_note"]:
-            value = (plan_meta.get(key) or "").strip()
-            if value:
-                safe = re.sub(r"[|\\n\\r]+", "/", value)
-                parts.append(f"{key}={safe}")
-    return " | ".join(parts)
+    return extract_plan_metadata_from_args(args)
 
 
 def _trade_ctx(market: str = "US"):
@@ -233,10 +208,10 @@ def sim_market_buy(code: str, qty: float, confirmed: bool = False, plan_meta: di
         if ret == RET_OK:
             order_id = data.iloc[0]["order_id"]
             print(f"✓ 市价买入已提交: {code} × {qty}  参考价 ${last_price}  order_id={order_id}")
-            _log_action("BUY", code, qty, last_price, _compose_note(f"order_id={order_id}", plan_meta))
+            _log_action("BUY", code, qty, last_price, compose_note(f"order_id={order_id}", plan_meta))
         else:
             print(f"✗ 下单失败: {data}")
-            _log_action("BUY_FAIL", code, qty, last_price, _compose_note(str(data), plan_meta))
+            _log_action("BUY_FAIL", code, qty, last_price, compose_note(str(data), plan_meta))
     finally:
         t.close()
 
@@ -261,10 +236,10 @@ def sim_market_sell(code: str, qty: float, confirmed: bool = False, plan_meta: d
         if ret == RET_OK:
             order_id = data.iloc[0]["order_id"]
             print(f"✓ 市价卖出已提交: {code} × {qty}  参考价 ${last_price}  order_id={order_id}")
-            _log_action("SELL", code, qty, last_price, _compose_note(f"order_id={order_id}", plan_meta))
+            _log_action("SELL", code, qty, last_price, compose_note(f"order_id={order_id}", plan_meta))
         else:
             print(f"✗ 下单失败: {data}")
-            _log_action("SELL_FAIL", code, qty, last_price, _compose_note(str(data), plan_meta))
+            _log_action("SELL_FAIL", code, qty, last_price, compose_note(str(data), plan_meta))
     finally:
         t.close()
 
@@ -315,10 +290,10 @@ def sim_option_buy(code: str, qty: int, confirmed: bool = False, plan_meta: dict
             order_id = data.iloc[0]["order_id"]
             value = qty * 100 * premium
             print(f"✓ 期权买入已提交: {code} × {qty}张  权利金 ${premium}/股  合约价值 ${value:,.0f}  order_id={order_id}")
-            _log_action("OPT_BUY", code, qty, premium, _compose_note(f"order_id={order_id}", plan_meta))
+            _log_action("OPT_BUY", code, qty, premium, compose_note(f"order_id={order_id}", plan_meta))
         else:
             print(f"✗ 下单失败: {data}")
-            _log_action("OPT_BUY_FAIL", code, qty, premium, _compose_note(str(data), plan_meta))
+            _log_action("OPT_BUY_FAIL", code, qty, premium, compose_note(str(data), plan_meta))
     finally:
         t.close()
 
@@ -362,10 +337,10 @@ def sim_option_limit_sell(code: str, qty: int, price: float,
         if ret == RET_OK:
             order_id = data.iloc[0]["order_id"]
             print(f"✓ 限价卖挂单 {time_in_force}: {code} × {qty}张 @${price:.2f}  order_id={order_id}")
-            _log_action("OPT_LIMIT_SELL_GTC", code, qty, price, _compose_note(f"order_id={order_id}, tif={time_in_force}", plan_meta))
+            _log_action("OPT_LIMIT_SELL_GTC", code, qty, price, compose_note(f"order_id={order_id}, tif={time_in_force}", plan_meta))
         else:
             print(f"✗ 挂单失败: {data}")
-            _log_action("OPT_LIMIT_SELL_FAIL", code, qty, price, _compose_note(str(data), plan_meta))
+            _log_action("OPT_LIMIT_SELL_FAIL", code, qty, price, compose_note(str(data), plan_meta))
     finally:
         t.close()
 
@@ -403,10 +378,10 @@ def sim_option_stop_sell(code: str, qty: int, stop_price: float,
         if ret == RET_OK:
             order_id = data.iloc[0]["order_id"]
             print(f"✓ STOP 止损挂单: {code} × {qty}张 触发价${stop_price:.2f}  order_id={order_id}")
-            _log_action("OPT_STOP_SELL", code, qty, stop_price, _compose_note(f"order_id={order_id}", plan_meta))
+            _log_action("OPT_STOP_SELL", code, qty, stop_price, compose_note(f"order_id={order_id}", plan_meta))
         else:
             print(f"✗ STOP 挂单失败 (可能模拟盘不支持期权STOP): {data}")
-            _log_action("OPT_STOP_SELL_FAIL", code, qty, stop_price, _compose_note(str(data), plan_meta))
+            _log_action("OPT_STOP_SELL_FAIL", code, qty, stop_price, compose_note(str(data), plan_meta))
     finally:
         t.close()
 
@@ -437,10 +412,10 @@ def sim_option_sell(code: str, qty: int, confirmed: bool = False, plan_meta: dic
             order_id = data.iloc[0]["order_id"]
             value = qty * 100 * premium
             print(f"✓ 期权卖出已提交: {code} × {qty}张  权利金 ${premium}/股  合约价值 ${value:,.0f}  order_id={order_id}")
-            _log_action("OPT_SELL", code, qty, premium, _compose_note(f"order_id={order_id}", plan_meta))
+            _log_action("OPT_SELL", code, qty, premium, compose_note(f"order_id={order_id}", plan_meta))
         else:
             print(f"✗ 下单失败: {data}")
-            _log_action("OPT_SELL_FAIL", code, qty, premium, _compose_note(str(data), plan_meta))
+            _log_action("OPT_SELL_FAIL", code, qty, premium, compose_note(str(data), plan_meta))
     finally:
         t.close()
 
@@ -458,7 +433,7 @@ def sim_cancel(order_id: str, market: str = "US", confirmed: bool = False, plan_
             trd_env=TRD_ENV,
         )
         print(f"{'✓' if ret == RET_OK else '✗'} 撤单: {order_id}  {data if ret != RET_OK else ''}")
-        _log_action("CANCEL", "-", 0, 0, _compose_note(f"order_id={order_id}, ret={ret}", plan_meta))
+        _log_action("CANCEL", "-", 0, 0, compose_note(f"order_id={order_id}, ret={ret}", plan_meta))
     finally:
         t.close()
 

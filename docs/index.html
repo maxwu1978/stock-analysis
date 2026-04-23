@@ -76,7 +76,7 @@
   }
   .summary-strip {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 14px;
     margin: 18px 0 26px;
   }
@@ -507,7 +507,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">IC-WEIGHTED MULTI-FACTOR · CN-A / US · v3</div>
-  <div class="muted">2026-04-23 16:56:19</div>
+  <div class="muted">2026-04-23 17:09:37</div>
 </div>
 
 <div class="container">
@@ -516,7 +516,7 @@
   <div class="hero-kicker">Issue № 01 · Research Bulletin · 上海 / 深圳</div>
   <h1>主力<em>分析</em><span class="eyebrow">A-Share Technical &amp; Factor Report</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-23 16:56:19</span>
+    <span class="pill">Last Sync · 2026-04-23 17:09:37</span>
     <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
     <span class="refresh-msg" id="refreshMsg"></span>
   </div>
@@ -542,6 +542,11 @@
     <div class="label">Option Panel</div>
     <div class="value">$104.00</div>
     <div class="sub">持仓盈亏快照</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Execution Pulse</div>
+    <div class="value">0 可执行 / 14 观察</div>
+    <div class="sub">STD 0 · PROBE 0 · MICRO 2 · 胜率 N/A</div>
   </article>
 </section>
 
@@ -632,11 +637,11 @@ async function triggerRefresh() {
   <table class="signal-table">
   <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
   <tbody>
-  <tr><td data-label="股票">宁德时代</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip strong"><strong>⚡⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">47%</span><span class="prob-return">+0.46%</span><small>n=228</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">52%</span><span class="prob-return">+1.80%</span><small>n=227</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">53%</span><span class="prob-return">+4.74%</span><small>n=218</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">97%</span><span class="prob-return">+38.90%</span><small>n=163</small></div></div></td></tr>
-<tr><td data-label="股票">贵州茅台</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip strong"><strong>⚡⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">48%</span><span class="prob-return">+0.00%</span><small>n=134</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">58%</span><span class="prob-return">+0.35%</span><small>n=135</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">54%</span><span class="prob-return">-0.10%</span><small>n=134</small></div><div class="prob-item weak"><span class="period">180日</span><span class="prob-main">35%</span><span class="prob-return">-4.29%</span><small>n=110</small></div></div></td></tr>
-<tr><td data-label="股票">中国铝业</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">56%</span><span class="prob-return">+1.01%</span><small>n=243</small></div><div class="prob-item strong"><span class="period">10日</span><span class="prob-main">68%</span><span class="prob-return">+2.80%</span><small>n=241</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">71%</span><span class="prob-return">+6.49%</span><small>n=231</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">79%</span><span class="prob-return">+34.94%</span><small>n=153</small></div></div></td></tr>
-<tr><td data-label="股票">阳光电源</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip"><strong>⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">54%</span><span class="prob-return">+2.00%</span><small>n=252</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">50%</span><span class="prob-return">+3.35%</span><small>n=251</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">54%</span><span class="prob-return">+6.17%</span><small>n=235</small></div><div class="prob-item"><span class="period">180日</span><span class="prob-main">49%</span><span class="prob-return">+44.01%</span><small>n=143</small></div></div></td></tr>
-<tr><td data-label="股票">闻泰科技</td><td data-label="方向"><span class="tag tag-down">偏跌</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item weak"><span class="period">5日</span><span class="prob-main">38%</span><span class="prob-return">-0.91%</span><small>n=162</small></div><div class="prob-item weak"><span class="period">10日</span><span class="prob-main">35%</span><span class="prob-return">-0.78%</span><small>n=162</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">41%</span><span class="prob-return">+0.37%</span><small>n=165</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">73%</span><span class="prob-return">+8.84%</span><small>n=133</small></div></div></td></tr>
+  <tr><td data-label="股票">宁德时代</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip strong"><strong>⚡⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">50%</span><span class="prob-return">+0.74%</span><small>n=211</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">51%</span><span class="prob-return">+2.32%</span><small>n=210</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">52%</span><span class="prob-return">+6.03%</span><small>n=202</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">98%</span><span class="prob-return">+44.24%</span><small>n=154</small></div></div></td></tr>
+<tr><td data-label="股票">贵州茅台</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip strong"><strong>⚡⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">53%</span><span class="prob-return">+0.18%</span><small>n=122</small></div><div class="prob-item strong"><span class="period">10日</span><span class="prob-main">63%</span><span class="prob-return">+0.73%</span><small>n=122</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">54%</span><span class="prob-return">+0.10%</span><small>n=120</small></div><div class="prob-item"><span class="period">180日</span><span class="prob-main">46%</span><span class="prob-return">-1.89%</span><small>n=98</small></div></div></td></tr>
+<tr><td data-label="股票">中国铝业</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">59%</span><span class="prob-return">+1.55%</span><small>n=220</small></div><div class="prob-item strong"><span class="period">10日</span><span class="prob-main">69%</span><span class="prob-return">+3.35%</span><small>n=219</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">75%</span><span class="prob-return">+7.80%</span><small>n=209</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">85%</span><span class="prob-return">+41.59%</span><small>n=140</small></div></div></td></tr>
+<tr><td data-label="股票">阳光电源</td><td data-label="方向"><span class="tag tag-up">偏涨</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip"><strong>⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">52%</span><span class="prob-return">+2.11%</span><small>n=234</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">52%</span><span class="prob-return">+3.92%</span><small>n=233</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">55%</span><span class="prob-return">+8.03%</span><small>n=221</small></div><div class="prob-item"><span class="period">180日</span><span class="prob-main">58%</span><span class="prob-return">+57.02%</span><small>n=136</small></div></div></td></tr>
+<tr><td data-label="股票">闻泰科技</td><td data-label="方向"><span class="tag tag-down">偏跌</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item weak"><span class="period">5日</span><span class="prob-main">38%</span><span class="prob-return">-0.91%</span><small>n=162</small></div><div class="prob-item weak"><span class="period">10日</span><span class="prob-main">35%</span><span class="prob-return">-0.77%</span><small>n=162</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">43%</span><span class="prob-return">+0.49%</span><small>n=169</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">74%</span><span class="prob-return">+9.06%</span><small>n=133</small></div></div></td></tr>
 
   </tbody>
   </table>
@@ -653,10 +658,10 @@ async function triggerRefresh() {
   <table>
   <thead><tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr></thead>
   <tbody>
-  <tr><td>宁德时代</td><td class="">55.4</td><td>3.032</td><td>439.91</td><td>417.55</td><td>383.89</td><td>42</td><td>混合</td></tr>
-<tr><td>贵州茅台</td><td class="down">18.5</td><td>-9.514</td><td>1411.73</td><td>1438.26</td><td>1435.57</td><td>26</td><td>混合</td></tr>
+  <tr><td>宁德时代</td><td class="up">61.1</td><td>4.418</td><td>435.77</td><td>411.34</td><td>377.21</td><td>43</td><td>混合</td></tr>
+<tr><td>贵州茅台</td><td class="down">18.5</td><td>-9.558</td><td>1411.73</td><td>1438.26</td><td>1435.57</td><td>26</td><td>混合</td></tr>
 <tr><td>中国铝业</td><td class="down">35.7</td><td>0.086</td><td>12.23</td><td>12.01</td><td>12.89</td><td>19</td><td>回归</td></tr>
-<tr><td>阳光电源</td><td class="">53.9</td><td>1.919</td><td>135.12</td><td>137.16</td><td>150.39</td><td>16</td><td>混合</td></tr>
+<tr><td>阳光电源</td><td class="">53.9</td><td>1.918</td><td>135.12</td><td>137.16</td><td>150.39</td><td>16</td><td>混合</td></tr>
 <tr><td>闻泰科技</td><td class="down">9.1</td><td>-0.378</td><td>29.84</td><td>31.05</td><td>33.42</td><td>24</td><td>混合</td></tr>
 
   </tbody>
@@ -788,12 +793,12 @@ async function triggerRefresh() {
 
 </div>
 
-<div class="position-panel" id="option-block"><!-- 期权持仓 section, 由 option_monitor.py 生成于 2026-04-23 07:26:36 -->
+<div class="position-panel" id="option-block"><!-- 期权持仓 section, 由 option_monitor.py 生成于 2026-04-23 17:05:29 -->
 <section class="section">
   <div class="section-head">
     <div class="section-num">№ 09</div>
     <h2><em>Option</em> Positions<span class="cn">期权持仓</span></h2>
-    <div class="section-meta">模拟盘 SIMULATE<br>更新 07:26:36</div>
+    <div class="section-meta">模拟盘 SIMULATE<br>更新 17:05:29</div>
   </div>
 
   <div style="margin-left:128px; margin-bottom:20px; padding:12px 18px;
@@ -803,7 +808,7 @@ async function triggerRefresh() {
       🌐 宏观风险 · 未来 14 天
     </div>
     <div style="display:flex; flex-wrap:wrap; gap:14px;">
-      <div><span class=""><strong>VIX 18.9</strong> 低</span></div><div>🟡 FOMC <small>2026-04-30 (7天)</small></div><div>⚪ NFP <small>2026-05-01 (8天)</small></div><div>🟡 GOOGL 财报 <small>2026-04-29 (6天)</small></div>
+      <div><span class=""><strong>VIX 19.4</strong> 低</span></div><div>🟡 FOMC <small>2026-04-30 (7天)</small></div><div>⚪ NFP <small>2026-05-01 (8天)</small></div><div>🟡 GOOGL 财报 <small>2026-04-29 (6天)</small></div>
     </div>
   </div>
 
@@ -840,9 +845,14 @@ async function triggerRefresh() {
         <div style="font-size:14px; font-weight:600; color:var(--up);">$0</div>
         <div style="color:var(--muted); font-size:10px;">无挂单</div>
       </div>
+      <div>
+        <div style="color:var(--muted); font-size:10px;">退出模板触发</div>
+        <div style="font-size:14px; font-weight:600;">0</div>
+        <div style="color:var(--muted); font-size:10px;">已触发模板/时间窗</div>
+      </div>
     </div>
   </div>
-  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 点"📋 复制平仓命令"复制到终端执行</p>
+  <p class="note">期权持仓实时监控 · 每小时由 launchd 自动重算 · 退出模板显示已触发或距离触发状态 · 点"📋 复制平仓命令"复制到终端执行</p>
   <div class="table-wrap" style="margin-bottom:24px;">
   <table>
   <thead><tr><th>组合</th><th>行权价</th><th>到期</th><th>现价</th><th>盈亏平衡</th><th>成本</th><th>PnL</th><th>Theta/天</th><th>IV</th><th>建议动作</th></tr></thead>
@@ -851,14 +861,14 @@ async function triggerRefresh() {
         <tr>
           <td><strong>GOOGL</strong> 跨式 Straddle</td>
           <td>$337.50</td>
-          <td>2026-05-08 · 16天 </td>
+          <td>2026-05-08 · 15天 </td>
           <td>$339.32</td>
           <td><span class="down">↓$314.16</span> / <span class="up">↑$360.84</span><br><small>-7.4% / +6.3%</small></td>
           <td>$2334</td>
           <td class="up">+$104.00<br><small>(+4.46%)</small><br><small>Call <span class="up">+$0</span></small><br><small>Put&nbsp; <span class="up">+$104</span></small></td>
-          <td>$-75.89</td>
-          <td>41.9%</td>
-          <td><span class="tag tag-neutral">⚪ 警戒持有</span><br><small style="color:var(--muted);">剩 16 天, 进入 21天警戒区</small><br><button onclick="navigator.clipboard.writeText('./venv/bin/python trade_futu_sim.py sell US.GOOGL260508C337500 1 --confirm\n./venv/bin/python trade_futu_sim.py sell US.GOOGL260508P337500 1 --confirm').then(()=>{this.textContent='✓ 已复制';setTimeout(()=>this.textContent='📋 立即平仓',2000)})" style="font-family:inherit;font-size:11px;padding:4px 8px;margin-right:4px;margin-top:4px;border:1px solid currentColor;background:var(--paper);cursor:pointer;">📋 立即平仓</button><button onclick="navigator.clipboard.writeText('./venv/bin/python trade_futu_sim.py limit_sell US.GOOGL260508C337500 1 16.71 --confirm\n./venv/bin/python trade_futu_sim.py limit_sell US.GOOGL260508P337500 1 13.64 --confirm').then(()=>{this.textContent='✓ 已复制';setTimeout(()=>this.textContent='🎯 挂止盈 +30%',2000)})" style="font-family:inherit;font-size:11px;padding:4px 8px;margin-right:4px;margin-top:4px;border:1px solid currentColor;background:var(--paper);cursor:pointer;">🎯 挂止盈 +30%</button><button onclick="navigator.clipboard.writeText('./venv/bin/python trade_futu_sim.py stop_sell US.GOOGL260508C337500 1 6.42 --confirm\n./venv/bin/python trade_futu_sim.py stop_sell US.GOOGL260508P337500 1 5.25 --confirm').then(()=>{this.textContent='✓ 已复制';setTimeout(()=>this.textContent='🛡 挂止损 -50%',2000)})" style="font-family:inherit;font-size:11px;padding:4px 8px;margin-right:4px;margin-top:4px;border:1px solid currentColor;background:var(--paper);cursor:pointer;">🛡 挂止损 -50%</button></td>
+          <td>$-77.78</td>
+          <td>42.4%</td>
+          <td><span class="tag tag-neutral">⚪ 警戒持有</span> <br><small style="color:var(--muted);">剩 15 天, 进入 21天警戒区</small><br><small style="color:var(--ink);">止盈一 $29.18 / 止盈二 $33.84 / 软止损 $16.34 / 硬止损 $11.67 / 5天时间止损</small><br><small style="color:var(--muted);">模板状态: 距止盈一 +$4.80 (+19.7%) · 距软止损 +$8.04 (+33.0%) · 时间止损剩 10 天</small><br><button onclick="navigator.clipboard.writeText('./venv/bin/python trade_futu_sim.py sell US.GOOGL260508C337500 1 --confirm\n./venv/bin/python trade_futu_sim.py sell US.GOOGL260508P337500 1 --confirm').then(()=>{this.textContent='✓ 已复制';setTimeout(()=>this.textContent='📋 立即平仓',2000)})" style="font-family:inherit;font-size:11px;padding:4px 8px;margin-right:4px;margin-top:4px;border:1px solid currentColor;background:var(--paper);cursor:pointer;">📋 立即平仓</button><button onclick="navigator.clipboard.writeText('./venv/bin/python trade_futu_sim.py limit_sell US.GOOGL260508C337500 1 16.71 --confirm\n./venv/bin/python trade_futu_sim.py limit_sell US.GOOGL260508P337500 1 13.64 --confirm').then(()=>{this.textContent='✓ 已复制';setTimeout(()=>this.textContent='🎯 挂止盈 +30%',2000)})" style="font-family:inherit;font-size:11px;padding:4px 8px;margin-right:4px;margin-top:4px;border:1px solid currentColor;background:var(--paper);cursor:pointer;">🎯 挂止盈 +30%</button><button onclick="navigator.clipboard.writeText('./venv/bin/python trade_futu_sim.py stop_sell US.GOOGL260508C337500 1 6.42 --confirm\n./venv/bin/python trade_futu_sim.py stop_sell US.GOOGL260508P337500 1 5.25 --confirm').then(()=>{this.textContent='✓ 已复制';setTimeout(()=>this.textContent='🛡 挂止损 -50%',2000)})" style="font-family:inherit;font-size:11px;padding:4px 8px;margin-right:4px;margin-top:4px;border:1px solid currentColor;background:var(--paper);cursor:pointer;">🛡 挂止损 -50%</button></td>
         </tr>
   </tbody></table></div>
 </section></div>
