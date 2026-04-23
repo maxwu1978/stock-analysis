@@ -105,6 +105,7 @@ def chg_td(val):
 
 
 def generate(allow_partial: bool = False):
+    footer_marker = '<div class="footer" id="method-block">'
     reliability_labels = load_reliability_labels()
     ensure_complete_reliability_labels(reliability_labels, allow_partial)
     old_page_html = load_old_page()
@@ -773,7 +774,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         )
         if old_a_share:
             html = re.sub(
-                r'((?:<section class="section">[\s\S]*?){4})(?=\s*<div class="footer">)',
+                r'((?:<section class="section">[\s\S]*?){4})(?=\s*<div class="footer" id="method-block">)',
                 old_a_share,
                 html,
                 count=1,
@@ -998,7 +999,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             print("  [!] 美股区块本次为空，保留旧页面内容")
 
     # 在A股footer前插入美股部分
-    html = html.replace('<div class="footer">', us_section + '\n<div class="footer">')
+    html = html.replace(footer_marker, us_section + '\n' + footer_marker)
 
     # 期权持仓 section 处理: 本地有最新片段就用新的, 否则从旧 index.html 保留
     # (Actions 环境无 option_section.html, 要避免 Actions 擦除本地 push 的期权内容)
@@ -1030,8 +1031,8 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
 
     if opt_html:
         html = html.replace(
-            '<div class="footer">',
-            f'<div class="position-panel" id="option-block">{opt_html}</div>\n<div class="footer">'
+            footer_marker,
+            f'<div class="position-panel" id="option-block">{opt_html}</div>\n{footer_marker}'
         )
 
     # 真实盘 section **不嵌入公开主页** (隐私保护)
