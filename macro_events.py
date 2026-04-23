@@ -6,6 +6,7 @@
   3. FOMC 会议日程 (2026 年硬编码, 每年 2 月补充更新)
   4. CPI / NFP 经济数据公告日程 (硬编码)
   5. 综合风险警告 get_risk_warnings(symbol) 返回列表
+  6. A股规则型宏观窗口摘要 get_cn_risk_warnings()
 
 用法:
   from macro_events import get_vix_level, get_risk_warnings, MACRO_CALENDAR
@@ -56,6 +57,37 @@ MACRO_CALENDAR = {
     "CPI": CPI_2026,
     "NFP": NFP_2026,
 }
+
+
+def get_cn_risk_warnings(days_ahead: int = 14) -> list[str]:
+    """A股规则型宏观窗口提示.
+
+    不伪装成精确官方日历，先给页面提供足够稳定的国内事件窗提示：
+    - 月末官方 PMI
+    - 月初政策会议 / 稳增长表述窗口
+    - 月中社融 / CPI / PPI 数据窗口
+    - 每月 20 日附近 LPR
+    """
+    now = datetime.now()
+    warnings: list[str] = []
+
+    for offset in range(days_ahead + 1):
+        day = now + timedelta(days=offset)
+        days_until = offset + 1
+
+        if day.day == 30:
+            warnings.append(f"🟡 PMI 窗口 {day:%Y-%m-%d} ({days_until}天后) — 月末数据发布, 周期股波动或放大")
+        elif day.day in (1, 2, 3):
+            warnings.append(f"⚪ 政策表述窗口 {day:%Y-%m-%d} ({days_until}天后) — 留意月初稳增长/产业政策口径")
+        elif day.day in (10, 11, 12):
+            warnings.append(f"⚪ 通胀窗口 {day:%Y-%m-%d} ({days_until}天后) — 关注 CPI / PPI")
+        elif day.day in (13, 14, 15):
+            warnings.append(f"⚪ 社融窗口 {day:%Y-%m-%d} ({days_until}天后) — 关注社融 / 信贷节奏")
+        elif day.day == 20:
+            warnings.append(f"⚪ LPR 窗口 {day:%Y-%m-%d} ({days_until}天后) — 利率预期影响金融地产")
+
+    # 去重并保持顺序
+    return list(dict.fromkeys(warnings))
 
 
 @lru_cache(maxsize=4)

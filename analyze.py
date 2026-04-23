@@ -9,6 +9,7 @@ from indicators import compute_all, summarize
 from probability import score_trend
 from fundamental import fetch_all_financials
 from reliability import get_reliability_label, load_reliability_labels
+from macro_events import get_cn_risk_warnings
 
 def direction_from_prob(hp):
     """用30日上涨概率决定方向"""
@@ -52,6 +53,10 @@ def main():
         all_hist = {}
 
     print(f"## A股技术分析报告 {now}\n")
+    cn_macro_notes = get_cn_risk_warnings(days_ahead=14)
+    if cn_macro_notes:
+        summary = " | ".join(dict.fromkeys(cn_macro_notes[:4]))
+        print(f"当前宏观窗口: {summary}\n")
 
     # --- 行情 ---
     if not rt.empty:

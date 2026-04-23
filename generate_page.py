@@ -181,6 +181,23 @@ def generate(allow_partial: bool = False):
     prob_html = ""
     tech_html = ""
     fund_html = ""
+    cn_macro_note_html = ""
+
+    try:
+        from macro_events import get_cn_risk_warnings
+        cn_macro_notes = get_cn_risk_warnings(days_ahead=14)
+    except Exception:
+        cn_macro_notes = []
+
+    if cn_macro_notes:
+        cn_summary = " · ".join(dict.fromkeys(cn_macro_notes[:4]))
+        cn_macro_note_html = (
+            f'<div class="macro-banner">'
+            f'<div class="banner-kicker">CN Macro Window</div>'
+            f'<div class="banner-body">{cn_summary}</div>'
+            f'<div class="banner-meta">{len(cn_macro_notes)} windows tracked</div>'
+            f'</div>'
+        )
 
     for code, df in all_hist.items():
         name = STOCKS[code]
@@ -706,6 +723,7 @@ async function triggerRefresh() {{
     <h2>Trend <em>Probability</em><span class="cn">趋势概率</span></h2>
     <div class="section-meta">IC-Weighted<br>Rolling Model</div>
   </div>
+  {cn_macro_note_html}
   <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short</p>
   <div class="table-wrap">
   <table>
