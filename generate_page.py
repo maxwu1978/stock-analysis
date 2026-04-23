@@ -115,24 +115,37 @@ def direction_tag(hp):
     return '<span class="tag tag-neutral">震荡</span>'
 
 
-def fmt_prob_cell(label, d):
+def prob_item_html(label, d):
     if not d:
-        return f'<td class="prob-cell prob-empty" data-label="{label}">-</td>'
+        return (
+            f'<div class="prob-item prob-empty">'
+            f'<span class="period">{label}</span>'
+            f'<span class="prob-main">-</span>'
+            f'<span class="prob-return">-</span>'
+            f'<small>n=0</small>'
+            f'</div>'
+        )
     p = int(d["上涨概率"].replace("%", ""))
     avg = d["平均收益"]
     n = d["样本数"]
-    cls = "prob-cell"
+    cls = "prob-item"
     if p >= 60:
         cls += " strong"
     elif p <= 40:
         cls += " weak"
     return (
-        f'<td class="{cls}" data-label="{label}">'
+        f'<div class="{cls}">'
+        f'<span class="period">{label}</span>'
         f'<span class="prob-main">{p}%</span>'
         f'<span class="prob-return">{avg}</span>'
         f'<small>n={n}</small>'
-        f'</td>'
+        f'</div>'
     )
+
+
+def fmt_prob_matrix(hp):
+    cells = "".join(prob_item_html(period, hp.get(period)) for period in ["5日", "10日", "30日", "180日"])
+    return f'<td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid">{cells}</div></td>'
 
 
 def chg_td(val):
@@ -255,19 +268,28 @@ def generate(allow_partial: bool = False):
         rel_cls = "strong" if reliability == "强" else ("weak" if reliability == "弱" else "")
 
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
-        if pd.isna(ft_score): ft_score = 0
+        if pd.isna(ft_score):
+            ft_score = 0
         ft_score = int(ft_score)
-        ft_html = f'<td class="tail-cell strong" data-label="肥尾">{"⚡" * ft_score}</td>' if ft_score >= 3 else '<td class="tail-cell" data-label="肥尾">-</td>'
+        ft_text = "⚡" * ft_score if ft_score >= 1 else "-"
+        ft_cls = " strong" if ft_score >= 3 else ""
+        risk_html = (
+            f'<td data-label="风险提示">'
+            f'<div class="risk-stack">'
+            f'<span class="risk-chip{ft_cls}"><strong>{ft_text}</strong></span>'
+            f'<span class="risk-meta">Fat Tail</span>'
+            f'</div>'
+            f'</td>'
+        )
 
         prob_html += (
             f'<tr>'
             f'<td data-label="股票">{name}</td>'
             f'<td data-label="方向">{direction_tag(hp)}</td>'
             f'<td class="{rel_cls}" data-label="可靠度">{reliability}</td>'
-            f'{ft_html}'
+            f'{risk_html}'
         )
-        for period in ["5日", "10日", "30日", "180日"]:
-            prob_html += fmt_prob_cell(period, hp.get(period))
+        prob_html += fmt_prob_matrix(hp)
         prob_html += '</tr>\n'
 
         stype = {"momentum": "动量", "mean_revert": "回归", "mixed": "混合"}.get(rg.get("stock_type"), "?")
@@ -612,120 +634,109 @@ def generate(allow_partial: bool = False):
   .tag-up {{ color: var(--up); background: rgba(184,37,31,0.08); }}
   .tag-down {{ color: var(--down); background: rgba(42,95,74,0.08); }}
   .tag-neutral {{ color: var(--muted); background: transparent; }}
-  .trend-table {{
-    min-width: 1120px;
+  .signal-table {{
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
   }}
-  .trend-table thead th,
-  .trend-table tbody td {{
+  .signal-table thead th,
+  .signal-table tbody td {{
     text-align: center;
     vertical-align: top;
+    white-space: normal;
   }}
-  .trend-table thead th:first-child,
-  .trend-table tbody td:first-child {{
+  .signal-table thead th:first-child,
+  .signal-table tbody td:first-child {{
     text-align: left;
   }}
-  .trend-table tbody td:nth-child(2),
-  .trend-table tbody td:nth-child(3),
-  .trend-table tbody td:nth-child(4) {{
+  .signal-table thead th:nth-child(1) {{ width: 18%; }}
+  .signal-table thead th:nth-child(2) {{ width: 12%; }}
+  .signal-table thead th:nth-child(3) {{ width: 10%; }}
+  .signal-table thead th:nth-child(4) {{ width: 18%; }}
+  .signal-table thead th:nth-child(5) {{ width: 42%; }}
+  .signal-table tbody td:nth-child(2),
+  .signal-table tbody td:nth-child(3),
+  .signal-table tbody td:nth-child(4) {{
     vertical-align: middle;
+    font-size: 14px;
   }}
-  .trend-table thead th:nth-child(1),
-  .trend-table tbody td:nth-child(1) {{
-    position: sticky;
-    left: 0;
-    min-width: 170px;
-    background: var(--paper);
-    z-index: 3;
-  }}
-  .trend-table thead th:nth-child(2),
-  .trend-table tbody td:nth-child(2) {{
-    position: sticky;
-    left: 170px;
-    min-width: 92px;
-    background: var(--paper);
-    z-index: 3;
-  }}
-  .trend-table thead th:nth-child(3),
-  .trend-table tbody td:nth-child(3) {{
-    position: sticky;
-    left: 262px;
-    min-width: 82px;
-    background: var(--paper);
-    z-index: 3;
-  }}
-  .trend-table thead th:nth-child(4),
-  .trend-table tbody td:nth-child(4) {{
-    position: sticky;
-    left: 344px;
-    min-width: 126px;
-    background: var(--paper);
-    z-index: 3;
-    box-shadow: 10px 0 18px rgba(20,18,17,0.06);
-  }}
-  .trend-table tbody td:nth-child(-n+4) {{
+  .signal-table tbody td:nth-child(-n+4) {{
     background: linear-gradient(180deg, rgba(242,237,226,0.98), rgba(232,223,205,0.92));
   }}
-  .trend-table thead th:nth-child(-n+4) {{
+  .signal-table thead th:nth-child(-n+4) {{
     background: linear-gradient(180deg, rgba(242,237,226,1), rgba(232,223,205,0.96));
   }}
-  .trend-table thead th:nth-child(n+5),
-  .trend-table tbody td:nth-child(n+5) {{
-    min-width: 116px;
+  .signal-table .prob-matrix-cell {{
+    padding-right: 0;
   }}
-  .trend-table .prob-cell {{
-    min-width: 110px;
-    white-space: normal;
-    line-height: 1.25;
+  .signal-table .prob-grid {{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }}
-  .trend-table .prob-main {{
+  .signal-table .prob-item {{
+    border: 1px solid var(--hair);
+    background: rgba(255,255,255,0.28);
+    padding: 10px 8px 8px;
+    line-height: 1.2;
+  }}
+  .signal-table .prob-item .period {{
+    display: block;
+    margin-bottom: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }}
+  .signal-table .prob-main {{
     display: block;
     font-size: 17px;
     font-weight: 600;
   }}
-  .trend-table .prob-return {{
+  .signal-table .prob-return {{
     display: block;
     margin-top: 4px;
     font-size: 13px;
     color: var(--ink);
   }}
-  .trend-table .prob-cell strong,
-  .trend-table .prob-cell .prob-main {{
-    color: inherit;
-  }}
-  .trend-table .prob-cell small {{
+  .signal-table .prob-item small {{
     display: block;
-    margin: 5px 0 0;
+    margin-top: 5px;
     font-size: 11px;
-  }}
-  .trend-table .prob-empty {{
     color: var(--muted);
-    vertical-align: middle;
   }}
-  .trend-table .macro-cell {{
-    min-width: 126px;
-    white-space: normal;
-    line-height: 1.25;
+  .signal-table .prob-empty {{
+    color: var(--muted);
   }}
-  .trend-table .macro-cell .penalty {{
+  .signal-table .risk-stack {{
+    display: grid;
+    gap: 8px;
+    justify-items: center;
+  }}
+  .signal-table .risk-chip {{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 78px;
+    padding: 5px 8px;
+    border: 1px solid var(--hair);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    background: rgba(255,255,255,0.22);
+  }}
+  .signal-table .risk-chip strong {{
+    font-size: 13px;
+  }}
+  .signal-table .risk-meta {{
     display: block;
-    font-size: 17px;
-    font-weight: 600;
+    font-size: 11px;
+    line-height: 1.35;
+    color: var(--muted);
   }}
-  .trend-table .macro-cell small {{
-    display: block;
-    margin: 4px 0 0;
-  }}
-  .trend-table .tail-cell {{
-    min-width: 76px;
-    vertical-align: middle;
-  }}
-  .trend-table .tail-cell,
-  .trend-table .macro-cell,
-  .trend-table td:nth-child(2),
-  .trend-table td:nth-child(3) {{
-    font-size: 14px;
+  .signal-table .risk-meta strong {{
+    color: var(--ink);
   }}
   .us-divider {{
     margin: 36px 0 0; padding-top: 20px;
@@ -758,51 +769,38 @@ def generate(allow_partial: bool = False):
     .summary-strip {{ grid-template-columns: 1fr 1fr; }}
     .macro-banner {{ grid-template-columns: 1fr; margin-left: 0; }}
     .market-block {{ padding: 18px 12px 6px; }}
-    .trend-table {{
-      min-width: 1080px;
-    }}
   }}
   @media (max-width: 820px) {{
     .summary-strip {{ grid-template-columns: 1fr 1fr; }}
     .anchor-nav {{ margin-bottom: 8px; }}
-    .trend-table {{
+    .signal-table {{
       min-width: 0;
       width: 100%;
       border-collapse: separate;
     }}
-    .trend-table thead {{
+    .signal-table thead {{
       display: none;
     }}
-    .trend-table,
-    .trend-table tbody,
-    .trend-table tr,
-    .trend-table td {{
+    .signal-table,
+    .signal-table tbody,
+    .signal-table tr,
+    .signal-table td {{
       display: block;
       width: 100%;
     }}
-    .trend-table tr {{
+    .signal-table tr {{
       margin: 0 0 16px;
       padding: 14px 14px 8px;
       border: 1px solid var(--hair);
       background: linear-gradient(180deg, rgba(242,237,226,0.98), rgba(232,223,205,0.92));
     }}
-    .trend-table thead th:nth-child(-n+4),
-    .trend-table tbody td:nth-child(-n+4),
-    .trend-table thead th:nth-child(n+5),
-    .trend-table tbody td:nth-child(n+5) {{
-      position: static;
-      left: auto;
-      min-width: 0;
-      box-shadow: none;
-      background: transparent;
-    }}
-    .trend-table tbody td {{
+    .signal-table tbody td {{
       border-bottom: 1px dashed var(--hair);
       padding: 9px 0;
       text-align: left;
       white-space: normal;
     }}
-    .trend-table tbody td::before {{
+    .signal-table tbody td::before {{
       content: attr(data-label);
       display: block;
       margin-bottom: 4px;
@@ -812,27 +810,27 @@ def generate(allow_partial: bool = False):
       text-transform: uppercase;
       color: var(--muted);
     }}
-    .trend-table tbody td:first-child {{
+    .signal-table tbody td:first-child {{
       padding-top: 0;
       padding-bottom: 12px;
       border-bottom: 1px solid var(--ink);
       font-size: 22px;
     }}
-    .trend-table tbody td:first-child::before {{
+    .signal-table tbody td:first-child::before {{
       display: none;
     }}
-    .trend-table tbody td:last-child {{
+    .signal-table tbody td:last-child {{
       border-bottom: 0;
       padding-bottom: 2px;
     }}
-    .trend-table .prob-cell,
-    .trend-table .macro-cell,
-    .trend-table .tail-cell {{
-      min-width: 0;
+    .signal-table .prob-grid {{
+      grid-template-columns: 1fr 1fr;
     }}
-    .trend-table .prob-main,
-    .trend-table .macro-cell .penalty {{
+    .signal-table .prob-main {{
       font-size: 18px;
+    }}
+    .signal-table .risk-stack {{
+      justify-items: start;
     }}
   }}
 </style>
@@ -940,7 +938,7 @@ async function triggerRefresh() {{
     <div class="section-meta">Realtime Tape<br>CN · A-Share</div>
   </div>
   <div class="table-wrap">
-  <table class="trend-table">
+  <table>
   <thead><tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交额</th><th>最高</th><th>最低</th></tr></thead>
   <tbody>
   {quote_html}
@@ -958,8 +956,8 @@ async function triggerRefresh() {{
   {cn_macro_note_html}
   <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short</p>
   <div class="table-wrap">
-  <table class="trend-table">
-  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
+  <table class="signal-table">
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
   <tbody>
   {prob_html}
   </tbody>
@@ -1104,29 +1102,34 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         if penalty > 0:
             us_macro_notes.extend(macro.get("warnings", []))
             reason_text = "/".join(dict.fromkeys(reasons)) if reasons else "宏观收缩"
-            us_macro_html = (
-                f'<td class="macro-cell weak" data-label="宏观覆盖">'
-                f'<span class="penalty">-{penalty}</span>'
-                f'<small>{reason_text}</small>'
-                f'</td>'
-            )
+            macro_line = f'<span class="risk-chip weak"><strong>-{penalty}</strong></span><span class="risk-meta">{reason_text}</span>'
         else:
-            us_macro_html = '<td class="macro-cell" data-label="宏观覆盖">-</td>'
+            macro_line = '<span class="risk-chip"><strong>-</strong></span><span class="risk-meta">Macro</span>'
 
         us_ft = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
-        if pd.isna(us_ft): us_ft = 0
+        if pd.isna(us_ft):
+            us_ft = 0
         us_ft = int(us_ft)
-        us_ft_html = f'<td class="tail-cell strong" data-label="肥尾">{"⚡" * us_ft}</td>' if us_ft >= 3 else '<td class="tail-cell" data-label="肥尾">-</td>'
+        us_ft_text = "⚡" * us_ft if us_ft >= 1 else "-"
+        us_ft_cls = " strong" if us_ft >= 3 else ""
+        us_risk_html = (
+            f'<td data-label="风险提示">'
+            f'<div class="risk-stack">'
+            f'{macro_line}'
+            f'<span class="risk-chip{us_ft_cls}"><strong>{us_ft_text}</strong></span>'
+            f'<span class="risk-meta">Fat Tail</span>'
+            f'</div>'
+            f'</td>'
+        )
 
         us_prob_html += (
             f'<tr>'
             f'<td data-label="股票">{uname}</td>'
             f'<td data-label="方向">{direction_tag(hp)}</td>'
             f'<td class="{us_rel_cls}" data-label="可靠度">{us_rel}</td>'
-            f'{us_macro_html}{us_ft_html}'
+            f'{us_risk_html}'
         )
-        for period in ["5日", "10日", "30日", "180日"]:
-            us_prob_html += fmt_prob_cell(period, hp.get(period))
+        us_prob_html += fmt_prob_matrix(hp)
         us_prob_html += '</tr>\n'
 
         stype = {"momentum": "动量", "mean_revert": "回归", "mixed": "混合"}.get(rg.get("stock_type"), "?")
@@ -1176,8 +1179,8 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     us_macro_note_html = ""
     if us_macro_notes:
         summary = " · ".join(dict.fromkeys(us_macro_notes))
-        affected = sum(1 for row in us_prob_html.split("</tr>") if 'class="weak">-' in row)
-        max_penalty = max([int(x) for x in re.findall(r">-(\d+) <small>", us_prob_html)] or [0])
+        affected = sum(1 for row in us_prob_html.split("</tr>") if "risk-chip weak" in row)
+        max_penalty = max([int(x) for x in re.findall(r"<strong>-(\d+)</strong>", us_prob_html)] or [0])
         us_macro_note_html = (
             f'<div class="macro-banner">'
             f'<div class="banner-kicker">Macro Overlay</div>'
@@ -1215,8 +1218,8 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
   </div>
   {us_macro_note_html}
   <div class="table-wrap">
-  <table>
-  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>宏观覆盖</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
+  <table class="signal-table">
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
   <tbody>{us_prob_html}</tbody>
   </table>
   </div>
