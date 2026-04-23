@@ -266,7 +266,7 @@ def render_subpage(
 <title>{title}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 {style_block}
 </style>
@@ -561,7 +561,7 @@ def build_strategy_page(
 """
     nav_links_html = """
   <a class="major" href="./index.html">← 返回总览</a>
-  <a class="major" href="#strategy-actionable">Actionable</a>
+  <a class="major active" href="#strategy-actionable">Strategy</a>
   <a class="major" href="#strategy-watchlist">Watchlist</a>
   <a class="major" href="#strategy-options">Options</a>
   <a class="major" href="./review.html">Review</a>
@@ -629,6 +629,7 @@ def build_us_page(full_page_html: str, now: str, us_section: str, macro_headline
 """
     nav_links_html = """
   <a class="major" href="./index.html">← 返回总览</a>
+  <a class="major active" href="#us-block">U.S.</a>
   <a class="minor" href="#us-quote">US Quote</a>
   <a class="minor" href="#us-trend">US Trend</a>
   <a class="minor" href="#us-tech">US Tech</a>
@@ -661,7 +662,7 @@ def build_cn_page(full_page_html: str, now: str, cn_section: str) -> str:
     summary_cards_html = ""
     nav_links_html = """
   <a class="major" href="./index.html">← 返回总览</a>
-  <a class="major" href="#cn-block">A-Share</a>
+  <a class="major active" href="#cn-block">A-Share</a>
   <a class="minor" href="#cn-quote">CN Quote</a>
   <a class="minor" href="#cn-trend">CN Trend</a>
   <a class="minor" href="#cn-tech">CN Tech</a>
@@ -693,16 +694,22 @@ def build_overview_page(
     option_summary: str,
     execution_summary_value: str,
     execution_summary_sub: str,
+    signal_snapshots: list[dict],
 ) -> str:
     style_block = extract_style_block(full_page_html)
     footer_html = extract_footer_block(full_page_html)
+    actionable = [s for s in signal_snapshots if s.get("action") in {"BUILD_LONG", "PROBE_LONG"}]
+    watchlist = [s for s in signal_snapshots if s.get("action") in {"WATCHLIST", "OBSERVE", "WAIT"}]
+    standard_count = sum(1 for s in signal_snapshots if s.get("tier") == "STANDARD")
+    probe_count = sum(1 for s in signal_snapshots if s.get("tier") == "PROBE")
+    micro_count = sum(1 for s in signal_snapshots if s.get("tier") == "MICRO")
     nav_links_html = """
+  <a class="major active" href="#overview-hub">Overview</a>
   <a class="major" href="./cn.html">A-Share</a>
   <a class="major" href="./us.html">U.S.</a>
   <a class="major" href="./strategy.html">Strategy</a>
   <a class="major" href="./options.html">Options</a>
   <a class="major" href="./review.html">Review</a>
-  <a class="major" href="#overview-hub">Overview</a>
 """
     body_html = f"""
 <section class="section" id="overview-hub">
@@ -711,17 +718,59 @@ def build_overview_page(
     <h2>Overview <em>Hub</em><span class="cn">总览导航</span></h2>
     <div class="section-meta">Multi-page<br>Fast Browse</div>
   </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>模块</th><th>当前摘要</th><th>入口</th></tr></thead>
-      <tbody>
-        <tr><td>A股</td><td>{a_weak}/{a_total} 弱，主模型偏研究参考</td><td><a href="./cn.html">打开 A股子页</a></td></tr>
-        <tr><td>美股</td><td>{us_mid_summary} 相对居前，宏观覆盖已接入</td><td><a href="./us.html">打开 美股子页</a></td></tr>
-        <tr><td>策略</td><td>只把明确信号单独列出，弱信号默认不交易</td><td><a href="./strategy.html">打开 策略子页</a></td></tr>
-        <tr><td>期权</td><td>{option_summary}，退出模板状态单独查看</td><td><a href="./options.html">打开 期权子页</a></td></tr>
-        <tr><td>复盘</td><td>{execution_summary_value}，{execution_summary_sub}</td><td><a href="./review.html">打开 复盘子页</a></td></tr>
-      </tbody>
-    </table>
+  <p class="note">首页只保留决策入口和状态摘要，把研究明细下沉到子页，避免把所有数据堆在一个长页面里。</p>
+  <div class="control-grid">
+    <article class="control-panel emphasis">
+      <div class="panel-kicker">Today Strategy</div>
+      <h3>{len(actionable)} 可执行 / {len(watchlist)} 观察</h3>
+      <p>只有明确进入 Actionable 的信号才视为接近可执行；弱信号默认继续观察。</p>
+      <div class="panel-metrics">
+        <span>STANDARD {standard_count}</span>
+        <span>PROBE {probe_count}</span>
+        <span>MICRO {micro_count}</span>
+      </div>
+      <a class="module-cta" href="./strategy.html">打开策略页</a>
+    </article>
+    <article class="control-panel">
+      <div class="panel-kicker">A-Share Desk</div>
+      <h3>{a_weak}/{a_total} 弱</h3>
+      <p>当前 A 股主模型偏研究参考，更适合先看趋势和宏观窗口，再决定是否加入观察名单。</p>
+      <ul class="panel-list">
+        <li>Quote / Trend / Tech / Fund</li>
+        <li>CN Macro Window 已接入</li>
+      </ul>
+      <a class="module-cta" href="./cn.html">打开 A股子页</a>
+    </article>
+    <article class="control-panel">
+      <div class="panel-kicker">U.S. Desk</div>
+      <h3>{us_mid_summary}</h3>
+      <p>美股保留宏观覆盖和动作层，适合先看子页，再决定是否进入策略页或期权页。</p>
+      <ul class="panel-list">
+        <li>Macro Overlay 生效</li>
+        <li>TSM / MU / WDC 已纳入跟踪</li>
+      </ul>
+      <a class="module-cta" href="./us.html">打开 美股子页</a>
+    </article>
+    <article class="control-panel">
+      <div class="panel-kicker">Options Panel</div>
+      <h3>{option_summary}</h3>
+      <p>期权页单独展示持仓、退出模板和全池扫描后的机会强弱，不再混在研究主表里。</p>
+      <ul class="panel-list">
+        <li>弱机会默认 MICRO</li>
+        <li>持仓管理与新机会分开</li>
+      </ul>
+      <a class="module-cta" href="./options.html">打开 期权子页</a>
+    </article>
+    <article class="control-panel">
+      <div class="panel-kicker">Execution Review</div>
+      <h3>{execution_summary_value}</h3>
+      <p>{execution_summary_sub}</p>
+      <ul class="panel-list">
+        <li>执行评分卡</li>
+        <li>计划覆盖与执行缺口</li>
+      </ul>
+      <a class="module-cta" href="./review.html">打开 复盘子页</a>
+    </article>
   </div>
 </section>
 """
@@ -795,7 +844,7 @@ def build_options_page(
 """
     nav_links_html = """
   <a class="major" href="./index.html">← 返回总览</a>
-  <a class="major" href="#option-block">Options</a>
+  <a class="major active" href="#option-block">Options</a>
   <a class="major" href="./review.html">Review</a>
   <a class="major" href="./index.html#method-block">Method</a>
 """
@@ -858,7 +907,7 @@ def build_review_page(
     nav_links_html = """
   <a class="major" href="./index.html">← 返回总览</a>
   <a class="major" href="./options.html">Options</a>
-  <a class="major" href="#review-block">Review</a>
+  <a class="major active" href="#review-block">Review</a>
   <a class="major" href="./index.html#method-block">Method</a>
 """
     return render_subpage(
@@ -1093,21 +1142,26 @@ def generate(allow_partial: bool = False):
 <title>主力分析 · QUANT DESK</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Spectral:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {{
-    --ink: #141211;
-    --paper: #f2ede2;
-    --paper-2: #e8dfcd;
-    --up: #b8251f;
-    --down: #2a5f4a;
-    --muted: #726b61;
-    --hair: #c9c0ae;
+    --ink: #16202b;
+    --paper: #f4f7f3;
+    --paper-2: #e7eef0;
+    --panel: #fbfcfa;
+    --panel-strong: #ffffff;
+    --accent: #17384f;
+    --accent-soft: #dfe9ef;
+    --up: #b33a2f;
+    --down: #1f6d53;
+    --warning: #b7852a;
+    --muted: #667485;
+    --hair: #d6dde2;
   }}
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   html, body {{ background: var(--paper); }}
   body {{
-    font-family: 'Spectral', 'Noto Serif SC', Georgia, serif;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
     color: var(--ink);
     font-feature-settings: "lnum", "tnum";
     -webkit-font-smoothing: antialiased;
@@ -1118,78 +1172,90 @@ def generate(allow_partial: bool = False):
   body::before {{
     content: '';
     position: fixed; inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
-    opacity: 0.04; pointer-events: none; z-index: 200; mix-blend-mode: multiply;
+    background:
+      linear-gradient(rgba(23,56,79,0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(23,56,79,0.035) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: 1; pointer-events: none; z-index: 0;
   }}
   .tape {{
-    border-bottom: 1px solid var(--ink);
-    padding: 9px 28px;
-    font-family: 'JetBrains Mono', 'PingFang SC', monospace;
-    font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 28px;
+    font-family: 'IBM Plex Mono', 'PingFang SC', monospace;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
     display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-    position: sticky; top: 0; background: var(--paper); z-index: 10;
+    position: sticky; top: 0; background: rgba(12, 20, 29, 0.92); color: #edf4f6; z-index: 10;
+    backdrop-filter: blur(8px);
   }}
-  .tape .dot {{ color: var(--up); animation: pulse 2s ease-in-out infinite; }}
-  .tape .muted {{ color: var(--muted); }}
+  .tape .dot {{ color: #f15b4d; animation: pulse 2s ease-in-out infinite; }}
+  .tape .muted {{ color: #9fb0ba; }}
   @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.35; }} }}
-  .container {{ max-width: 1380px; margin: 0 auto; padding: 0 22px 56px; }}
-  .hero {{ padding: 28px 0 18px; border-bottom: 1px solid var(--ink); }}
+  .container {{ max-width: 1440px; margin: 0 auto; padding: 0 22px 56px; position: relative; z-index: 1; }}
+  .hero {{
+    padding: 22px 0 14px;
+    border-bottom: 1px solid var(--hair);
+    display: grid;
+    gap: 8px;
+  }}
   .hero-kicker {{
     display: flex; gap: 12px; align-items: center; margin-bottom: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--muted);
   }}
-  .hero-kicker::before {{ content: ''; width: 30px; height: 1px; background: var(--ink); display: inline-block; }}
+  .hero-kicker::before {{ content: ''; width: 28px; height: 2px; background: var(--accent); display: inline-block; }}
   .hero h1 {{
-    font-family: 'DM Serif Display', 'Noto Serif SC', serif;
-    font-weight: 400;
-    font-size: clamp(38px, 5.8vw, 78px);
-    line-height: 0.92;
-    letter-spacing: -0.028em;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    font-size: clamp(34px, 5vw, 68px);
+    line-height: 0.94;
+    letter-spacing: -0.045em;
   }}
-  .hero h1 em {{ font-style: italic; color: var(--up); }}
+  .hero h1 em {{ font-style: normal; color: var(--accent); }}
   .hero h1 .eyebrow {{
-    display: block; font-size: 0.14em; letter-spacing: 0.26em;
+    display: block; font-size: 0.17em; letter-spacing: 0.22em;
     text-transform: uppercase; color: var(--muted);
-    font-family: 'JetBrains Mono', monospace; font-style: normal;
-    margin-top: 10px; font-weight: 400;
+    font-family: 'IBM Plex Mono', monospace; font-style: normal;
+    margin-top: 12px; font-weight: 500;
   }}
   .hero-meta {{
-    margin-top: 16px;
+    margin-top: 10px;
     display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px; letter-spacing: 0.08em; color: var(--muted);
   }}
   .summary-strip {{
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
     margin: 14px 0 16px;
   }}
   .summary-card {{
-    background: linear-gradient(180deg, rgba(232,223,205,0.9), rgba(242,237,226,0.92));
-    border-top: 1px solid var(--ink);
-    border-left: 1px solid var(--hair);
-    padding: 10px 12px 12px;
-    min-height: 74px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.86));
+    border: 1px solid var(--hair);
+    border-top: 3px solid var(--accent);
+    border-radius: 14px;
+    padding: 12px 14px 14px;
+    min-height: 84px;
+    box-shadow: 0 10px 28px rgba(22, 32, 43, 0.06);
   }}
   .summary-card .label {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 6px;
   }}
   .summary-card .value {{
-    font-family: 'DM Serif Display', 'Noto Serif SC', serif;
-    font-size: clamp(20px, 2.6vw, 28px);
-    line-height: 1;
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: clamp(22px, 2.3vw, 30px);
+    line-height: 1.02;
+    font-weight: 700;
   }}
   .summary-card .sub {{
     margin-top: 6px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.05em;
     color: var(--muted);
@@ -1199,29 +1265,36 @@ def generate(allow_partial: bool = False):
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 0 0 12px;
+    margin: 0 0 14px;
     position: sticky;
     top: 30px;
     z-index: 9;
-    padding: 8px 0 8px;
-    background: linear-gradient(180deg, rgba(242,237,226,0.96), rgba(242,237,226,0.82));
-    backdrop-filter: blur(4px);
+    padding: 8px 0 10px;
+    background: linear-gradient(180deg, rgba(244,247,243,0.96), rgba(244,247,243,0.80));
+    backdrop-filter: blur(8px);
   }}
   .anchor-nav a {{
     text-decoration: none;
-    color: var(--ink);
+    color: var(--muted);
     border: 1px solid var(--hair);
-    padding: 6px 10px;
-    font-family: 'JetBrains Mono', monospace;
+    border-radius: 999px;
+    padding: 7px 12px;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    background: rgba(255,255,255,0.22);
+    background: rgba(255,255,255,0.82);
+    transition: transform 0.16s ease, border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
   }}
-  .anchor-nav a:hover {{ border-color: var(--ink); transform: translateY(-1px); }}
+  .anchor-nav a:hover {{ border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }}
   .anchor-nav a.major {{
-    background: rgba(20,18,17,0.06);
-    border-color: var(--ink);
+    background: rgba(23,56,79,0.06);
+    border-color: rgba(23,56,79,0.18);
+  }}
+  .anchor-nav a.active {{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #f5fbff;
   }}
   .anchor-nav a.minor {{
     color: var(--muted);
@@ -1229,9 +1302,11 @@ def generate(allow_partial: bool = False):
   }}
   .market-block {{
     margin: 16px 0 0;
-    padding: 16px 14px 8px;
+    padding: 18px 16px 10px;
     border: 1px solid var(--hair);
-    background: linear-gradient(180deg, rgba(255,255,255,0.10), rgba(232,223,205,0.35));
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.92));
+    box-shadow: 0 16px 42px rgba(22, 32, 43, 0.07);
     position: relative;
   }}
   .market-block + .market-block {{ margin-top: 20px; }}
@@ -1240,18 +1315,19 @@ def generate(allow_partial: bool = False):
     justify-content: space-between;
     align-items: baseline;
     gap: 12px;
-    padding-bottom: 10px;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--hair);
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }}
   .market-label strong {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 11px;
-    letter-spacing: 0.22em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
+    color: var(--accent);
   }}
   .market-label span {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
@@ -1259,9 +1335,10 @@ def generate(allow_partial: bool = False):
   }}
   .macro-banner {{
     margin: 2px 0 14px 88px;
-    padding: 10px 12px;
-    border-left: 6px solid var(--up);
-    background: rgba(184,37,31,0.06);
+    padding: 12px 14px;
+    border-left: 6px solid var(--warning);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(183,133,42,0.10), rgba(255,255,255,0.92));
     display: grid;
     grid-template-columns: 136px 1fr auto;
     gap: 10px;
@@ -1269,41 +1346,46 @@ def generate(allow_partial: bool = False):
   }}
   .macro-banner .banner-kicker,
   .macro-banner .banner-meta {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--muted);
   }}
   .macro-banner .banner-body {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     line-height: 1.55;
   }}
   .position-panel {{
     margin-top: 18px;
-    padding: 12px 12px 4px;
-    border: 1px solid var(--ink);
-    background: linear-gradient(180deg, rgba(20,18,17,0.03), rgba(232,223,205,0.50));
+    padding: 14px 14px 6px;
+    border: 1px solid rgba(23,56,79,0.18);
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(223,233,239,0.82), rgba(255,255,255,0.98));
+    box-shadow: 0 18px 42px rgba(22, 32, 43, 0.08);
   }}
   .position-panel .section:first-child {{
     padding-top: 18px;
   }}
   .pill {{
-    border: 1px solid var(--ink); padding: 7px 13px;
-    text-transform: uppercase; color: var(--ink);
-    font-size: 10.5px; letter-spacing: 0.16em;
+    border: 1px solid rgba(23,56,79,0.18); padding: 7px 13px;
+    text-transform: uppercase; color: var(--accent);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.72);
+    font-size: 10px; letter-spacing: 0.14em;
   }}
   .btn-refresh {{
-    background: var(--ink); color: var(--paper); border: 1px solid var(--ink);
-    padding: 8px 14px; font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+    background: var(--accent); color: #f6fbff; border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 8px 14px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
     cursor: pointer; transition: transform 0.18s, background 0.18s;
   }}
   .btn-refresh:hover:not(:disabled) {{ background: var(--up); border-color: var(--up); transform: translateY(-1px); }}
   .btn-refresh:disabled {{ opacity: 0.45; cursor: wait; }}
   .refresh-msg {{
-    font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
     letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
   }}
   .section {{ padding: 34px 0 18px; }}
@@ -1313,51 +1395,135 @@ def generate(allow_partial: bool = False):
     gap: 16px; align-items: start; margin-bottom: 16px;
   }}
   .section-num {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px; letter-spacing: 0.18em; color: var(--muted);
-    border-top: 1px solid var(--ink); padding-top: 8px;
+    border-top: 2px solid var(--accent); padding-top: 8px;
   }}
   .section-head h2 {{
-    font-family: 'DM Serif Display', 'Noto Serif SC', serif;
-    font-weight: 400; font-size: clamp(24px, 3.3vw, 38px);
-    line-height: 1; letter-spacing: -0.018em;
-    border-top: 1px solid var(--ink); padding-top: 2px; color: var(--ink);
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-weight: 700; font-size: clamp(24px, 3.1vw, 38px);
+    line-height: 1.02; letter-spacing: -0.035em;
+    border-top: 2px solid var(--accent); padding-top: 4px; color: var(--ink);
   }}
-  .section-head h2 em {{ font-style: italic; color: var(--up); }}
+  .section-head h2 em {{ font-style: normal; color: var(--accent); }}
   .section-head h2 .cn {{
-    font-size: 0.36em; font-family: 'Noto Serif SC', serif;
+    font-size: 0.34em; font-family: 'Noto Sans SC', sans-serif;
     color: var(--muted); letter-spacing: 0.02em; margin-left: 16px;
     font-style: normal; font-weight: 400; vertical-align: 0.15em;
   }}
   .section-meta {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
     color: var(--muted); border-top: 1px solid var(--hair);
     padding-top: 8px; text-align: right; max-width: 160px; line-height: 1.55;
   }}
   .note {{
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 9px; letter-spacing: 0.08em; color: var(--muted);
     margin: 6px 0 12px 88px; text-transform: uppercase;
+  }}
+  .control-grid {{
+    margin-left: 88px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+  }}
+  .control-panel {{
+    display: grid;
+    gap: 10px;
+    align-content: start;
+    min-height: 232px;
+    padding: 16px;
+    border: 1px solid var(--hair);
+    border-radius: 18px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.84));
+  }}
+  .control-panel.emphasis {{
+    border-color: rgba(23,56,79,0.2);
+    background: linear-gradient(180deg, rgba(223,233,239,0.88), rgba(255,255,255,0.98));
+    box-shadow: 0 14px 36px rgba(23,56,79,0.12);
+  }}
+  .control-panel .panel-kicker {{
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }}
+  .control-panel h3 {{
+    font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: clamp(22px, 2.4vw, 30px);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+  }}
+  .control-panel p {{
+    font-size: 13px;
+    color: #334150;
+    line-height: 1.55;
+  }}
+  .panel-metrics {{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }}
+  .panel-metrics span {{
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(23,56,79,0.14);
+    background: rgba(255,255,255,0.82);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }}
+  .panel-list {{
+    display: grid;
+    gap: 6px;
+    padding-left: 18px;
+    color: #41505d;
+    font-size: 12px;
+  }}
+  .module-cta {{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: auto;
+    padding: 10px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: var(--accent);
+    color: #f4fbff;
   }}
   .table-wrap {{ overflow-x: auto; margin-left: 88px; }}
   @media (max-width: 820px) {{
     .section-head {{ grid-template-columns: 1fr; gap: 10px; }}
-    .table-wrap, .note {{ margin-left: 0; }}
+    .table-wrap, .note, .control-grid {{ margin-left: 0; }}
     .section-meta {{ text-align: left; max-width: none; }}
     .container {{ padding: 0 16px 48px; }}
   }}
   table {{
     width: 100%; border-collapse: collapse;
-    font-family: 'JetBrains Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
-    font-size: 13px; font-variant-numeric: tabular-nums;
+    font-family: 'IBM Plex Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
+    font-size: 12.5px; font-variant-numeric: tabular-nums;
+    background: rgba(255,255,255,0.78);
+    border-radius: 16px;
+    overflow: hidden;
   }}
   thead th {{
     text-align: right; padding: 10px 12px 10px 0;
-    border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink);
-    font-family: 'Noto Serif SC', 'PingFang SC', 'Microsoft YaHei', serif;
-    font-size: 12px; letter-spacing: 0.03em;
-    color: var(--ink); font-weight: 600; white-space: nowrap;
+    border-top: 1px solid rgba(23,56,79,0.12); border-bottom: 1px solid rgba(23,56,79,0.16);
+    font-family: 'IBM Plex Mono', 'PingFang SC', 'Microsoft YaHei', monospace;
+    font-size: 10px; letter-spacing: 0.10em;
+    color: var(--accent); font-weight: 600; white-space: nowrap;
+    background: rgba(223,233,239,0.58);
+    text-transform: uppercase;
   }}
   thead th:first-child {{ text-align: left; padding-right: 24px; }}
   tbody td {{
@@ -1366,24 +1532,24 @@ def generate(allow_partial: bool = False):
     white-space: nowrap;
   }}
   tbody td:first-child {{
-    text-align: left; font-family: 'Noto Serif SC', 'Spectral', serif;
-    font-size: 16px; font-weight: 500; letter-spacing: -0.003em;
+    text-align: left; font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+    font-size: 15px; font-weight: 700; letter-spacing: -0.02em;
     padding-right: 24px;
   }}
   tbody td small {{
     color: var(--muted); font-size: 10px; letter-spacing: 0.03em;
     margin-left: 4px; white-space: nowrap;
   }}
-  tbody tr:hover td {{ background: rgba(20,18,17,0.04); }}
-  tbody tr:last-child td {{ border-bottom: 1px solid var(--ink); }}
+  tbody tr:hover td {{ background: rgba(23,56,79,0.05); }}
+  tbody tr:last-child td {{ border-bottom: 1px solid rgba(23,56,79,0.16); }}
   .up {{ color: var(--up); font-weight: 600; }}
   .down {{ color: var(--down); font-weight: 600; }}
   .strong {{ color: var(--up); font-weight: 700; }}
   .weak {{ color: var(--muted); font-weight: 400; }}
   .tag {{
-    display: inline-block; font-family: 'Noto Serif SC', 'PingFang SC', sans-serif;
-    font-size: 11px; letter-spacing: 0.03em;
-    padding: 3px 8px; border: 1px solid currentColor; font-weight: 500;
+    display: inline-block; font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+    font-size: 11px; letter-spacing: 0.02em;
+    padding: 3px 8px; border: 1px solid currentColor; border-radius: 999px; font-weight: 600;
   }}
   .tag-up {{ color: var(--up); background: rgba(184,37,31,0.08); }}
   .tag-down {{ color: var(--down); background: rgba(42,95,74,0.08); }}
@@ -1415,10 +1581,10 @@ def generate(allow_partial: bool = False):
     font-size: 12px;
   }}
   .signal-table tbody td:nth-child(-n+4) {{
-    background: linear-gradient(180deg, rgba(242,237,226,0.98), rgba(232,223,205,0.92));
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.9));
   }}
   .signal-table thead th:nth-child(-n+4) {{
-    background: linear-gradient(180deg, rgba(242,237,226,1), rgba(232,223,205,0.96));
+    background: linear-gradient(180deg, rgba(223,233,239,0.92), rgba(255,255,255,0.98));
   }}
   .signal-table .prob-matrix-cell {{
     padding-right: 0;
@@ -1430,14 +1596,15 @@ def generate(allow_partial: bool = False):
   }}
   .signal-table .prob-item {{
     border: 1px solid var(--hair);
-    background: rgba(255,255,255,0.28);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.82);
     padding: 8px 7px 7px;
     line-height: 1.2;
   }}
   .signal-table .prob-item .period {{
     display: block;
     margin-bottom: 5px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -1475,10 +1642,11 @@ def generate(allow_partial: bool = False):
     min-width: 66px;
     padding: 4px 6px;
     border: 1px solid var(--hair);
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px;
     letter-spacing: 0.05em;
-    background: rgba(255,255,255,0.22);
+    border-radius: 999px;
+    background: rgba(255,255,255,0.88);
   }}
   .signal-table .risk-chip strong {{
     font-size: 11px;
@@ -1494,25 +1662,25 @@ def generate(allow_partial: bool = False):
   }}
   .us-divider {{
     margin: 36px 0 0; padding-top: 20px;
-    border-top: 6px double var(--ink); position: relative;
+    border-top: 4px double var(--accent); position: relative;
   }}
   .us-divider .stamp {{
     position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
     background: var(--paper); padding: 0 22px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
-    color: var(--ink); white-space: nowrap;
+    color: var(--accent); white-space: nowrap;
   }}
   .us-divider .stamp em {{ color: var(--up); font-style: normal; }}
   .footer {{
-    margin-top: 42px; border-top: 1px solid var(--ink); padding-top: 18px;
-    font-family: 'JetBrains Mono', monospace;
+    margin-top: 42px; border-top: 1px solid rgba(23,56,79,0.18); padding-top: 18px;
+    font-family: 'IBM Plex Mono', monospace;
     font-size: 10px; letter-spacing: 0.05em; color: var(--muted);
     line-height: 1.65;
     display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end;
   }}
   .footer strong {{
-    color: var(--ink); letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase;
     display: block; margin-bottom: 6px;
   }}
   .footer .colophon {{ text-align: right; font-size: 10px; opacity: 0.75; }}
@@ -1523,6 +1691,7 @@ def generate(allow_partial: bool = False):
     .summary-strip {{ grid-template-columns: 1fr 1fr; gap: 8px; }}
     .macro-banner {{ grid-template-columns: 1fr; margin-left: 0; }}
     .market-block {{ padding: 14px 10px 4px; }}
+    .control-panel {{ min-height: auto; }}
   }}
   @media (max-width: 820px) {{
     .summary-strip {{ grid-template-columns: 1fr 1fr; }}
@@ -1546,7 +1715,8 @@ def generate(allow_partial: bool = False):
       margin: 0 0 16px;
       padding: 14px 14px 8px;
       border: 1px solid var(--hair);
-      background: linear-gradient(180deg, rgba(242,237,226,0.98), rgba(232,223,205,0.92));
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.92));
     }}
     .signal-table tbody td {{
       border-bottom: 1px dashed var(--hair);
@@ -1558,7 +1728,7 @@ def generate(allow_partial: bool = False):
       content: attr(data-label);
       display: block;
       margin-bottom: 4px;
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'IBM Plex Mono', monospace;
       font-size: 10px;
       letter-spacing: 0.14em;
       text-transform: uppercase;
@@ -1767,7 +1937,7 @@ Reliability · auto-labeled from structured backtests; current A-share / US mode
 </div>
 <div class="colophon">
 Issue № 01 · Vol. IV<br>
-Set in DM Serif Display &amp; JetBrains Mono<br>
+Set in Space Grotesk &amp; IBM Plex Mono<br>
 <strong style="display:inline; font-size:inherit;">Not investment advice</strong>
 </div>
 </div>
@@ -2134,6 +2304,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         option_summary=option_summary,
         execution_summary_value=execution_summary_value,
         execution_summary_sub=execution_summary_sub,
+        signal_snapshots=signal_snapshots,
     )
     with open("docs/index.html", "w", encoding="utf-8") as f:
         f.write(overview_html)
