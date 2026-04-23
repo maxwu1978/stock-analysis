@@ -334,6 +334,126 @@ def summarize_execution_strip(signals: list[dict], trades: pd.DataFrame) -> tupl
     return value, sub
 
 
+def summarize_strategy_candidates(signals: list[dict]) -> tuple[list[dict], list[dict]]:
+    actionable = [s for s in signals if s.get("action") in {"BUILD_LONG", "PROBE_LONG"}]
+    watchlist = [s for s in signals if s.get("action") in {"WATCHLIST", "OBSERVE", "WAIT"}]
+    actionable = sorted(
+        actionable,
+        key=lambda x: ({"STANDARD": 0, "PROBE": 1, "MICRO": 2, "NO_TRADE": 3}.get(x.get("tier", ""), 9), -(x.get("score") or 0)),
+    )
+    watchlist = sorted(watchlist, key=lambda x: (x.get("market", ""), x.get("name", "")))
+    return actionable, watchlist
+
+
+def build_strategy_page(
+    full_page_html: str,
+    now: str,
+    signals: list[dict],
+    execution_summary_value: str,
+    execution_summary_sub: str,
+) -> str:
+    style_block = extract_style_block(full_page_html)
+    footer_html = extract_footer_block(full_page_html)
+    actionable, watchlist = summarize_strategy_candidates(signals)
+
+    if actionable:
+        actionable_rows = ""
+        for row in actionable:
+            actionable_rows += (
+                f"<tr><td>{row.get('market')}</td><td>{row.get('name')}</td><td>{row.get('action')}</td>"
+                f"<td>{row.get('tier')}</td><td>{row.get('reliability')}</td>"
+                f"<td>{row.get('plan_text')}</td><td>{row.get('rationale')}</td></tr>\n"
+            )
+        actionable_html = f"""
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>市场</th><th>标的</th><th>动作</th><th>层级</th><th>可靠度</th><th>仓位计划</th><th>原因</th></tr></thead>
+    <tbody>{actionable_rows}</tbody>
+  </table>
+</div>
+"""
+        actionable_note = "<p class=\"note\">当前有明确信号，优先关注这里；只有这一块才视为接近可执行。</p>"
+    else:
+        actionable_html = (
+            "<p class=\"note\"><strong>当前没有明确信号。</strong> 这不是系统失效，而是当前全部信号仍在观察/等待区。"
+            " 弱信号阶段默认不交易，只保留观察名单。</p>"
+        )
+        actionable_note = ""
+
+    watch_rows = ""
+    for row in watchlist[:20]:
+        watch_rows += (
+            f"<tr><td>{row.get('market')}</td><td>{row.get('name')}</td><td>{row.get('action')}</td>"
+            f"<td>{row.get('tier')}</td><td>{row.get('reliability')}</td><td>{row.get('plan_text')}</td></tr>\n"
+        )
+    watch_html = f"""
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>市场</th><th>标的</th><th>状态</th><th>层级</th><th>可靠度</th><th>计划</th></tr></thead>
+    <tbody>{watch_rows or '<tr><td colspan="6">暂无观察名单</td></tr>'}</tbody>
+  </table>
+</div>
+"""
+
+    summary_cards_html = f"""
+  <article class="summary-card">
+    <div class="label">Execution Pulse</div>
+    <div class="value">{execution_summary_value}</div>
+    <div class="sub">{execution_summary_sub}</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Actionable Signals</div>
+    <div class="value">{len(actionable)}</div>
+    <div class="sub">只有这里视为接近可执行</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Watchlist</div>
+    <div class="value">{len(watchlist)}</div>
+    <div class="sub">弱信号或等待阶段默认不交易</div>
+  </article>
+"""
+    nav_links_html = """
+  <a class="major" href="./index.html">← 返回总览</a>
+  <a class="major" href="#strategy-actionable">Actionable</a>
+  <a class="major" href="#strategy-watchlist">Watchlist</a>
+  <a class="major" href="./review.html">Review</a>
+"""
+    body_html = f"""
+<section class="section" id="strategy-actionable">
+  <div class="section-head">
+    <div class="section-num">№ 01</div>
+    <h2>Actionable <em>Signals</em><span class="cn">今日明确信号</span></h2>
+    <div class="section-meta">Only Trade<br>When Clear</div>
+  </div>
+  {actionable_note}
+  {actionable_html}
+</section>
+
+<section class="section" id="strategy-watchlist">
+  <div class="section-head">
+    <div class="section-num">№ 02</div>
+    <h2>Watchlist <em>Only</em><span class="cn">观察名单</span></h2>
+    <div class="section-meta">No Trade<br>When Weak</div>
+  </div>
+  <p class="note">信号弱的时候不交易是正常策略，不需要强行出手。</p>
+  {watch_html}
+</section>
+"""
+    return render_subpage(
+        title="主力分析 · Strategy Desk",
+        hero_kicker="Issue № ST · Action Layer · Strategy",
+        hero_title_html="交易<em>策略</em>",
+        eyebrow="Actionable Signals & Watchlist Only",
+        now=now,
+        style_block=style_block,
+        summary_cards_html=summary_cards_html,
+        nav_links_html=nav_links_html,
+        body_html=body_html,
+        footer_html=footer_html,
+        hero_link_html='<a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>',
+    )
+
+
 def build_us_page(full_page_html: str, now: str, us_section: str, macro_headline: str) -> str:
     style_block = extract_style_block(full_page_html)
     footer_html = extract_footer_block(full_page_html)
@@ -421,6 +541,7 @@ def build_overview_page(
     nav_links_html = """
   <a class="major" href="./cn.html">A-Share</a>
   <a class="major" href="./us.html">U.S.</a>
+  <a class="major" href="./strategy.html">Strategy</a>
   <a class="major" href="./options.html">Options</a>
   <a class="major" href="./review.html">Review</a>
   <a class="major" href="#overview-hub">Overview</a>
@@ -438,6 +559,7 @@ def build_overview_page(
       <tbody>
         <tr><td>A股</td><td>{a_weak}/{a_total} 弱，主模型偏研究参考</td><td><a href="./cn.html">打开 A股子页</a></td></tr>
         <tr><td>美股</td><td>{us_mid_summary} 相对居前，宏观覆盖已接入</td><td><a href="./us.html">打开 美股子页</a></td></tr>
+        <tr><td>策略</td><td>只把明确信号单独列出，弱信号默认不交易</td><td><a href="./strategy.html">打开 策略子页</a></td></tr>
         <tr><td>期权</td><td>{option_summary}，退出模板状态单独查看</td><td><a href="./options.html">打开 期权子页</a></td></tr>
         <tr><td>复盘</td><td>{execution_summary_value}，{execution_summary_sub}</td><td><a href="./review.html">打开 复盘子页</a></td></tr>
       </tbody>
@@ -729,9 +851,14 @@ def generate(allow_partial: bool = False):
         signal_snapshots.append({
             "market": "CN",
             "symbol": code,
+            "name": name,
             "action": decision.action,
             "tier": decision.plan.position_tier,
             "allowed": decision.plan.allowed,
+            "reliability": reliability,
+            "score": float(prob.get("score", 0) or 0),
+            "plan_text": f"{decision.plan.position_tier} · {decision.plan.qty}股 · ${decision.plan.risk_budget:,.0f}",
+            "rationale": decision.rationale,
         })
 
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
@@ -1593,9 +1720,14 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         signal_snapshots.append({
             "market": "US",
             "symbol": ticker,
+            "name": uname,
             "action": decision.action,
             "tier": decision.plan.position_tier,
             "allowed": decision.plan.allowed,
+            "reliability": us_rel,
+            "score": float(prob.get("score", 0) or 0),
+            "plan_text": f"{decision.plan.position_tier} · {decision.plan.qty}股 · ${decision.plan.risk_budget:,.0f}",
+            "rationale": decision.rationale,
         })
         reasons = macro.get("reasons", [])
         if penalty > 0:
@@ -1864,6 +1996,15 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     )
     with open("docs/options.html", "w", encoding="utf-8") as f:
         f.write(options_page_html)
+    strategy_page_html = build_strategy_page(
+        html,
+        now,
+        signal_snapshots,
+        execution_summary_value,
+        execution_summary_sub,
+    )
+    with open("docs/strategy.html", "w", encoding="utf-8") as f:
+        f.write(strategy_page_html)
     review_page_html = build_review_page(
         html,
         now,
@@ -1880,6 +2021,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     print(f"\n总览页已生成: docs/index.html ({len(overview_html)} 字节)")
     print(f"A股子页已生成: docs/cn.html ({len(cn_page_html)} 字节)")
     print(f"美股子页已生成: docs/us.html ({len(us_page_html)} 字节)")
+    print(f"策略子页已生成: docs/strategy.html ({len(strategy_page_html)} 字节)")
     print(f"期权子页已生成: docs/options.html ({len(options_page_html)} 字节)")
     print(f"复盘子页已生成: docs/review.html ({len(review_page_html)} 字节)")
     print(f"完整快照已生成: docs/dashboard_full.html ({len(html)} 字节)")
