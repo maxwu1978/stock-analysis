@@ -344,7 +344,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">IC-WEIGHTED MULTI-FACTOR · CN-A / US · v3</div>
-  <div class="muted">2026-04-23 11:27:32</div>
+  <div class="muted">2026-04-23 11:38:34</div>
 </div>
 
 <div class="container">
@@ -353,7 +353,7 @@
   <div class="hero-kicker">Issue № 01 · Research Bulletin · 上海 / 深圳</div>
   <h1>主力<em>分析</em><span class="eyebrow">A-Share Technical &amp; Factor Report</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-23 11:27:32</span>
+    <span class="pill">Last Sync · 2026-04-23 11:38:34</span>
     <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
     <span class="refresh-msg" id="refreshMsg"></span>
   </div>
@@ -367,7 +367,7 @@
   </article>
   <article class="summary-card">
     <div class="label">US Relative Leader</div>
-    <div class="value">英伟达 / 西部数据 / 特斯拉 / 苹果</div>
+    <div class="value">特斯拉 / 苹果 / 携程</div>
     <div class="sub">当前自动标签相对最强</div>
   </article>
   <article class="summary-card">
@@ -468,7 +468,12 @@ async function triggerRefresh() {
   <table>
   <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
   <tbody>
-  
+  <tr><td>宁德时代</td><td><span class="tag tag-neutral">震荡</span></td><td class="weak">弱</td><td class="strong">⚡⚡⚡⚡</td><td>50% +0.75% <small>(n=212)</small></td><td>51% +2.33% <small>(n=209)</small></td><td>52% +6.03% <small>(n=202)</small></td><td class="strong">98% +44.24% <small>(n=154)</small></td></tr>
+<tr><td>贵州茅台</td><td><span class="tag tag-neutral">震荡</span></td><td class="weak">弱</td><td class="strong">⚡⚡⚡⚡</td><td>53% +0.18% <small>(n=122)</small></td><td class="strong">63% +0.73% <small>(n=122)</small></td><td>54% +0.10% <small>(n=120)</small></td><td>46% -1.89% <small>(n=98)</small></td></tr>
+<tr><td>中国铝业</td><td><span class="tag tag-up">看涨</span></td><td class="weak">弱</td><td>-</td><td>59% +1.56% <small>(n=220)</small></td><td class="strong">69% +3.35% <small>(n=219)</small></td><td class="strong">75% +7.80% <small>(n=209)</small></td><td class="strong">85% +41.59% <small>(n=140)</small></td></tr>
+<tr><td>阳光电源</td><td><span class="tag tag-up">偏涨</span></td><td class="weak">弱</td><td>-</td><td>52% +2.11% <small>(n=234)</small></td><td>52% +3.92% <small>(n=233)</small></td><td>55% +8.03% <small>(n=221)</small></td><td>58% +57.16% <small>(n=137)</small></td></tr>
+<tr><td>闻泰科技</td><td><span class="tag tag-down">偏跌</span></td><td class="weak">弱</td><td class="strong">⚡⚡⚡</td><td class="weak">38% -0.91% <small>(n=162)</small></td><td class="weak">35% -0.77% <small>(n=162)</small></td><td>43% +0.49% <small>(n=169)</small></td><td class="strong">74% +9.06% <small>(n=133)</small></td></tr>
+
   </tbody>
   </table>
   </div>
@@ -484,7 +489,12 @@ async function triggerRefresh() {
   <table>
   <thead><tr><th>股票</th><th>RSI6</th><th>MACD柱</th><th>MA5</th><th>MA20</th><th>MA60</th><th>ADX</th><th>股性</th></tr></thead>
   <tbody>
-  
+  <tr><td>宁德时代</td><td class="up">61.1</td><td>4.418</td><td>435.77</td><td>411.34</td><td>377.21</td><td>43</td><td>混合</td></tr>
+<tr><td>贵州茅台</td><td class="down">18.5</td><td>-9.558</td><td>1411.73</td><td>1438.26</td><td>1435.57</td><td>26</td><td>混合</td></tr>
+<tr><td>中国铝业</td><td class="down">35.7</td><td>0.086</td><td>12.23</td><td>12.01</td><td>12.89</td><td>19</td><td>回归</td></tr>
+<tr><td>阳光电源</td><td class="">53.9</td><td>1.918</td><td>135.12</td><td>137.16</td><td>150.39</td><td>16</td><td>混合</td></tr>
+<tr><td>闻泰科技</td><td class="down">9.1</td><td>-0.378</td><td>29.84</td><td>31.05</td><td>33.42</td><td>24</td><td>混合</td></tr>
+
   </tbody>
   </table>
   </div>
@@ -500,7 +510,12 @@ async function triggerRefresh() {
   <table>
   <thead><tr><th>股票</th><th>报告期</th><th>ROE</th><th>营收增长</th><th>利润增长</th><th>毛利率</th><th>负债率</th></tr></thead>
   <tbody>
-  
+  <tr><td>宁德时代</td><td>2026-03-31</td><td class="">6.0%</td><td class="up">+52.5%</td><td class="up">+48.5%</td><td>24.8%</td><td class="down">62.3%</td></tr>
+<tr><td>贵州茅台</td><td>2025-12-31</td><td class="up">32.5%</td><td class="down">-1.2%</td><td class="down">-4.5%</td><td>91.2%</td><td class="up">16.4%</td></tr>
+<tr><td>中国铝业</td><td>2025-12-31</td><td class="up">17.6%</td><td class="">+1.7%</td><td class="">+2.2%</td><td>18.0%</td><td class="">46.0%</td></tr>
+<tr><td>阳光电源</td><td>2025-12-31</td><td class="up">31.3%</td><td class="">+14.6%</td><td class="up">+22.0%</td><td>31.8%</td><td class="">58.1%</td></tr>
+<tr><td>闻泰科技</td><td>2025-09-30</td><td class="">4.3%</td><td class="down">-44.0%</td><td class="up">+265.1%</td><td>17.0%</td><td class="">33.9%</td></tr>
+
   </tbody>
   </table>
   </div>
@@ -547,14 +562,14 @@ async function triggerRefresh() {
   <div class="table-wrap">
   <table>
   <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>宏观覆盖</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
-  <tbody><tr><td>英伟达</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td class="weak">-4 <small>宏观事件将近</small></td><td>-</td><td class="strong">63% +2.19% <small>(n=280)</small></td><td class="strong">65% +3.57% <small>(n=279)</small></td><td class="strong">66% +9.08% <small>(n=267)</small></td><td class="strong">90% +101.02% <small>(n=217)</small></td></tr>
+  <tbody><tr><td>英伟达</td><td><span class="tag tag-up">看涨</span></td><td class="weak">弱</td><td class="weak">-4 <small>宏观事件将近</small></td><td>-</td><td class="strong">63% +2.19% <small>(n=280)</small></td><td class="strong">65% +3.57% <small>(n=279)</small></td><td class="strong">66% +9.08% <small>(n=267)</small></td><td class="strong">90% +101.02% <small>(n=217)</small></td></tr>
 <tr><td>台积电</td><td><span class="tag tag-neutral">震荡</span></td><td class="weak">弱</td><td class="weak">-4 <small>宏观事件将近</small></td><td>-</td><td>54% +0.69% <small>(n=289)</small></td><td>50% +1.38% <small>(n=287)</small></td><td>50% +2.41% <small>(n=274)</small></td><td class="strong">74% +24.99% <small>(n=222)</small></td></tr>
 <tr><td>美光科技</td><td><span class="tag tag-neutral">震荡</span></td><td class="weak">弱</td><td class="weak">-4 <small>宏观事件将近</small></td><td>-</td><td>41% -0.26% <small>(n=303)</small></td><td>47% -0.09% <small>(n=300)</small></td><td>49% -0.16% <small>(n=289)</small></td><td class="strong">80% +23.59% <small>(n=217)</small></td></tr>
-<tr><td>西部数据</td><td><span class="tag tag-up">看涨</span></td><td class="">中</td><td class="weak">-12 <small>宏观事件将近/财报将近</small></td><td class="strong">⚡⚡⚡</td><td>53% +0.41% <small>(n=290)</small></td><td>56% +0.89% <small>(n=289)</small></td><td class="strong">62% +1.12% <small>(n=279)</small></td><td class="strong">70% +24.08% <small>(n=231)</small></td></tr>
+<tr><td>西部数据</td><td><span class="tag tag-up">看涨</span></td><td class="strong">强</td><td class="weak">-12 <small>宏观事件将近/财报将近</small></td><td class="strong">⚡⚡⚡</td><td>53% +0.41% <small>(n=290)</small></td><td>56% +0.89% <small>(n=289)</small></td><td class="strong">62% +1.12% <small>(n=279)</small></td><td class="strong">70% +24.08% <small>(n=231)</small></td></tr>
 <tr><td>特斯拉</td><td><span class="tag tag-down">偏跌</span></td><td class="">中</td><td class="weak">-4 <small>宏观事件将近</small></td><td class="strong">⚡⚡⚡⚡</td><td>42% -0.63% <small>(n=287)</small></td><td>46% -0.83% <small>(n=287)</small></td><td>44% +0.75% <small>(n=272)</small></td><td>43% +1.25% <small>(n=198)</small></td></tr>
 <tr><td>谷歌</td><td><span class="tag tag-up">偏涨</span></td><td class="weak">弱</td><td class="weak">-12 <small>宏观事件将近/财报将近</small></td><td class="strong">⚡⚡⚡</td><td>50% -0.13% <small>(n=250)</small></td><td>47% -0.47% <small>(n=248)</small></td><td>56% +0.55% <small>(n=237)</small></td><td class="strong">75% +12.67% <small>(n=174)</small></td></tr>
 <tr><td>苹果</td><td><span class="tag tag-neutral">震荡</span></td><td class="">中</td><td class="weak">-12 <small>宏观事件将近/财报将近</small></td><td class="strong">⚡⚡⚡</td><td>58% +0.20% <small>(n=190)</small></td><td>59% +0.26% <small>(n=185)</small></td><td>49% +0.60% <small>(n=186)</small></td><td class="strong">60% +3.47% <small>(n=126)</small></td></tr>
-<tr><td>携程</td><td><span class="tag tag-up">偏涨</span></td><td class="strong">强</td><td class="weak">-4 <small>宏观事件将近</small></td><td class="strong">⚡⚡⚡</td><td>50% +0.58% <small>(n=317)</small></td><td>51% +0.87% <small>(n=314)</small></td><td>58% +3.35% <small>(n=300)</small></td><td class="strong">75% +24.49% <small>(n=216)</small></td></tr>
+<tr><td>携程</td><td><span class="tag tag-up">偏涨</span></td><td class="">中</td><td class="weak">-4 <small>宏观事件将近</small></td><td class="strong">⚡⚡⚡</td><td>50% +0.58% <small>(n=317)</small></td><td>51% +0.87% <small>(n=314)</small></td><td>58% +3.35% <small>(n=300)</small></td><td class="strong">75% +24.49% <small>(n=216)</small></td></tr>
 <tr><td>富途控股</td><td><span class="tag tag-up">看涨</span></td><td class="weak">弱</td><td class="weak">-4 <small>宏观事件将近</small></td><td>-</td><td class="strong">69% +18.99% <small>(n=13)</small></td><td class="strong">77% +31.77% <small>(n=13)</small></td><td class="strong">85% +22.60% <small>(n=13)</small></td><td class="strong">100% +27.36% <small>(n=10)</small></td></tr>
 </tbody>
   </table>

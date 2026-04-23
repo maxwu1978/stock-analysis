@@ -1,10 +1,10 @@
-"""A股数据获取模块 - Sina API (实时) + 腾讯财经 (历史K线)"""
+"""A股数据获取模块 - Sina API (实时) + 腾讯/新浪 (历史K线)"""
 
+import json
 import re
 import time
 import requests
 import pandas as pd
-from datetime import datetime, timedelta
 
 STOCKS = {
     "300750": "宁德时代",
@@ -61,7 +61,18 @@ def fetch_realtime_quotes() -> pd.DataFrame:
 
 
 def fetch_history(symbol: str, days: int = 120) -> pd.DataFrame:
-    """获取单只股票的历史日线数据（前复权）- 使用腾讯财经 API"""
+    """获取单只股票的历史日线数据（前复权）.
+
+    优先腾讯日线，失败时回退新浪长历史，降低单源解析失败导致的整页空表风险。
+    """
+    try:
+        return _fetch_history_tencent(symbol, days)
+    except Exception:
+        return _fetch_history_sina(symbol, max(days, 800))
+
+
+def _fetch_history_tencent(symbol: str, days: int = 120) -> pd.DataFrame:
+    """腾讯财经前复权日线。"""
     sina_sym = _sina_symbol(symbol)
     url = f"https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param={sina_sym},day,,,{days},qfq"
     resp = requests.get(url, timeout=15)
@@ -90,6 +101,37 @@ def fetch_history(symbol: str, days: int = 120) -> pd.DataFrame:
     df.set_index("date", inplace=True)
 
     # 计算涨跌幅
+    df["pct_chg"] = df["close"].pct_change() * 100
+    df["change"] = df["close"].diff()
+    return df
+
+
+def _fetch_history_sina(symbol: str, count: int = 800) -> pd.DataFrame:
+    """新浪长历史日线，作为 A 股页面/回测的稳定回退源。"""
+    sina_sym = _sina_symbol(symbol)
+    url = (
+        "https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/"
+        f"CN_MarketData.getKLineData?symbol={sina_sym}&scale=240&ma=no&datalen={count}"
+    )
+    resp = requests.get(url, timeout=15, headers={"Referer": "https://finance.sina.com.cn"})
+    data = json.loads(resp.text)
+    if not data:
+        raise ValueError(f"No Sina historical data for {symbol}")
+
+    rows = []
+    for item in data:
+        rows.append({
+            "date": item["day"],
+            "open": float(item["open"]),
+            "close": float(item["close"]),
+            "high": float(item["high"]),
+            "low": float(item["low"]),
+            "volume": int(float(item["volume"])),
+        })
+
+    df = pd.DataFrame(rows)
+    df["date"] = pd.to_datetime(df["date"])
+    df.set_index("date", inplace=True)
     df["pct_chg"] = df["close"].pct_change() * 100
     df["change"] = df["close"].diff()
     return df

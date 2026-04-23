@@ -70,6 +70,17 @@ def refresh_cn_macro_banner(section_html: str, banner_html: str) -> str:
     )
 
 
+def extract_section_by_id(html: str, section_id: str) -> str | None:
+    pattern = rf'(<section class="section" id="{section_id}">[\s\S]*?</section>)'
+    match = re.search(pattern, html, re.S)
+    return match.group(1) if match else None
+
+
+def replace_section_by_id(html: str, section_id: str, replacement: str) -> str:
+    pattern = rf'(<section class="section" id="{section_id}">[\s\S]*?</section>)'
+    return re.sub(pattern, replacement, html, count=1, flags=re.S)
+
+
 def load_old_page() -> str:
     old_page_path = "docs/index.html"
     if not os.path.exists(old_page_path):
@@ -806,21 +817,23 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
 </div>
 </body></html>"""
 
-    if allow_partial and not any([quote_html.strip(), prob_html.strip(), tech_html.strip(), fund_html.strip()]) and old_page_html:
-        old_a_share = extract_old_block(
-            old_page_html,
-            r'((?:<section class="section">[\s\S]*?){4})\s*<section class="us-divider">'
-        )
-        if old_a_share:
-            old_a_share = refresh_cn_macro_banner(old_a_share, cn_macro_note_html)
-            html = re.sub(
-                r'((?:<section class="section">[\s\S]*?){4})(?=\s*<div class="footer" id="method-block">)',
-                old_a_share,
-                html,
-                count=1,
-                flags=re.S,
-            )
-            print("  [!] A股区块本次为空，保留旧页面内容")
+    if allow_partial and old_page_html:
+        if not prob_html.strip():
+            old_trend = extract_section_by_id(old_page_html, "cn-trend")
+            if old_trend:
+                old_trend = refresh_cn_macro_banner(old_trend, cn_macro_note_html)
+                html = replace_section_by_id(html, "cn-trend", old_trend)
+                print("  [!] A股趋势区块为空，保留旧页面内容并刷新宏观条")
+        if not tech_html.strip():
+            old_tech = extract_section_by_id(old_page_html, "cn-tech")
+            if old_tech:
+                html = replace_section_by_id(html, "cn-tech", old_tech)
+                print("  [!] A股技术区块为空，保留旧页面内容")
+        if not fund_html.strip():
+            old_fund = extract_section_by_id(old_page_html, "cn-fund")
+            if old_fund:
+                html = replace_section_by_id(html, "cn-fund", old_fund)
+                print("  [!] A股财报区块为空，保留旧页面内容")
 
     # ==================== 美股部分 ====================
     print("获取美股行情...")
