@@ -608,6 +608,8 @@ def generate(allow_partial: bool = False):
   .tag-neutral {{ color: var(--muted); background: transparent; }}
   .trend-table {{
     min-width: 1120px;
+    border-collapse: separate;
+    border-spacing: 0;
   }}
   .trend-table thead th,
   .trend-table tbody td {{
@@ -622,6 +624,49 @@ def generate(allow_partial: bool = False):
   .trend-table tbody td:nth-child(3),
   .trend-table tbody td:nth-child(4) {{
     vertical-align: middle;
+  }}
+  .trend-table thead th:nth-child(1),
+  .trend-table tbody td:nth-child(1) {{
+    position: sticky;
+    left: 0;
+    min-width: 170px;
+    background: var(--paper);
+    z-index: 3;
+  }}
+  .trend-table thead th:nth-child(2),
+  .trend-table tbody td:nth-child(2) {{
+    position: sticky;
+    left: 170px;
+    min-width: 92px;
+    background: var(--paper);
+    z-index: 3;
+  }}
+  .trend-table thead th:nth-child(3),
+  .trend-table tbody td:nth-child(3) {{
+    position: sticky;
+    left: 262px;
+    min-width: 82px;
+    background: var(--paper);
+    z-index: 3;
+  }}
+  .trend-table thead th:nth-child(4),
+  .trend-table tbody td:nth-child(4) {{
+    position: sticky;
+    left: 344px;
+    min-width: 126px;
+    background: var(--paper);
+    z-index: 3;
+    box-shadow: 10px 0 18px rgba(20,18,17,0.06);
+  }}
+  .trend-table tbody td:nth-child(-n+4) {{
+    background: linear-gradient(180deg, rgba(242,237,226,0.98), rgba(232,223,205,0.92));
+  }}
+  .trend-table thead th:nth-child(-n+4) {{
+    background: linear-gradient(180deg, rgba(242,237,226,1), rgba(232,223,205,0.96));
+  }}
+  .trend-table thead th:nth-child(n+5),
+  .trend-table tbody td:nth-child(n+5) {{
+    min-width: 116px;
   }}
   .trend-table .prob-cell {{
     min-width: 110px;
@@ -670,6 +715,12 @@ def generate(allow_partial: bool = False):
     min-width: 76px;
     vertical-align: middle;
   }}
+  .trend-table .tail-cell,
+  .trend-table .macro-cell,
+  .trend-table td:nth-child(2),
+  .trend-table td:nth-child(3) {{
+    font-size: 14px;
+  }}
   .us-divider {{
     margin: 36px 0 0; padding-top: 20px;
     border-top: 6px double var(--ink); position: relative;
@@ -702,7 +753,7 @@ def generate(allow_partial: bool = False):
     .macro-banner {{ grid-template-columns: 1fr; margin-left: 0; }}
     .market-block {{ padding: 18px 12px 6px; }}
     .trend-table {{
-      min-width: 980px;
+      min-width: 1080px;
     }}
   }}
   @media (max-width: 820px) {{
