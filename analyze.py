@@ -8,15 +8,7 @@ from fetch_data import STOCKS, fetch_realtime_quotes, fetch_all_history
 from indicators import compute_all, summarize
 from probability import score_trend
 from fundamental import fetch_all_financials
-
-
-SIGNAL_RELIABILITY = {
-    "300750": "强",  # 宁德时代
-    "600519": "弱",  # 贵州茅台
-    "601600": "强",  # 中国铝业
-    "300274": "弱",  # 阳光电源
-    "600745": "中",  # 闻泰科技
-}
+from reliability import get_reliability_label, load_reliability_labels
 
 def direction_from_prob(hp):
     """用30日上涨概率决定方向"""
@@ -42,6 +34,7 @@ def md_table(headers, rows):
 
 def main():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    reliability_labels = load_reliability_labels()
 
     print("_正在获取数据..._", file=sys.stderr)
 
@@ -108,7 +101,7 @@ def main():
             if p <= 40: return f"_{p}%_ {avg} (n={n})"
             return f"{p}% {avg} (n={n})"
 
-        reliability = SIGNAL_RELIABILITY.get(code, "?")
+        reliability = get_reliability_label(reliability_labels, "a_share", code)
 
         # 肥尾信号
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
@@ -176,7 +169,7 @@ def main():
             fund_rows))
 
     print(f"\n---")
-    print(f"模型: 25因子 x 滚动IC加权, 6年5800样本回测 | 免责: 仅为统计概率, 不构成投资建议")
+    print(f"模型: 25因子 x 滚动IC加权, 6年5800样本回测 | 可靠度: 自动回测标签, 当前A股主模型整体偏弱 | 免责: 仅为统计概率, 不构成投资建议")
 
 
 if __name__ == "__main__":

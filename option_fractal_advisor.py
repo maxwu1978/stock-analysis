@@ -186,7 +186,7 @@ def classify_regime(feat: dict) -> dict:
     if asym > 0.3:
         # 强反转股
         if rsi < 40 or ma20 < -6:
-            # ⭐ 核心强信号: 胜率 67.9% (回测验证)
+            # ⭐ 当前最可信的单腿信号: 胜率 67.9% (回测验证, 仍需生产样本闭环)
             regime = "strong_asym_oversold"
             strategy = "BUY_CALL"
             days_to_expiry = 14  # Call 持有期更长, 给反转空间

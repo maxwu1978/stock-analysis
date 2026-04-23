@@ -220,10 +220,14 @@ def compute_overall_stats(all_results: dict):
             continue
         for h in HORIZONS:
             rets = subset[f"fwd_{h}d_ret"]
-            wins = rets[rets > 0]
-            losses = rets[rets <= 0]
+            if threshold > 0:
+                wins = rets[rets > 0]
+                losses = rets[rets <= 0]
+            else:
+                wins = rets[rets < 0]
+                losses = rets[rets >= 0]
             win_rate = len(wins) / len(rets) * 100
-            avg_win = wins.mean() * 100 if len(wins) > 0 else 0
+            avg_win = abs(wins.mean()) * 100 if len(wins) > 0 else 0
             avg_loss = abs(losses.mean()) * 100 if len(losses) > 0 else 0
             pnl_ratio = avg_win / avg_loss if avg_loss > 0 else float("inf")
             print(f"    {label} {h}日: 胜率{win_rate:.0f}%  "

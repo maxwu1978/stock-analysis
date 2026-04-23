@@ -1,0 +1,139 @@
+{
+  "generated_at": "2026-04-23T02:35:23.551798+00:00",
+  "a_share": {
+    "300750": {
+      "label": "弱",
+      "sample_size": 1175,
+      "bull_n_30d": 80,
+      "bear_n_30d": 42,
+      "diff_up_30d_pp": -4.64,
+      "diff_ret_30d_pct": -0.67,
+      "rankic_30d": -0.1569,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -66.67,
+      "second_half_diff_up_30d_pp": 10.87
+    },
+    "600519": {
+      "label": "弱",
+      "sample_size": 1175,
+      "bull_n_30d": 62,
+      "bear_n_30d": 63,
+      "diff_up_30d_pp": -10.57,
+      "diff_ret_30d_pct": -5.22,
+      "rankic_30d": -0.0771,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -56.0,
+      "second_half_diff_up_30d_pp": 67.98
+    },
+    "601600": {
+      "label": "弱",
+      "sample_size": 1175,
+      "bull_n_30d": 72,
+      "bear_n_30d": 93,
+      "diff_up_30d_pp": -18.68,
+      "diff_ret_30d_pct": -8.66,
+      "rankic_30d": -0.1771,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -38.52,
+      "second_half_diff_up_30d_pp": -25.49
+    },
+    "300274": {
+      "label": "弱",
+      "sample_size": 1175,
+      "bull_n_30d": 58,
+      "bear_n_30d": 55,
+      "diff_up_30d_pp": -12.66,
+      "diff_ret_30d_pct": -7.05,
+      "rankic_30d": -0.0589,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -19.4,
+      "second_half_diff_up_30d_pp": -6.43
+    },
+    "600745": {
+      "label": "弱",
+      "sample_size": 1175,
+      "bull_n_30d": 69,
+      "bear_n_30d": 115,
+      "diff_up_30d_pp": -15.36,
+      "diff_ret_30d_pct": -6.91,
+      "rankic_30d": -0.1543,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": 9.61,
+      "second_half_diff_up_30d_pp": -47.22
+    }
+  },
+  "us": {
+    "NVDA": {
+      "label": "弱",
+      "sample_size": 2218,
+      "bull_n_30d": 239,
+      "bear_n_30d": 297,
+      "diff_up_30d_pp": -5.98,
+      "diff_ret_30d_pct": -1.86,
+      "rankic_30d": -0.0285,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": 0.54,
+      "second_half_diff_up_30d_pp": -16.42
+    },
+    "TSLA": {
+      "label": "弱",
+      "sample_size": 2218,
+      "bull_n_30d": 196,
+      "bear_n_30d": 287,
+      "diff_up_30d_pp": -17.71,
+      "diff_ret_30d_pct": -7.3,
+      "rankic_30d": -0.1265,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -12.2,
+      "second_half_diff_up_30d_pp": -29.74
+    },
+    "GOOGL": {
+      "label": "弱",
+      "sample_size": 2218,
+      "bull_n_30d": 304,
+      "bear_n_30d": 357,
+      "diff_up_30d_pp": -12.15,
+      "diff_ret_30d_pct": -0.66,
+      "rankic_30d": 0.0361,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -19.11,
+      "second_half_diff_up_30d_pp": -4.58
+    },
+    "AAPL": {
+      "label": "中",
+      "sample_size": 2218,
+      "bull_n_30d": 215,
+      "bear_n_30d": 290,
+      "diff_up_30d_pp": 5.67,
+      "diff_ret_30d_pct": 1.08,
+      "rankic_30d": 0.0212,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": 23.12,
+      "second_half_diff_up_30d_pp": -14.3
+    },
+    "TCOM": {
+      "label": "弱",
+      "sample_size": 2218,
+      "bull_n_30d": 266,
+      "bear_n_30d": 332,
+      "diff_up_30d_pp": -11.3,
+      "diff_ret_30d_pct": -3.08,
+      "rankic_30d": -0.1025,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -1.76,
+      "second_half_diff_up_30d_pp": -21.16
+    },
+    "FUTU": {
+      "label": "弱",
+      "sample_size": 1496,
+      "bull_n_30d": 211,
+      "bear_n_30d": 133,
+      "diff_up_30d_pp": -19.47,
+      "diff_ret_30d_pct": -14.91,
+      "rankic_30d": -0.1372,
+      "stable_halves": false,
+      "first_half_diff_up_30d_pp": -7.04,
+      "second_half_diff_up_30d_pp": -37.27
+    }
+  }
+}

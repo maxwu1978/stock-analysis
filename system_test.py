@@ -61,7 +61,9 @@ def generate_signals(df, score_fn, fund_df=None):
         if "error" in result:
             continue
         row = df.iloc[i]
-        outlook = -result["score"]
+        # Keep validation aligned with the production model and backtest_v2:
+        # positive score means bullish, negative score means bearish.
+        outlook = result["score"]
         records.append({"date": row.name, "close": row["close"], "outlook": outlook})
 
     out = pd.DataFrame(records)

@@ -44,7 +44,9 @@ def run_backtest(ticker, name):
             continue
 
         row = df.iloc[i]
-        outlook = -result["score"]
+        # Keep the US backtest aligned with the production model output:
+        # positive score means bullish, negative score means bearish.
+        outlook = result["score"]
 
         record = {"date": row.name, "close": row["close"], "outlook": outlook}
         for h in HORIZONS:

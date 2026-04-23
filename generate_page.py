@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import re
 import sys
 from datetime import datetime
 import pandas as pd
@@ -13,9 +14,7 @@ from probability import score_trend
 from probability_us import score_trend_us
 from fundamental import fetch_all_financials
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
-
-A_SIGNAL_RELIABILITY = {"300750": "强", "600519": "弱", "601600": "强", "300274": "弱", "600745": "中"}
-US_SIGNAL_RELIABILITY = {"NVDA": "中", "TSLA": "强", "GOOGL": "弱", "AAPL": "中", "TCOM": "?", "FUTU": "?"}
+from reliability import get_reliability_label, load_reliability_labels
 
 
 def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
@@ -23,6 +22,39 @@ def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
     missing = [f"{name}({code})" for code, name in expected.items() if code not in all_hist]
     if missing:
         raise RuntimeError(f"{label}历史数据缺失: {', '.join(missing)}")
+
+
+def ensure_complete_reliability_labels(labels: dict, allow_partial: bool) -> None:
+    """发布模式必须使用完整的自动可靠度标签，避免静默回退到 ?。"""
+    if not labels:
+        msg = "可靠度标签缺失，请先运行 python3 build_reliability.py"
+        if allow_partial:
+            print(f"  [!] {msg}")
+            return
+        raise RuntimeError(msg)
+
+
+def extract_old_block(old_html: str, pattern: str) -> str | None:
+    match = re.search(pattern, old_html, re.S)
+    return match.group(1) if match else None
+
+
+def load_old_page() -> str:
+    old_page_path = "docs/index.html"
+    if not os.path.exists(old_page_path):
+        return ""
+    with open(old_page_path, encoding="utf-8") as f:
+        return f.read()
+
+    missing_a = [f"{name}({code})" for code, name in STOCKS.items() if code not in labels.get("a_share", {})]
+    missing_us = [f"{name}({ticker})" for ticker, name in US_STOCKS.items() if ticker not in labels.get("us", {})]
+    if missing_a or missing_us:
+        missing = missing_a + missing_us
+        msg = f"可靠度标签不完整: {', '.join(missing)}"
+        if allow_partial:
+            print(f"  [!] {msg}")
+            return
+        raise RuntimeError(msg)
 
 
 def parse_args():
@@ -73,6 +105,9 @@ def chg_td(val):
 
 
 def generate(allow_partial: bool = False):
+    reliability_labels = load_reliability_labels()
+    ensure_complete_reliability_labels(reliability_labels, allow_partial)
+    old_page_html = load_old_page()
     print("获取实时行情...")
     try:
         rt = fetch_realtime_quotes()
@@ -132,7 +167,7 @@ def generate(allow_partial: bool = False):
         hp = prob.get("historical_prob", {})
         rg = prob.get("regime", {})
 
-        reliability = A_SIGNAL_RELIABILITY.get(code, "?")
+        reliability = get_reliability_label(reliability_labels, "a_share", code)
         rel_cls = "strong" if reliability == "强" else ("weak" if reliability == "弱" else "")
 
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
@@ -519,7 +554,8 @@ async function triggerRefresh() {{
 <div>
 <strong>Methodology</strong>
 Model · 25-factor stack (17 technical + 8 fundamental) × rolling IC weights<br>
-Backtest · 5 800 samples / 6 years · multi-regime validation
+Backtest · 5 800 samples / 6 years · multi-regime validation<br>
+Reliability · auto-labeled from structured backtests; current A-share / US model signals are mostly weak
 </div>
 <div class="colophon">
 Issue № 01 · Vol. IV<br>
@@ -530,6 +566,21 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
 
 </div>
 </body></html>"""
+
+    if allow_partial and not any([quote_html.strip(), prob_html.strip(), tech_html.strip(), fund_html.strip()]) and old_page_html:
+        old_a_share = extract_old_block(
+            old_page_html,
+            r'((?:<section class="section">[\s\S]*?){4})\s*<section class="us-divider">'
+        )
+        if old_a_share:
+            html = re.sub(
+                r'((?:<section class="section">[\s\S]*?){4})(?=\s*<div class="footer">)',
+                old_a_share,
+                html,
+                count=1,
+                flags=re.S,
+            )
+            print("  [!] A股区块本次为空，保留旧页面内容")
 
     # ==================== 美股部分 ====================
     print("获取美股行情...")
@@ -591,7 +642,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         hp = prob.get("historical_prob", {})
         rg = prob.get("regime", {})
 
-        us_rel = US_SIGNAL_RELIABILITY.get(ticker, "?")
+        us_rel = get_reliability_label(reliability_labels, "us", ticker)
         us_rel_cls = "strong" if us_rel == "强" else ("weak" if us_rel == "弱" else "")
 
         us_ft = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
@@ -710,6 +761,15 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
 </section>
 """
 
+    if allow_partial and not any([us_quote_html.strip(), us_prob_html.strip(), us_tech_html.strip(), us_fund_html.strip()]) and old_page_html:
+        old_us = extract_old_block(
+            old_page_html,
+            r'(<section class="us-divider">[\s\S]*?</section>\s*<section class="section">[\s\S]*?</section>\s*<section class="section">[\s\S]*?</section>\s*<section class="section">[\s\S]*?</section>\s*<section class="section">[\s\S]*?</section>)'
+        )
+        if old_us:
+            us_section = old_us
+            print("  [!] 美股区块本次为空，保留旧页面内容")
+
     # 在A股footer前插入美股部分
     html = html.replace('<div class="footer">', us_section + '\n<div class="footer">')
 
@@ -723,23 +783,19 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         print(f"  [+] 期权持仓 section 用本地最新片段 ({len(opt_html)} 字节)")
     else:
         # Actions 环境: 尝试从旧 docs/index.html 中提取期权 section 保留
-        old_page_path = "docs/index.html"
-        if os.path.exists(old_page_path):
-            import re
-            with open(old_page_path, encoding="utf-8") as f:
-                old_html = f.read()
+        if old_page_html:
             # 匹配期权 section 的整块 (包括开头注释到 </section>)
             # 也要保留紧急横幅 (如果有)
             m = re.search(
                 r'(<!-- 期权持仓 section[\s\S]*?</section>)',
-                old_html,
+                old_page_html,
             )
             if m:
                 opt_html = m.group(1)
                 # 同时提取紧急横幅 (如果有)
                 banner_m = re.search(
                     r'(<div style="background:#cf222e[\s\S]*?</script>)',
-                    old_html,
+                    old_page_html,
                 )
                 if banner_m:
                     opt_html = banner_m.group(1) + "\n" + opt_html
