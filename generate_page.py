@@ -16,7 +16,7 @@ from fundamental import fetch_all_financials
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 from reliability import get_reliability_label, load_reliability_labels
 from position_sizing import recommend_model_action
-from production_review import load_trade_log, summarize_execution_quality, summarize_plan_coverage
+from production_review import load_signal_history, load_trade_log, summarize_execution_quality, summarize_plan_coverage
 
 
 def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
@@ -161,9 +161,21 @@ def chg_td(val):
 
 
 def render_review_section() -> str:
+    signals = load_signal_history()
     trades = load_trade_log()
     execution_quality = summarize_execution_quality(trades)
     plan_coverage = summarize_plan_coverage(trades)
+    planned_trade_count = 0 if trades.empty or "has_plan" not in trades.columns else int(trades["has_plan"].fillna(False).sum())
+    empty_note_html = ""
+    if execution_quality.empty and plan_coverage.empty:
+        empty_note_html = f"""
+  <p class="note">
+    当前复盘页没有显示出有效表格，原因通常是<strong>执行样本还不够</strong>，不是页面坏了。
+    目前已解析信号 <strong>{len(signals)}</strong> 条，交易日志 <strong>{len(trades)}</strong> 条，
+    带计划字段的执行记录 <strong>{planned_trade_count}</strong> 条。
+    等你继续按带 `signal_id / plan_tier / plan_exit` 的命令执行后，这里会开始显示执行质量、仓位层级和计划覆盖。
+  </p>
+"""
 
     metric_rows = ""
     if execution_quality.empty:
@@ -190,6 +202,7 @@ def render_review_section() -> str:
     <h2>Execution <em>Review</em><span class="cn">执行评分卡</span></h2>
     <div class="section-meta">Trade Log<br>Plan Coverage</div>
   </div>
+  {empty_note_html}
   <div class="table-wrap">
     <table>
       <thead><tr><th>执行质量</th><th>数值</th></tr></thead>
@@ -233,6 +246,7 @@ def render_subpage(
     nav_links_html: str,
     body_html: str,
     footer_html: str,
+    hero_link_html: str = "",
 ) -> str:
     summary_section_html = (
         f"""
@@ -272,6 +286,7 @@ def render_subpage(
   <div class="hero-meta">
     <span class="pill">Last Sync · {now}</span>
     <span class="pill">Linked from index.html</span>
+    {hero_link_html}
   </div>
 </header>
 
@@ -335,7 +350,7 @@ def build_us_page(full_page_html: str, now: str, us_section: str, macro_headline
   </article>
 """
     nav_links_html = """
-  <a class="major" href="./index.html">Overview</a>
+  <a class="major" href="./index.html">← 返回总览</a>
   <a class="minor" href="#us-quote">US Quote</a>
   <a class="minor" href="#us-trend">US Trend</a>
   <a class="minor" href="#us-tech">US Tech</a>
@@ -352,6 +367,7 @@ def build_us_page(full_page_html: str, now: str, us_section: str, macro_headline
         nav_links_html=nav_links_html,
         body_html=us_section,
         footer_html=footer_html,
+        hero_link_html='<a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>',
     )
 
 
@@ -366,12 +382,12 @@ def build_cn_page(full_page_html: str, now: str, cn_section: str) -> str:
         cn_section = match.group(1) if match else ""
     summary_cards_html = ""
     nav_links_html = """
+  <a class="major" href="./index.html">← 返回总览</a>
   <a class="major" href="#cn-block">A-Share</a>
   <a class="minor" href="#cn-quote">CN Quote</a>
   <a class="minor" href="#cn-trend">CN Trend</a>
   <a class="minor" href="#cn-tech">CN Tech</a>
   <a class="minor" href="#cn-fund">CN Fund</a>
-  <a class="minor" href="./index.html">Overview</a>
 """
     return render_subpage(
         title="主力分析 · A-Share Desk",
@@ -384,6 +400,7 @@ def build_cn_page(full_page_html: str, now: str, cn_section: str) -> str:
         nav_links_html=nav_links_html,
         body_html=cn_section,
         footer_html=footer_html,
+        hero_link_html='<a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>',
     )
 
 
@@ -497,7 +514,7 @@ def build_options_page(
   </article>
 """
     nav_links_html = """
-  <a class="major" href="./index.html">Home</a>
+  <a class="major" href="./index.html">← 返回总览</a>
   <a class="major" href="#option-block">Options</a>
   <a class="major" href="./review.html">Review</a>
   <a class="major" href="./index.html#method-block">Method</a>
@@ -513,6 +530,7 @@ def build_options_page(
         nav_links_html=nav_links_html,
         body_html=body_html,
         footer_html=footer_html,
+        hero_link_html='<a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>',
     )
 
 
@@ -558,7 +576,7 @@ def build_review_page(
   </article>
 """
     nav_links_html = """
-  <a class="major" href="./index.html">Home</a>
+  <a class="major" href="./index.html">← 返回总览</a>
   <a class="major" href="./options.html">Options</a>
   <a class="major" href="#review-block">Review</a>
   <a class="major" href="./index.html#method-block">Method</a>
@@ -574,6 +592,7 @@ def build_review_page(
         nav_links_html=nav_links_html,
         body_html=review_html,
         footer_html=footer_html,
+        hero_link_html='<a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>',
     )
 
 
