@@ -13,6 +13,7 @@
 """
 
 import sys
+import time
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -401,7 +402,7 @@ def run(watchlist: list[str]) -> None:
     print(f"  期权策略推荐  {ts}   US 市场: {hc.get('market_us', '?')}")
     print("═" * 80)
 
-    for code in watchlist:
+    for idx, code in enumerate(watchlist):
         try:
             feat = analyze_underlying(code)
             regime = classify_regime(feat)
@@ -411,6 +412,9 @@ def run(watchlist: list[str]) -> None:
             print(format_recommendation(feat, regime, picks))
         except Exception as e:
             print(f"\n  {code}: 错误 {str(e)[:80]}")
+
+        if idx < len(watchlist) - 1:
+            time.sleep(0.20)
 
     print(f"\n{'═' * 80}")
     print("  ⚠ 以上仅为分形信号衍生的策略建议, 不构成交易推荐")

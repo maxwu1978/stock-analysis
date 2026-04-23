@@ -14,6 +14,7 @@
 """
 
 import logging
+import time
 import pandas as pd
 
 logging.getLogger("futu").setLevel(logging.ERROR)
@@ -27,6 +28,11 @@ PORT_TRADE = 11111  # OpenD 10.x 统一端口; 旧版用 22222
 def _quote_ctx():
     from futu import OpenQuoteContext
     return OpenQuoteContext(host=HOST, port=PORT_QUOTE)
+
+
+def _is_rate_limited(err) -> bool:
+    msg = str(err).lower()
+    return "too frequent" in msg or "no more request" in msg
 
 
 def health_check() -> dict:
@@ -146,19 +152,35 @@ def get_option_expirations(underlying: str) -> pd.DataFrame:
     from futu import RET_OK
     q = _quote_ctx()
     try:
-        ret, data = q.get_option_expiration_date(underlying)
-        if ret != RET_OK:
-            raise RuntimeError(f"get_option_expiration_date failed: {data}")
-        return data
+        last_err = None
+        for delay in (0.0, 0.4, 0.8, 1.6):
+            if delay:
+                time.sleep(delay)
+            ret, data = q.get_option_expiration_date(underlying)
+            if ret == RET_OK:
+                return data
+            last_err = data
+            if not _is_rate_limited(data):
+                raise RuntimeError(f"get_option_expiration_date failed: {data}")
+        raise RuntimeError(f"get_option_expiration_date failed: {last_err}")
     finally:
         q.close()
 
 
-def get_option_chain_full(underlying: str, expiry: str) -> pd.DataFrame:
-    """获取指定到期日的完整期权链 + 实时报价 + 希腊字母.
+def get_option_chain_full(
+    underlying: str,
+    expiry: str,
+    *,
+    spot: float | None = None,
+    strike_band: float | None = None,
+    max_contracts_per_side: int | None = 6,
+) -> pd.DataFrame:
+    """获取指定到期日的期权链 + 实时报价 + 希腊字母.
 
     underlying: 'US.NVDA'
     expiry: '2026-04-24' (到期日, 来自 get_option_expirations)
+    spot/strike_band: 若提供, 会先按 ATM 附近行权价过滤, 再订阅 snapshot
+    max_contracts_per_side: 每侧最多保留多少个合约, 降低订阅额度消耗
 
     返回 DataFrame 列:
       code, name, option_type (CALL/PUT), strike_price, last_price, prev_close_price,
@@ -169,34 +191,77 @@ def get_option_chain_full(underlying: str, expiry: str) -> pd.DataFrame:
     q = _quote_ctx()
     try:
         # 1. 拉期权链 (基础结构)
-        ret, chain = q.get_option_chain(underlying, start=expiry, end=expiry)
+        last_err = None
+        chain = None
+        for delay in (0.0, 1.0, 2.0, 4.0):
+            if delay:
+                time.sleep(delay)
+            ret, chain = q.get_option_chain(underlying, start=expiry, end=expiry)
+            if ret == RET_OK:
+                break
+            last_err = chain
+            if not _is_rate_limited(chain):
+                raise RuntimeError(f"get_option_chain failed: {chain}")
         if ret != RET_OK:
-            raise RuntimeError(f"get_option_chain failed: {chain}")
+            raise RuntimeError(f"get_option_chain failed: {last_err}")
         if chain.empty:
             return pd.DataFrame()
 
+        chain = chain.copy()
+        if spot and strike_band is not None:
+            k_lo = spot * (1 - strike_band)
+            k_hi = spot * (1 + strike_band)
+            chain = chain[(chain["strike_price"] >= k_lo) & (chain["strike_price"] <= k_hi)].copy()
+
+        if chain.empty:
+            return pd.DataFrame()
+
+        if spot:
+            chain["moneyness_abs"] = (chain["strike_price"] / spot - 1).abs()
+        else:
+            chain["moneyness_abs"] = 0.0
+
+        if max_contracts_per_side:
+            slices = []
+            for option_type in ("CALL", "PUT"):
+                side = chain[chain["option_type"] == option_type].copy()
+                if side.empty:
+                    continue
+                side = side.sort_values(["moneyness_abs", "strike_price"])
+                slices.append(side.head(max_contracts_per_side))
+            if slices:
+                chain = pd.concat(slices, ignore_index=True)
+
+        chain = chain.drop_duplicates(subset=["code"]).reset_index(drop=True)
         codes = chain["code"].tolist()
 
         # 2. 订阅并拉 snapshot (含希腊字母)
-        # 分批 subscribe 避免单次过多
-        BATCH = 50
+        # 先筛后订, 把单标的订阅从整条链压到 ATM 附近少量合约
+        BATCH = 20
         snapshots = []
         for i in range(0, len(codes), BATCH):
             batch = codes[i:i + BATCH]
-            q.subscribe(batch, [SubType.QUOTE])
-            ret, snap = q.get_market_snapshot(batch)
-            if ret == RET_OK:
-                snapshots.append(snap)
+            ret, err = q.subscribe(batch, [SubType.QUOTE])
+            if ret != RET_OK:
+                raise RuntimeError(f"subscribe failed: {err}")
+            try:
+                ret, snap = q.get_market_snapshot(batch)
+                if ret == RET_OK and not snap.empty:
+                    snapshots.append(snap)
+            finally:
+                try:
+                    q.unsubscribe(batch, [SubType.QUOTE])
+                except Exception:
+                    pass
         if not snapshots:
             return pd.DataFrame()
 
         snap_df = pd.concat(snapshots, ignore_index=True)
 
-        # 3. 合并 + 筛选核心列
+        # 3. 先保留链路基础字段, 再合并 snapshot 核心列
+        df = chain[["code", "name", "option_type", "strike_price", "strike_time"]].copy()
         core_cols = {
             "code": "code",
-            "name": "name",
-            "option_type": "option_type",
             "option_strike_price": "strike_price",
             "last_price": "last_price",
             "prev_close_price": "prev_close",
@@ -210,10 +275,14 @@ def get_option_chain_full(underlying: str, expiry: str) -> pd.DataFrame:
             "option_theta": "theta",
             "option_vega": "vega",
             "option_expiry_date_distance": "days_to_expiry",
-            "strike_time": "expiry",
         }
-        df = snap_df[[k for k in core_cols if k in snap_df.columns]].copy()
-        df.rename(columns=core_cols, inplace=True)
+        snap_core = snap_df[[k for k in core_cols if k in snap_df.columns]].copy()
+        snap_core.rename(columns=core_cols, inplace=True)
+        df = df.merge(snap_core, on="code", how="left", suffixes=("", "_snap"))
+        if "strike_price_snap" in df.columns:
+            df["strike_price"] = df["strike_price_snap"].fillna(df["strike_price"])
+            df.drop(columns=["strike_price_snap"], inplace=True)
+        df.rename(columns={"strike_time": "expiry"}, inplace=True)
         # 变化率
         if "last_price" in df.columns and "prev_close" in df.columns:
             df["chg_pct"] = (df["last_price"] / df["prev_close"] - 1) * 100
@@ -223,7 +292,8 @@ def get_option_chain_full(underlying: str, expiry: str) -> pd.DataFrame:
 
 
 def find_atm_options(underlying: str, days_to_expiry: int = 7,
-                     strike_band: float = 0.05) -> pd.DataFrame:
+                     strike_band: float = 0.05,
+                     max_contracts_per_side: int = 6) -> pd.DataFrame:
     """按到期距离和 moneyness 查找 ATM 附近的期权.
 
     underlying: 'US.NVDA'
@@ -252,19 +322,20 @@ def find_atm_options(underlying: str, days_to_expiry: int = 7,
     exps["dist"] = (exps["option_expiry_date_distance"] - days_to_expiry).abs()
     target_expiry = exps.loc[exps["dist"].idxmin(), "strike_time"]
 
-    # 拉全链
-    chain = get_option_chain_full(underlying, target_expiry)
+    # 拉 ATM 附近小范围期权链, 避免整条链订阅打满行情额度
+    chain = get_option_chain_full(
+        underlying,
+        target_expiry,
+        spot=spot,
+        strike_band=strike_band,
+        max_contracts_per_side=max_contracts_per_side,
+    )
     if chain.empty:
         return pd.DataFrame()
 
-    # 筛选 strike 在 spot × (1 ± strike_band) 范围
-    k_lo = spot * (1 - strike_band)
-    k_hi = spot * (1 + strike_band)
-    mask = (chain["strike_price"] >= k_lo) & (chain["strike_price"] <= k_hi)
-    filtered = chain[mask].copy()
-    filtered["spot"] = spot
-    filtered["moneyness_pct"] = (filtered["strike_price"] / spot - 1) * 100
-    return filtered.reset_index(drop=True)
+    chain["spot"] = spot
+    chain["moneyness_pct"] = (chain["strike_price"] / spot - 1) * 100
+    return chain.reset_index(drop=True)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ Strangle = OTM Call + OTM Put (更便宜但需更大波动才盈利)
 """
 
 import sys
+import time
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -199,7 +200,7 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
     print(f"  目标到期天数: {days_to_expiry}")
     print(f"{'═' * 88}")
 
-    for code in watchlist:
+    for idx, code in enumerate(watchlist):
         try:
             feat = analyze_stock(code)
             # 取目标天数的 ATM 期权链 (±3% 行权价)
@@ -255,6 +256,10 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
                 print(f"    → {sc['signal']}, 无跨式机会")
         except Exception as e:
             print(f"\n  {code}: 错误 {str(e)[:80]}")
+
+        # 全池扫链时显式节流, 避免连续 get_option_chain 触发 OpenD 频率限制
+        if idx < len(watchlist) - 1:
+            time.sleep(0.90)
 
     print(f"\n{'═' * 88}")
     print("  ⚠ 跨式需要大幅度波动才盈利. 若股价横盘, theta 衰减会双倍损失.")
