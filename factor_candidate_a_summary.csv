@@ -1,0 +1,8 @@
+factor,family,status,best_abs_rankic,mean_abs_rankic,stable_count,mean_consistency,best_orthogonality,closest_active_factor,best_decision,max_coverage,quality_score
+gap_ret_20d,behavior,candidate,0.0416,0.0285,1,91.7,0.2663,gap_ret_10d,PROMOTE_TO_TRIAL,99.3,16.11
+amihud_30d,behavior,candidate,0.0927,0.0489,0,100.0,0.0165,amihud_20d,WATCH,99.0,14.87
+amihud_10d,behavior,candidate,0.0817,0.046,0,100.0,0.038,amihud_20d,WATCH,99.7,14.76
+price_position_z20,behavior,candidate,0.0256,0.0199,0,77.8,0.3863,price_position,WATCH,98.1,13.73
+gap_ret_5d,behavior,candidate,0.0236,0.0187,0,91.7,0.2804,gap_ret_10d,WATCH,99.8,13.25
+high52w_x_vol_surge,trend,candidate,0.0302,0.0141,0,60.0,0.0954,high52w_pos,REJECT_DUPLICATE,91.7,11.06
+mfdfa_x_roc10,fractal,candidate,0.0136,0.0123,0,67.2,0.2838,mfdfa_x_roc20,REJECT,88.1,11.46

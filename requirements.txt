@@ -10,3 +10,4 @@ tabulate
 yfinance
 pywencai
 futu-api
+PyYAML

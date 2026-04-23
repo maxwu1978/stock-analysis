@@ -1,0 +1,174 @@
+- name: gap_ret_5d
+  market: a
+  family: behavior
+  status: candidate
+  source: manual
+  formula_type: rolling_mean
+  inputs: [gap_ret_1d]
+  params:
+    window: 5
+    min_periods: 3
+  notes: 短周期隔夜收益窗口
+  owner: research
+
+- name: gap_ret_20d
+  market: a
+  family: behavior
+  status: candidate
+  source: manual
+  formula_type: rolling_mean
+  inputs: [gap_ret_1d]
+  params:
+    window: 20
+    min_periods: 10
+  notes: 长周期隔夜收益窗口
+  owner: research
+
+- name: amihud_10d
+  market: a
+  family: behavior
+  status: candidate
+  source: manual
+  formula_type: rolling_mean
+  inputs: [amihud_daily]
+  params:
+    window: 10
+    min_periods: 5
+  notes: 非流动性短窗口
+  owner: research
+
+- name: amihud_30d
+  market: a
+  family: behavior
+  status: candidate
+  source: manual
+  formula_type: rolling_mean
+  inputs: [amihud_daily]
+  params:
+    window: 30
+    min_periods: 15
+  notes: 非流动性长窗口
+  owner: research
+
+- name: price_position_z20
+  market: a
+  family: behavior
+  status: candidate
+  source: generated
+  formula_type: rolling_zscore
+  inputs: [price_position]
+  params:
+    window: 20
+    min_periods: 10
+  notes: 区间位置标准化
+  owner: research
+
+- name: mfdfa_x_roc10
+  market: a
+  family: fractal
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs: [mfdfa_width_centered_120, ROC10]
+  notes: Δα 中心化后乘 10 日动量
+  owner: research
+
+- name: high52w_x_vol_surge
+  market: a
+  family: trend
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs: [high52w_pos, vol_surge]
+  notes: 52周位置与量能异动交互
+  owner: research
+
+- name: intraday_ret_5d
+  market: a
+  family: behavior
+  status: watch
+  source: manual
+  formula_type: rolling_mean
+  inputs: [intraday_ret_1d]
+  params:
+    window: 5
+    min_periods: 3
+  notes: 日内收益率短窗口
+  owner: research
+
+- name: gap_ret_5d
+  market: us
+  family: behavior
+  status: candidate
+  source: manual
+  formula_type: rolling_mean
+  inputs: [gap_ret_1d]
+  params:
+    window: 5
+    min_periods: 3
+  notes: 美股短周期隔夜收益窗口
+  owner: research
+
+- name: atr_pct_z20
+  market: us
+  family: volatility
+  status: candidate
+  source: generated
+  formula_type: rolling_zscore
+  inputs: [atr_pct]
+  params:
+    window: 20
+    min_periods: 10
+  notes: 波动率标准化
+  owner: research
+
+- name: roc30
+  market: us
+  family: trend
+  status: candidate
+  source: generated
+  formula_type: close_roc
+  params:
+    period: 30
+  notes: 30日价格动量
+  owner: research
+
+- name: high52w_x_vol_surge
+  market: us
+  family: trend
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs: [high52w_pos, vol_surge]
+  notes: 52周位置与量能异动交互
+  owner: research
+
+- name: vix_z20_x_high52w
+  market: us
+  family: macro
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs: [vix_z20, high52w_pos]
+  notes: VIX 偏离与年度位置交互
+  owner: research
+
+- name: vix_z20_x_vol_surge
+  market: us
+  family: macro
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs: [vix_z20, vol_surge]
+  notes: VIX 偏离与量能异动交互
+  owner: research
+
+- name: mfdfa_x_roc10
+  market: us
+  family: fractal
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs: [mfdfa_width_centered_120, ROC10]
+  notes: Δα 中心化后乘 10 日动量
+  owner: research

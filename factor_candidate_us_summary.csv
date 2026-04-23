@@ -1,0 +1,7 @@
+factor,family,status,best_abs_rankic,mean_abs_rankic,stable_count,mean_consistency,best_orthogonality,closest_active_factor,best_decision,max_coverage,quality_score
+high52w_x_vol_surge,trend,candidate,0.05,0.0312,0,42.1,0.1362,high52w_pos,WATCH,87.6,12.56
+vix_z20_x_vol_surge,macro,candidate,0.0451,0.0275,0,69.6,0.0355,vix_z20,WATCH,83.0,11.23
+gap_ret_5d,behavior,candidate,0.0287,0.0162,0,50.0,0.5751,-DI,WATCH,99.7,14.47
+vix_z20_x_high52w,macro,candidate,0.0262,0.0104,0,50.0,0.1137,vix_z20,REJECT_DUPLICATE,81.8,9.79
+roc30,trend,candidate,0.0179,0.0071,0,51.4,0.1627,ROC20,REJECT,97.0,11.22
+atr_pct_z20,volatility,candidate,,,0,,,,REJECT,0.0,0.0

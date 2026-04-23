@@ -1,0 +1,96 @@
+name: 因子实验与晋升队列
+
+on:
+  workflow_dispatch:
+    inputs:
+      statuses:
+        description: 候选状态（空格分隔，例如 "candidate watch"）
+        required: false
+        default: candidate watch
+  schedule:
+    # 每周一北京时间 02:30 运行
+    - cron: '30 18 * * 0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: factor-lab
+  cancel-in-progress: false
+
+jobs:
+  factor-lab:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        market: [a, us]
+    env:
+      FACTOR_STATUSES: ${{ github.event_name == 'workflow_dispatch' && inputs.statuses || 'candidate watch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 运行候选因子实验
+        run: bash scripts/run_factor_lab_ci.sh "${{ matrix.market }}"
+
+      - name: 上传实验产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: factor-lab-${{ matrix.market }}
+          path: |
+            factor_candidate_${{ matrix.market }}_panel.csv
+            factor_candidate_${{ matrix.market }}_report.csv
+            factor_candidate_${{ matrix.market }}_summary.csv
+          if-no-files-found: error
+
+  promotion-queue:
+    runs-on: ubuntu-latest
+    needs: factor-lab
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+
+      - name: 下载实验产物
+        uses: actions/download-artifact@v4
+        with:
+          pattern: factor-lab-*
+          merge-multiple: true
+          path: .
+
+      - name: 生成晋升队列
+        run: python3 factor_promotion.py --prefix factor_candidate --output factor_promotion_queue.json
+
+      - name: 提交报告与队列
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add \
+            factor_candidate_a_report.csv \
+            factor_candidate_a_summary.csv \
+            factor_candidate_us_report.csv \
+            factor_candidate_us_summary.csv \
+            factor_promotion_queue.json
+          if git diff --cached --quiet; then
+            echo "No factor-lab changes to commit."
+            exit 0
+          fi
+          git commit -m "自动更新因子实验队列"
+          git pull --rebase origin "${BRANCH_NAME}"
+          git push

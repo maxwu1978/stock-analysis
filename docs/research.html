@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>主力分析 · Overview</title>
+<title>因子研究 · QUANT DESK</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
@@ -675,130 +675,111 @@
 <div class="container">
 
 <header class="hero">
-  <div class="hero-kicker">Issue № 01 · Control Deck · Overview</div>
-  <h1>主力<em>总览</em><span class="eyebrow">Overview, Navigation & Execution Pulse</span></h1>
+  <div class="hero-kicker">Issue № 11 · Factor Lab · Candidate Research</div>
+  <h1>候选因子<em>研究</em><span class="eyebrow">Candidate Factor Lab & Promotion Queue</span></h1>
   <div class="hero-meta">
     <span class="pill">Last Sync · 2026-04-24 00:58:22</span>
     <span class="pill">Linked from index.html</span>
-    
+    <a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>
   </div>
 </header>
 
 
 <section class="summary-strip">
-<article class="summary-card">
-    <div class="label">A-Share Reliability</div>
-    <div class="value">5/5 弱</div>
-    <div class="sub">当前主模型整体偏弱</div>
+
+  <article class="summary-card">
+    <div class="label">Promotion Queue</div>
+    <div class="value">0 晋升 / 13 候选</div>
+    <div class="sub">候选因子研究与晋升队列</div>
   </article>
   <article class="summary-card">
-    <div class="label">US Relative Leader</div>
-    <div class="value">特斯拉 / 苹果 / 携程</div>
-    <div class="sub">当前自动标签相对最强</div>
+    <div class="label">Scope</div>
+    <div class="value">Candidate Lab</div>
+    <div class="sub">只展示候选研究，不改 production 策略</div>
   </article>
   <article class="summary-card">
-    <div class="label">Macro Window</div>
-    <div class="value">FOMC 2026-04-30 (6天后) / NFP 2026-05-01 (7天后)</div>
-    <div class="sub">事件风控已接入美股预测</div>
+    <div class="label">Navigation</div>
+    <div class="value">Home / Review</div>
+    <div class="sub">总览与执行复盘分开查看</div>
   </article>
   <article class="summary-card">
-    <div class="label">Option Panel</div>
-    <div class="value">$-36.00</div>
-    <div class="sub">持仓盈亏快照</div>
+    <div class="label">Status</div>
+    <div class="value">Research Only</div>
+    <div class="sub">不参与动作、仓位和策略触发</div>
   </article>
-  <article class="summary-card">
-    <div class="label">Execution Pulse</div>
-    <div class="value">0 可执行 / 14 观察</div>
-    <div class="sub">STD 0 · PROBE 0 · MICRO 2 · 胜率 N/A</div>
-  </article>
+
 </section>
 
 
 <nav class="anchor-nav">
 
-  <a class="major active" href="#overview-hub">Overview</a>
-  <a class="major" href="./cn.html">A-Share</a>
-  <a class="major" href="./us.html">U.S.</a>
-  <a class="major" href="./strategy.html">Strategy</a>
-  <a class="major" href="./options.html">Options</a>
+  <a class="major" href="./index.html">← 返回总览</a>
+  <a class="major active" href="#factor-lab-block">Research</a>
   <a class="major" href="./review.html">Review</a>
-  <a class="major" href="./research.html">Research</a>
+  <a class="major" href="./index.html#method-block">Method</a>
 
 </nav>
 
-
-<section class="section" id="overview-hub">
+<section class="section" id="factor-lab-block">
   <div class="section-head">
-    <div class="section-num">№ 01</div>
-    <h2>Overview <em>Hub</em><span class="cn">总览导航</span></h2>
-    <div class="section-meta">Multi-page<br>Fast Browse</div>
+    <div class="section-num">№ 11</div>
+    <h2>Factor <em>Lab</em><span class="cn">候选因子研究</span></h2>
+    <div class="section-meta">Research<br>Promotion Queue</div>
   </div>
-  <p class="note">首页只保留决策入口和状态摘要，把研究明细下沉到子页，避免把所有数据堆在一个长页面里。</p>
-  <div class="control-grid">
-    <article class="control-panel emphasis">
-      <div class="panel-kicker">Today Strategy</div>
-      <h3>0 可执行 / 14 观察</h3>
-      <p>只有明确进入 Actionable 的信号才视为接近可执行；弱信号默认继续观察。</p>
-      <div class="panel-metrics">
-        <span>STANDARD 0</span>
-        <span>PROBE 0</span>
-        <span>MICRO 2</span>
-      </div>
-      <a class="module-cta" href="./strategy.html">打开策略页</a>
+  <p class="note">候选因子研究与生产模型分离运行。这里只展示自动实验、观察名单和晋升队列，<strong>不会直接改动交易触发</strong>。</p>
+  <div class="summary-strip">
+    <article class="summary-card">
+      <div class="label">Promotion Queue</div>
+      <div class="value">0</div>
+      <div class="sub">当前达到晋升试验池门槛的候选数</div>
     </article>
-    <article class="control-panel">
-      <div class="panel-kicker">A-Share Desk</div>
-      <h3>5/5 弱</h3>
-      <p>当前 A 股主模型偏研究参考，更适合先看趋势和宏观窗口，再决定是否加入观察名单。</p>
-      <ul class="panel-list">
-        <li>Quote / Trend / Tech / Fund</li>
-        <li>CN Macro Window 已接入</li>
-      </ul>
-      <a class="module-cta" href="./cn.html">打开 A股子页</a>
+    <article class="summary-card">
+      <div class="label">A-Share Candidates</div>
+      <div class="value">7</div>
+      <div class="sub">A股候选因子总数</div>
     </article>
-    <article class="control-panel">
-      <div class="panel-kicker">U.S. Desk</div>
-      <h3>特斯拉 / 苹果 / 携程</h3>
-      <p>美股保留宏观覆盖和动作层，适合先看子页，再决定是否进入策略页或期权页。</p>
-      <ul class="panel-list">
-        <li>Macro Overlay 生效</li>
-        <li>TSM / MU / WDC 已纳入跟踪</li>
-      </ul>
-      <a class="module-cta" href="./us.html">打开 美股子页</a>
+    <article class="summary-card">
+      <div class="label">U.S. Candidates</div>
+      <div class="value">6</div>
+      <div class="sub">美股候选因子总数</div>
     </article>
-    <article class="control-panel">
-      <div class="panel-kicker">Options Panel</div>
-      <h3>$-36.00</h3>
-      <p>期权页单独展示持仓、退出模板和全池扫描后的机会强弱，不再混在研究主表里。</p>
-      <ul class="panel-list">
-        <li>弱机会默认 MICRO</li>
-        <li>持仓管理与新机会分开</li>
-      </ul>
-      <a class="module-cta" href="./options.html">打开 期权子页</a>
+    <article class="summary-card">
+      <div class="label">Generated</div>
+      <div class="value">Queue</div>
+      <div class="sub">2026-04-23T20:53:28.057904+00:00</div>
     </article>
-    <article class="control-panel">
-      <div class="panel-kicker">Execution Review</div>
-      <h3>0 可执行 / 14 观察</h3>
-      <p>STD 0 · PROBE 0 · MICRO 2 · 胜率 N/A</p>
-      <ul class="panel-list">
-        <li>执行评分卡</li>
-        <li>计划覆盖与执行缺口</li>
-      </ul>
-      <a class="module-cta" href="./review.html">打开 复盘子页</a>
-    </article>
-    <article class="control-panel">
-      <div class="panel-kicker">Factor Lab</div>
-      <h3>0 晋升 / 13 候选</h3>
-      <p>候选因子研究与晋升队列</p>
-      <ul class="panel-list">
-        <li>候选因子观察名单</li>
-        <li>晋升队列与重复淘汰</li>
-      </ul>
-      <a class="module-cta" href="./research.html">打开 研究子页</a>
-    </article>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>晋升候选</th><th>家族</th><th>abs RankIC</th><th>质量分</th><th>最接近 active</th></tr></thead>
+      <tbody><tr><td colspan="5">当前没有候选因子达到晋升试验池门槛</td></tr></tbody>
+    </table>
+  </div>
+  <div class="table-wrap" style="margin-top:18px;">
+    <table>
+      <thead><tr><th>A股观察名单</th><th>家族</th><th>abs RankIC</th><th>质量分</th><th>最接近 active</th></tr></thead>
+      <tbody><tr><td>amihud_30d</td><td>behavior</td><td>0.0927</td><td>14.87</td><td>amihud_20d</td></tr>
+<tr><td>amihud_10d</td><td>behavior</td><td>0.0817</td><td>14.76</td><td>amihud_20d</td></tr>
+<tr><td>price_position_z20</td><td>behavior</td><td>0.0256</td><td>13.73</td><td>price_position</td></tr>
+<tr><td>gap_ret_5d</td><td>behavior</td><td>0.0236</td><td>13.25</td><td>gap_ret_10d</td></tr></tbody>
+    </table>
+  </div>
+  <div class="table-wrap" style="margin-top:18px;">
+    <table>
+      <thead><tr><th>美股观察名单</th><th>家族</th><th>abs RankIC</th><th>质量分</th><th>最接近 active</th></tr></thead>
+      <tbody><tr><td>gap_ret_5d</td><td>behavior</td><td>0.0287</td><td>14.47</td><td>-DI</td></tr>
+<tr><td>high52w_x_vol_surge</td><td>trend</td><td>0.05</td><td>12.56</td><td>high52w_pos</td></tr>
+<tr><td>vix_z20_x_vol_surge</td><td>macro</td><td>0.0451</td><td>11.23</td><td>vix_z20</td></tr></tbody>
+    </table>
+  </div>
+  <div class="table-wrap" style="margin-top:18px;">
+    <table>
+      <thead><tr><th>重复/淘汰</th><th>家族</th><th>abs RankIC</th><th>质量分</th><th>最接近 active</th></tr></thead>
+      <tbody><tr><td>high52w_x_vol_surge</td><td>trend</td><td>0.0302</td><td>11.06</td><td>high52w_pos</td></tr>
+<tr><td>vix_z20_x_high52w</td><td>macro</td><td>0.0262</td><td>9.79</td><td>vix_z20</td></tr></tbody>
+    </table>
   </div>
 </section>
-
 
 <div class="footer" id="method-block">
 <div>
@@ -806,12 +787,6 @@
 Model · slimmed multi-factor stack × rolling IC weights × tear-sheet family priors<br>
 Backtest · 5 800 samples / 6 years · multi-regime validation<br>
 Reliability · auto-labeled from structured backtests; current A-share / US model signals are mostly weak
-</div>
-<div class="colophon">
-Issue № 01 · Vol. IV<br>
-Set in Space Grotesk &amp; IBM Plex Mono<br>
-<strong style="display:inline; font-size:inherit;">Not investment advice</strong>
-</div>
 </div>
 
 </div>

@@ -15,9 +15,11 @@ from probability import score_trend
 from probability_us import score_trend_us
 from fundamental import fetch_all_financials
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
+from kronos_reference import format_kronos_reference_html, load_kronos_reference, get_kronos_reference
 from reliability import get_reliability_label, load_reliability_labels
 from position_sizing import recommend_model_action
 from production_review import load_signal_history, load_trade_log, summarize_execution_quality, summarize_plan_coverage
+from factor_lab_report import load_factor_lab_bundle, render_factor_lab_section_html
 
 
 def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
@@ -695,6 +697,8 @@ def build_overview_page(
     execution_summary_value: str,
     execution_summary_sub: str,
     signal_snapshots: list[dict],
+    research_summary_value: str,
+    research_summary_sub: str,
 ) -> str:
     style_block = extract_style_block(full_page_html)
     footer_html = extract_footer_block(full_page_html)
@@ -710,6 +714,7 @@ def build_overview_page(
   <a class="major" href="./strategy.html">Strategy</a>
   <a class="major" href="./options.html">Options</a>
   <a class="major" href="./review.html">Review</a>
+  <a class="major" href="./research.html">Research</a>
 """
     body_html = f"""
 <section class="section" id="overview-hub">
@@ -770,6 +775,16 @@ def build_overview_page(
         <li>计划覆盖与执行缺口</li>
       </ul>
       <a class="module-cta" href="./review.html">打开 复盘子页</a>
+    </article>
+    <article class="control-panel">
+      <div class="panel-kicker">Factor Lab</div>
+      <h3>{research_summary_value}</h3>
+      <p>{research_summary_sub}</p>
+      <ul class="panel-list">
+        <li>候选因子观察名单</li>
+        <li>晋升队列与重复淘汰</li>
+      </ul>
+      <a class="module-cta" href="./research.html">打开 研究子页</a>
     </article>
   </div>
 </section>
@@ -925,9 +940,63 @@ def build_review_page(
     )
 
 
+def build_research_page(
+    full_page_html: str,
+    now: str,
+    research_html: str,
+    research_summary_value: str,
+    research_summary_sub: str,
+) -> str:
+    style_block = extract_style_block(full_page_html)
+    footer_match = re.search(r'(<div class="footer" id="method-block">[\s\S]*?</div>)', full_page_html)
+    footer_html = footer_match.group(1) if footer_match else ""
+    summary_cards_html = f"""
+  <article class="summary-card">
+    <div class="label">Promotion Queue</div>
+    <div class="value">{research_summary_value}</div>
+    <div class="sub">{research_summary_sub}</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Scope</div>
+    <div class="value">Candidate Lab</div>
+    <div class="sub">只展示候选研究，不改 production 策略</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Navigation</div>
+    <div class="value">Home / Review</div>
+    <div class="sub">总览与执行复盘分开查看</div>
+  </article>
+  <article class="summary-card">
+    <div class="label">Status</div>
+    <div class="value">Research Only</div>
+    <div class="sub">不参与动作、仓位和策略触发</div>
+  </article>
+"""
+    nav_links_html = """
+  <a class="major" href="./index.html">← 返回总览</a>
+  <a class="major active" href="#factor-lab-block">Research</a>
+  <a class="major" href="./review.html">Review</a>
+  <a class="major" href="./index.html#method-block">Method</a>
+"""
+    return render_subpage(
+        title="因子研究 · QUANT DESK",
+        hero_kicker="Issue № 11 · Factor Lab · Candidate Research",
+        hero_title_html="候选因子<em>研究</em>",
+        eyebrow="Candidate Factor Lab & Promotion Queue",
+        now=now,
+        style_block=style_block,
+        summary_cards_html=summary_cards_html,
+        nav_links_html=nav_links_html,
+        body_html=research_html,
+        footer_html=footer_html,
+        hero_link_html='<a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>',
+    )
+
+
 def generate(allow_partial: bool = False):
     footer_marker = '<div class="footer" id="method-block">'
     reliability_labels = load_reliability_labels()
+    kronos_refs = load_kronos_reference()
     ensure_complete_reliability_labels(reliability_labels, allow_partial)
     old_page_html = load_old_page()
     trades = load_trade_log()
@@ -960,6 +1029,8 @@ def generate(allow_partial: bool = False):
 
     execution_summary_value = "__EXECUTION_SUMMARY_VALUE__"
     execution_summary_sub = "__EXECUTION_SUMMARY_SUB__"
+    research_summary_value = "__RESEARCH_SUMMARY_VALUE__"
+    research_summary_sub = "__RESEARCH_SUMMARY_SUB__"
     signal_snapshots: list[dict] = []
 
     print("获取实时行情...")
@@ -1084,12 +1155,14 @@ def generate(allow_partial: bool = False):
             f'</div>'
             f'</td>'
         )
+        kronos_html = format_kronos_reference_html(get_kronos_reference(kronos_refs, "CN", code))
 
         prob_html += (
             f'<tr>'
             f'<td data-label="股票">{name}</td>'
             f'<td data-label="方向">{direction_tag(hp)}</td>'
             f'<td class="{rel_cls}" data-label="可靠度">{reliability}</td>'
+            f'{kronos_html}'
             f'{risk_html}'
         )
         prob_html += fmt_prob_matrix(hp)
@@ -1569,21 +1642,23 @@ def generate(allow_partial: bool = False):
   .signal-table tbody td:first-child {{
     text-align: left;
   }}
-  .signal-table thead th:nth-child(1) {{ width: 16%; }}
-  .signal-table thead th:nth-child(2) {{ width: 11%; }}
-  .signal-table thead th:nth-child(3) {{ width: 9%; }}
-  .signal-table thead th:nth-child(4) {{ width: 16%; }}
-  .signal-table thead th:nth-child(5) {{ width: 48%; }}
+  .signal-table thead th:nth-child(1) {{ width: 15%; }}
+  .signal-table thead th:nth-child(2) {{ width: 10%; }}
+  .signal-table thead th:nth-child(3) {{ width: 8%; }}
+  .signal-table thead th:nth-child(4) {{ width: 14%; }}
+  .signal-table thead th:nth-child(5) {{ width: 15%; }}
+  .signal-table thead th:nth-child(6) {{ width: 38%; }}
   .signal-table tbody td:nth-child(2),
   .signal-table tbody td:nth-child(3),
-  .signal-table tbody td:nth-child(4) {{
+  .signal-table tbody td:nth-child(4),
+  .signal-table tbody td:nth-child(5) {{
     vertical-align: middle;
     font-size: 12px;
   }}
-  .signal-table tbody td:nth-child(-n+4) {{
+  .signal-table tbody td:nth-child(-n+5) {{
     background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.9));
   }}
-  .signal-table thead th:nth-child(-n+4) {{
+  .signal-table thead th:nth-child(-n+5) {{
     background: linear-gradient(180deg, rgba(223,233,239,0.92), rgba(255,255,255,0.98));
   }}
   .signal-table .prob-matrix-cell {{
@@ -1634,6 +1709,40 @@ def generate(allow_partial: bool = False):
     display: grid;
     gap: 6px;
     justify-items: center;
+  }}
+  .signal-table .kronos-stack {{
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+  }}
+  .signal-table .kronos-chip {{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 4px 7px;
+    border: 1px solid var(--hair);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.88);
+  }}
+  .signal-table .kronos-chip.kronos-up {{
+    color: var(--up);
+    border-color: rgba(179,58,47,0.35);
+    background: rgba(179,58,47,0.08);
+  }}
+  .signal-table .kronos-chip.kronos-down {{
+    color: var(--down);
+    border-color: rgba(31,109,83,0.35);
+    background: rgba(31,109,83,0.08);
+  }}
+  .signal-table .kronos-meta {{
+    display: block;
+    font-size: 9px;
+    line-height: 1.25;
+    color: var(--muted);
   }}
   .signal-table .risk-chip {{
     display: inline-flex;
@@ -1754,6 +1863,9 @@ def generate(allow_partial: bool = False):
       font-size: 18px;
     }}
     .signal-table .risk-stack {{
+      justify-items: start;
+    }}
+    .signal-table .kronos-stack {{
       justify-items: start;
     }}
   }}
@@ -1884,10 +1996,10 @@ async function triggerRefresh() {{
     <div class="section-meta">IC-Weighted<br>Rolling Model</div>
   </div>
   {cn_macro_note_html}
-  <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short</p>
+  <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short<br>Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。</p>
   <div class="table-wrap">
   <table class="signal-table">
-  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>Kronos参考</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
   <tbody>
   {prob_html}
   </tbody>
@@ -2082,12 +2194,14 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
             f'</div>'
             f'</td>'
         )
+        us_kronos_html = format_kronos_reference_html(get_kronos_reference(kronos_refs, "US", ticker))
 
         us_prob_html += (
             f'<tr>'
             f'<td data-label="股票">{uname}</td>'
             f'<td data-label="方向">{direction_tag(hp)}</td>'
             f'<td class="{us_rel_cls}" data-label="可靠度">{us_rel}</td>'
+            f'{us_kronos_html}'
             f'{us_risk_html}'
         )
         us_prob_html += fmt_prob_matrix(hp)
@@ -2178,9 +2292,10 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
     <div class="section-meta">US-Tuned<br>IC Weights</div>
   </div>
   {us_macro_note_html}
+  <p class="note">Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。</p>
   <div class="table-wrap">
   <table class="signal-table">
-  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>Kronos参考</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
   <tbody>{us_prob_html}</tbody>
   </table>
   </div>
@@ -2269,6 +2384,9 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
 
     review_html = render_review_section()
     html = html.replace(footer_marker, review_html + "\n" + footer_marker)
+    factor_lab_bundle = load_factor_lab_bundle()
+    research_html = render_factor_lab_section_html(factor_lab_bundle)
+    html = html.replace(footer_marker, research_html + "\n" + footer_marker)
 
     # 真实盘 section **不嵌入公开主页** (隐私保护)
     # 如果存在 real_position_section.html, 说明本地生成了, 但 docs/ 是公开的,
@@ -2290,9 +2408,16 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
     option_block_html = option_match.group(1) if option_match else (
         f'<div class="position-panel" id="option-block">{opt_html}</div>' if opt_html else ""
     )
-    review_section_match = re.search(r'(<section class="section" id="review-block">[\s\S]*?</section>)\s*<div class="footer"', html)
+    review_section_match = re.search(r'(<section class="section" id="review-block">[\s\S]*?</section>)\s*<section class="section" id="factor-lab-block">', html)
     review_section_html = review_section_match.group(1) if review_section_match else review_html
+    research_section_match = re.search(r'(<section class="section" id="factor-lab-block">[\s\S]*?</section>)\s*<div class="footer"', html)
+    research_section_html = research_section_match.group(1) if research_section_match else research_html
     summary_cards_html = extract_summary_strip_html(html)
+    research_queue_len = len((factor_lab_bundle.get("queue") or {}).get("promotion_queue", []))
+    a_candidate_total = 0 if factor_lab_bundle.get("a_summary", pd.DataFrame()).empty else len(factor_lab_bundle["a_summary"])
+    us_candidate_total = 0 if factor_lab_bundle.get("us_summary", pd.DataFrame()).empty else len(factor_lab_bundle["us_summary"])
+    research_summary_value = f"{research_queue_len} 晋升 / {a_candidate_total + us_candidate_total} 候选"
+    research_summary_sub = "候选因子研究与晋升队列"
 
     overview_html = build_overview_page(
         full_page_html=html,
@@ -2305,6 +2430,8 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
         execution_summary_value=execution_summary_value,
         execution_summary_sub=execution_summary_sub,
         signal_snapshots=signal_snapshots,
+        research_summary_value=research_summary_value,
+        research_summary_sub=research_summary_sub,
     )
     with open("docs/index.html", "w", encoding="utf-8") as f:
         f.write(overview_html)
@@ -2347,12 +2474,22 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
     )
     with open("docs/review.html", "w", encoding="utf-8") as f:
         f.write(review_page_html)
+    research_page_html = build_research_page(
+        html,
+        now,
+        research_section_html,
+        research_summary_value,
+        research_summary_sub,
+    )
+    with open("docs/research.html", "w", encoding="utf-8") as f:
+        f.write(research_page_html)
     print(f"\n总览页已生成: docs/index.html ({len(overview_html)} 字节)")
     print(f"A股子页已生成: docs/cn.html ({len(cn_page_html)} 字节)")
     print(f"美股子页已生成: docs/us.html ({len(us_page_html)} 字节)")
     print(f"策略子页已生成: docs/strategy.html ({len(strategy_page_html)} 字节)")
     print(f"期权子页已生成: docs/options.html ({len(options_page_html)} 字节)")
     print(f"复盘子页已生成: docs/review.html ({len(review_page_html)} 字节)")
+    print(f"研究子页已生成: docs/research.html ({len(research_page_html)} 字节)")
     print(f"完整快照已生成: docs/dashboard_full.html ({len(html)} 字节)")
     print("下一步: git add docs && git commit && git push")
 
