@@ -424,7 +424,11 @@ def collect_option_strategy_signals() -> list[dict]:
             plan_match = re.search(r"仓位:\s+([^\n]+)", out)
             plan = plan_match.group(1).strip() if plan_match else "按顾问输出执行"
             strength = "弱机会" if "WEAK" in action or confidence == "LOW" else "强机会"
-            note = "跨式弱机会，只适合微型试单。" if strength == "弱机会" else "跨式出现较清晰波动信号。"
+            note = (
+                "跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。"
+                if strength == "弱机会"
+                else "跨式出现较清晰波动信号。"
+            )
             signals.append({
                 "kind": "straddle",
                 "symbol": symbol,
