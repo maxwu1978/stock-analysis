@@ -4,6 +4,7 @@
 import argparse
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime
 import pandas as pd
@@ -345,6 +346,106 @@ def summarize_strategy_candidates(signals: list[dict]) -> tuple[list[dict], list
     return actionable, watchlist
 
 
+def collect_option_strategy_signals() -> list[dict]:
+    signals: list[dict] = []
+
+    if os.path.exists("option_section.html"):
+        try:
+            option_text = open("option_section.html", encoding="utf-8").read()
+            for symbol, action, detail in re.findall(
+                r'<td><strong>([A-Z]+)</strong>.*?</td>.*?<td><span class="tag[^"]*">[^<]*\s*([^<]+)</span>\s*<br><small[^>]*>([^<]+)</small>',
+                option_text,
+                re.S,
+            ):
+                signals.append({
+                    "kind": "holding",
+                    "symbol": symbol,
+                    "label": f"{symbol} 持仓管理",
+                    "action": action.strip(),
+                    "strength": "持仓管理",
+                    "plan": detail.strip(),
+                    "note": "现有仓位以退出模板和时间窗管理为主。",
+                })
+        except Exception:
+            pass
+
+    advisor_specs = [
+        ("single", ["python3", "option_fractal_advisor.py", "nvda_only"]),
+        ("straddle", ["python3", "option_straddle_advisor.py", "nvda_only"]),
+    ]
+    for kind, cmd in advisor_specs:
+        try:
+            run = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="ignore",
+                cwd=os.getcwd(),
+                timeout=20,
+            )
+        except Exception:
+            continue
+        out = run.stdout or ""
+        if not out:
+            continue
+
+        symbol_match = re.search(r"US\.([A-Z]+)", out)
+        symbol = symbol_match.group(1) if symbol_match else "US"
+        if kind == "single":
+            advice_match = re.search(r"建议:\s+([A-Z_]+)", out)
+            action = advice_match.group(1) if advice_match else "OBSERVE"
+            if action == "OBSERVE":
+                signals.append({
+                    "kind": "single",
+                    "symbol": symbol,
+                    "label": f"{symbol} 单腿分形",
+                    "action": action,
+                    "strength": "无机会",
+                    "plan": "当前无明确信号",
+                    "note": "分形单腿策略当前仅给出观望，不建议开新仓。",
+                })
+            else:
+                signals.append({
+                    "kind": "single",
+                    "symbol": symbol,
+                    "label": f"{symbol} 单腿分形",
+                    "action": action,
+                    "strength": "强机会",
+                    "plan": "按顾问输出执行",
+                    "note": "出现单腿明确信号，可优先关注。",
+                })
+        else:
+            signal_match = re.search(r"信号:\s+([A-Z_]+)\s+置信度:\s+([A-Z]+)", out)
+            if not signal_match:
+                continue
+            action = signal_match.group(1)
+            confidence = signal_match.group(2)
+            plan_match = re.search(r"仓位:\s+([^\n]+)", out)
+            plan = plan_match.group(1).strip() if plan_match else "按顾问输出执行"
+            strength = "弱机会" if "WEAK" in action or confidence == "LOW" else "强机会"
+            note = "跨式弱机会，只适合微型试单。" if strength == "弱机会" else "跨式出现较清晰波动信号。"
+            signals.append({
+                "kind": "straddle",
+                "symbol": symbol,
+                "label": f"{symbol} 跨式策略",
+                "action": action,
+                "strength": strength,
+                "plan": plan,
+                "note": note,
+            })
+
+    deduped: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for item in signals:
+        key = (item.get("kind", ""), item.get("action", ""))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped
+
+
 def build_strategy_page(
     full_page_html: str,
     now: str,
@@ -355,6 +456,7 @@ def build_strategy_page(
     style_block = extract_style_block(full_page_html)
     footer_html = extract_footer_block(full_page_html)
     actionable, watchlist = summarize_strategy_candidates(signals)
+    option_signals = collect_option_strategy_signals()
 
     if actionable:
         actionable_rows = ""
@@ -395,6 +497,21 @@ def build_strategy_page(
 </div>
 """
 
+    option_rows = ""
+    for row in option_signals:
+        option_rows += (
+            f"<tr><td>{row.get('label')}</td><td>{row.get('strength')}</td><td>{row.get('action')}</td>"
+            f"<td>{row.get('plan')}</td><td>{row.get('note')}</td></tr>\n"
+        )
+    option_html = f"""
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>策略</th><th>类型</th><th>信号</th><th>计划</th><th>说明</th></tr></thead>
+    <tbody>{option_rows or '<tr><td colspan="5">暂无期权机会更新</td></tr>'}</tbody>
+  </table>
+</div>
+"""
+
     summary_cards_html = f"""
   <article class="summary-card">
     <div class="label">Execution Pulse</div>
@@ -411,11 +528,17 @@ def build_strategy_page(
     <div class="value">{len(watchlist)}</div>
     <div class="sub">弱信号或等待阶段默认不交易</div>
   </article>
+  <article class="summary-card">
+    <div class="label">Option Setup</div>
+    <div class="value">{sum(1 for row in option_signals if row.get('strength') in {'强机会', '弱机会'})}</div>
+    <div class="sub">期权强/弱机会与持仓管理分开显示</div>
+  </article>
 """
     nav_links_html = """
   <a class="major" href="./index.html">← 返回总览</a>
   <a class="major" href="#strategy-actionable">Actionable</a>
   <a class="major" href="#strategy-watchlist">Watchlist</a>
+  <a class="major" href="#strategy-options">Options</a>
   <a class="major" href="./review.html">Review</a>
 """
     body_html = f"""
@@ -437,6 +560,16 @@ def build_strategy_page(
   </div>
   <p class="note">信号弱的时候不交易是正常策略，不需要强行出手。</p>
   {watch_html}
+</section>
+
+<section class="section" id="strategy-options">
+  <div class="section-head">
+    <div class="section-num">№ 03</div>
+    <h2>Option <em>Setups</em><span class="cn">今日期权机会</span></h2>
+    <div class="section-meta">Strong / Weak<br>Hold Mgmt</div>
+  </div>
+  <p class="note">这里单独区分强机会、弱机会和仅持仓管理。弱信号存在并不等于要交易，默认仍以轻仓或不交易为主。</p>
+  {option_html}
 </section>
 """
     return render_subpage(

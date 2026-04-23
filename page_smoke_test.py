@@ -16,7 +16,7 @@ PAGE_MARKERS = {
     "index.html": ["Execution Pulse", "./cn.html", "./us.html", "./strategy.html", "./options.html", "./review.html"],
     "cn.html": ['id="cn-quote"', 'id="cn-trend"', 'id="cn-tech"', 'id="cn-fund"', "CN Macro Window"],
     "us.html": ['id="us-quote"', 'id="us-trend"', 'id="us-tech"', 'id="us-fund"', "Macro Overlay"],
-    "strategy.html": ['id="strategy-actionable"', 'id="strategy-watchlist"', "Actionable Signals", "Watchlist Only"],
+    "strategy.html": ['id="strategy-actionable"', 'id="strategy-watchlist"', 'id="strategy-options"', "Actionable Signals", "Watchlist Only", "今日期权机会"],
     "options.html": ['id="option-block"', "Option Positions", "./index.html"],
     "review.html": ['id="review-block"', "Execution <em>Review</em>", "./index.html"],
     "dashboard_full.html": ['id="cn-block"', 'id="us-block"', 'id="option-block"', 'id="review-block"'],

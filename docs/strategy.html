@@ -509,7 +509,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">STATIC SUBPAGE · OPTIONS / REVIEW</div>
-  <div class="muted">2026-04-23 17:49:39</div>
+  <div class="muted">2026-04-23 18:01:31</div>
 </div>
 
 <div class="container">
@@ -518,7 +518,7 @@
   <div class="hero-kicker">Issue № ST · Action Layer · Strategy</div>
   <h1>交易<em>策略</em><span class="eyebrow">Actionable Signals & Watchlist Only</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-23 17:49:39</span>
+    <span class="pill">Last Sync · 2026-04-23 18:01:31</span>
     <span class="pill">Linked from index.html</span>
     <a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>
   </div>
@@ -542,6 +542,11 @@
     <div class="value">14</div>
     <div class="sub">弱信号或等待阶段默认不交易</div>
   </article>
+  <article class="summary-card">
+    <div class="label">Option Setup</div>
+    <div class="value">1</div>
+    <div class="sub">期权强/弱机会与持仓管理分开显示</div>
+  </article>
 
 </section>
 
@@ -551,6 +556,7 @@
   <a class="major" href="./index.html">← 返回总览</a>
   <a class="major" href="#strategy-actionable">Actionable</a>
   <a class="major" href="#strategy-watchlist">Watchlist</a>
+  <a class="major" href="#strategy-options">Options</a>
   <a class="major" href="./review.html">Review</a>
 
 </nav>
@@ -581,7 +587,7 @@
 <tr><td>CN</td><td>宁德时代</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>CN</td><td>贵州茅台</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>CN</td><td>闻泰科技</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>CN</td><td>阳光电源</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>CN</td><td>阳光电源</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>台积电</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>富途控股</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>携程</td><td>WATCHLIST</td><td>MICRO</td><td>中</td><td>MICRO · 232股 · $1,350</td></tr>
@@ -591,6 +597,26 @@
 <tr><td>US</td><td>苹果</td><td>OBSERVE</td><td>NO_TRADE</td><td>中</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>西部数据</td><td>WATCHLIST</td><td>MICRO</td><td>强</td><td>MICRO · 249股 · $1,050</td></tr>
 <tr><td>US</td><td>谷歌</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+</tbody>
+  </table>
+</div>
+
+</section>
+
+<section class="section" id="strategy-options">
+  <div class="section-head">
+    <div class="section-num">№ 03</div>
+    <h2>Option <em>Setups</em><span class="cn">今日期权机会</span></h2>
+    <div class="section-meta">Strong / Weak<br>Hold Mgmt</div>
+  </div>
+  <p class="note">这里单独区分强机会、弱机会和仅持仓管理。弱信号存在并不等于要交易，默认仍以轻仓或不交易为主。</p>
+  
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>策略</th><th>类型</th><th>信号</th><th>计划</th><th>说明</th></tr></thead>
+    <tbody><tr><td>GOOGL 持仓管理</td><td>持仓管理</td><td>有</td><td>剩 15 天, 进入 21天警戒区</td><td>现有仓位以退出模板和时间窗管理为主。</td></tr>
+<tr><td>NVDA 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望，不建议开新仓。</td></tr>
+<tr><td>NVDA 跨式策略</td><td>弱机会</td><td>BUY_STRADDLE_WEAK</td><td>MICRO · 建议 1 套 · 风险预算 $900 · 名义资金 $1,424</td><td>跨式弱机会，只适合微型试单。</td></tr>
 </tbody>
   </table>
 </div>
