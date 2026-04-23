@@ -37,7 +37,7 @@ def run_backtest(ticker, name):
     for i in range(WARMUP, test_end):
         window = df.iloc[:i + 1].copy()
         try:
-            result = score_trend(window)
+            result = score_trend(window, symbol=ticker, apply_macro_overlay=False)
         except:
             continue
         if "error" in result:

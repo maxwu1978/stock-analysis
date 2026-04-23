@@ -33,6 +33,16 @@ def ensure_complete_reliability_labels(labels: dict, allow_partial: bool) -> Non
             return
         raise RuntimeError(msg)
 
+    missing_a = [f"{name}({code})" for code, name in STOCKS.items() if code not in labels.get("a_share", {})]
+    missing_us = [f"{name}({ticker})" for ticker, name in US_STOCKS.items() if ticker not in labels.get("us", {})]
+    if missing_a or missing_us:
+        missing = missing_a + missing_us
+        msg = f"可靠度标签不完整: {', '.join(missing)}"
+        if allow_partial:
+            print(f"  [!] {msg}")
+            return
+        raise RuntimeError(msg)
+
 
 def extract_old_block(old_html: str, pattern: str) -> str | None:
     match = re.search(pattern, old_html, re.S)
@@ -45,16 +55,6 @@ def load_old_page() -> str:
         return ""
     with open(old_page_path, encoding="utf-8") as f:
         return f.read()
-
-    missing_a = [f"{name}({code})" for code, name in STOCKS.items() if code not in labels.get("a_share", {})]
-    missing_us = [f"{name}({ticker})" for ticker, name in US_STOCKS.items() if ticker not in labels.get("us", {})]
-    if missing_a or missing_us:
-        missing = missing_a + missing_us
-        msg = f"可靠度标签不完整: {', '.join(missing)}"
-        if allow_partial:
-            print(f"  [!] {msg}")
-            return
-        raise RuntimeError(msg)
 
 
 def parse_args():
@@ -628,6 +628,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     us_prob_html = ""
     us_tech_html = ""
     us_fund_html = ""
+    us_macro_notes = []
 
     for ticker, df in us_hist.items():
         uname = US_STOCKS[ticker]
@@ -636,7 +637,7 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
         s = summarize(df)
         if not s:
             continue
-        prob = score_trend_us(df)
+        prob = score_trend_us(df, symbol=ticker)
         if "error" in prob:
             continue
         hp = prob.get("historical_prob", {})
@@ -644,13 +645,22 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
 
         us_rel = get_reliability_label(reliability_labels, "us", ticker)
         us_rel_cls = "strong" if us_rel == "强" else ("weak" if us_rel == "弱" else "")
+        macro = prob.get("macro_overlay", {})
+        penalty = int(macro.get("penalty", 0) or 0)
+        reasons = macro.get("reasons", [])
+        if penalty > 0:
+            us_macro_notes.extend(macro.get("warnings", []))
+            reason_text = "/".join(dict.fromkeys(reasons)) if reasons else "宏观收缩"
+            us_macro_html = f'<td class="weak">-{penalty} <small>{reason_text}</small></td>'
+        else:
+            us_macro_html = '<td>-</td>'
 
         us_ft = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(us_ft): us_ft = 0
         us_ft = int(us_ft)
         us_ft_html = f'<td class="strong">{"⚡" * us_ft}</td>' if us_ft >= 3 else '<td>-</td>'
 
-        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td><td class="{us_rel_cls}">{us_rel}</td>{us_ft_html}'
+        us_prob_html += f'<tr><td>{uname}</td><td>{direction_tag(hp)}</td><td class="{us_rel_cls}">{us_rel}</td>{us_macro_html}{us_ft_html}'
         for period in ["5日", "10日", "30日", "180日"]:
             us_prob_html += fmt_prob_cell(hp.get(period))
         us_prob_html += '</tr>\n'
@@ -699,6 +709,11 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
             us_fund_html += '</tr>\n'
 
     # 拼接美股HTML
+    us_macro_note_html = ""
+    if us_macro_notes:
+        summary = " · ".join(dict.fromkeys(us_macro_notes))
+        us_macro_note_html = f'<p class="note">Macro Overlay · {summary}</p>'
+
     us_section = f"""
 <section class="us-divider">
   <span class="stamp">U.S. Equities · <em>美股研判</em> · NVDA · TSLA · GOOGL · AAPL · FUTU</span>
@@ -724,9 +739,10 @@ Set in DM Serif Display &amp; JetBrains Mono<br>
     <h2>Trend <em>Probability</em><span class="cn">趋势概率</span></h2>
     <div class="section-meta">US-Tuned<br>IC Weights</div>
   </div>
+  {us_macro_note_html}
   <div class="table-wrap">
   <table>
-  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>宏观覆盖</th><th>肥尾</th><th>5日</th><th>10日</th><th>30日</th><th>180日</th></tr></thead>
   <tbody>{us_prob_html}</tbody>
   </table>
   </div>

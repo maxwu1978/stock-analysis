@@ -17,6 +17,7 @@
 """
 
 from datetime import datetime, timedelta
+from functools import lru_cache
 from pathlib import Path
 
 import pandas as pd
@@ -55,6 +56,40 @@ MACRO_CALENDAR = {
     "CPI": CPI_2026,
     "NFP": NFP_2026,
 }
+
+
+@lru_cache(maxsize=4)
+def get_vix_history(period: str = "10y") -> pd.DataFrame:
+    """缓存 VIX 历史数据，供主模型对齐宏观波动因子。"""
+    v = yf.Ticker("^VIX")
+    hist = v.history(period=period, interval="1d", auto_adjust=False)
+    if hist.index.tz is not None:
+        hist.index = hist.index.tz_localize(None)
+    out = hist[["Close"]].rename(columns={"Close": "vix_close"}).copy()
+    out["vix_ma20"] = out["vix_close"].rolling(20).mean()
+    out["vix_std20"] = out["vix_close"].rolling(20).std()
+    out["vix_z20"] = (out["vix_close"] - out["vix_ma20"]) / out["vix_std20"].replace(0, pd.NA)
+    out["vix_ma20_diff"] = (out["vix_close"] / out["vix_ma20"].replace(0, pd.NA) - 1) * 100
+    out["vix_roc5"] = out["vix_close"].pct_change(5) * 100
+    return out
+
+
+def add_us_macro_factors(df: pd.DataFrame) -> pd.DataFrame:
+    """为美股日线对齐可历史回测的宏观因子，目前只接入 VIX 系列。"""
+    out = df.copy()
+    try:
+        vix = get_vix_history()
+    except Exception:
+        out["vix_close"] = pd.NA
+        out["vix_z20"] = pd.NA
+        out["vix_ma20_diff"] = pd.NA
+        out["vix_roc5"] = pd.NA
+        return out
+
+    aligned = vix.reindex(out.index).ffill()
+    for col in ["vix_close", "vix_z20", "vix_ma20_diff", "vix_roc5"]:
+        out[col] = aligned[col]
+    return out
 
 
 def get_vix_level() -> dict:

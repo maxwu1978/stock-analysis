@@ -9,6 +9,7 @@
 
 import pandas as pd
 import numpy as np
+from macro_events import add_us_macro_factors, get_risk_warnings, get_vix_level
 
 # 美股专用因子 — 去掉所有财报因子
 US_FACTOR_COLS = [
@@ -38,6 +39,11 @@ US_FACTOR_COLS = [
     "mfdfa_alpha0_120d",   # 120日MF-DFA谱中心α_0
     "hq2_120d",            # 120日MF-DFA h(q=2) 稳健版Hurst
     "mfdfa_x_roc20",       # Δα × ROC20 交互因子
+    # 宏观波动因子 (可历史回测)
+    "vix_close",           # VIX 绝对水平
+    "vix_z20",             # VIX 相对20日均值偏离
+    "vix_ma20_diff",       # VIX 相对20日均值百分比偏离
+    "vix_roc5",            # VIX 5日变化率
 ]
 
 IC_WINDOW = 90   # 美股用更短窗口
@@ -46,6 +52,8 @@ HORIZON = 5
 
 def _prepare_us_factors(df: pd.DataFrame) -> pd.DataFrame:
     """计算美股专用衍生因子"""
+    df = add_us_macro_factors(df)
+
     # 标准技术因子衍生
     boll_spread = df.get("BOLL_UP", pd.Series(dtype=float)) - df.get("BOLL_DN", pd.Series(dtype=float))
     if "BOLL_DN" in df.columns:
@@ -88,6 +96,53 @@ def _prepare_us_factors(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _apply_current_macro_overlay(score: float, symbol: str | None = None) -> dict:
+    """当前预测的宏观事件覆盖：缩减置信度，不伪造历史因子。"""
+    warnings = get_risk_warnings(symbol, days_ahead=14)
+    penalty = 0
+    reasons = []
+
+    vix = get_vix_level()
+    if "error" not in vix:
+        cur = vix["current"]
+        if cur >= 30:
+            penalty += 18
+            reasons.append(f"VIX {cur:.1f} 恐慌")
+        elif cur >= 25:
+            penalty += 10
+            reasons.append(f"VIX {cur:.1f} 偏高")
+
+    for warning in warnings:
+        if "财报" in warning and "🔴" in warning:
+            penalty += 15
+            reasons.append("财报临近")
+        elif "财报" in warning and "🟡" in warning:
+            penalty += 8
+            reasons.append("财报将近")
+        elif any(tag in warning for tag in ("FOMC", "CPI", "NFP")) and "🔴" in warning:
+            penalty += 8
+            reasons.append("宏观事件临近")
+        elif any(tag in warning for tag in ("FOMC", "CPI", "NFP")) and "🟡" in warning:
+            penalty += 4
+            reasons.append("宏观事件将近")
+
+    if penalty <= 0 or score == 0:
+        return {
+            "adjusted_score": score,
+            "penalty": 0,
+            "warnings": warnings,
+            "reasons": reasons,
+        }
+
+    adjusted = score - np.sign(score) * min(abs(score), penalty)
+    return {
+        "adjusted_score": float(adjusted),
+        "penalty": penalty,
+        "warnings": warnings,
+        "reasons": reasons,
+    }
+
+
 def _compute_rolling_ic(df, factor_cols, window=IC_WINDOW, horizon=HORIZON):
     fwd = df["close"].shift(-horizon) / df["close"] - 1
     df = df.copy()
@@ -101,7 +156,7 @@ def _compute_rolling_ic(df, factor_cols, window=IC_WINDOW, horizon=HORIZON):
     return ic_df
 
 
-def score_trend_us(df: pd.DataFrame) -> dict:
+def score_trend_us(df: pd.DataFrame, symbol: str | None = None, apply_macro_overlay: bool = True) -> dict:
     """美股专用评分"""
     if len(df) < IC_WINDOW + HORIZON + 20:
         return {"error": f"数据不足{IC_WINDOW + HORIZON + 20}天"}
@@ -154,6 +209,16 @@ def score_trend_us(df: pd.DataFrame) -> dict:
     else:
         score = 0
 
+    macro_overlay = {
+        "adjusted_score": score,
+        "penalty": 0,
+        "warnings": [],
+        "reasons": [],
+    }
+    if apply_macro_overlay:
+        macro_overlay = _apply_current_macro_overlay(score, symbol=symbol)
+        score = macro_overlay["adjusted_score"]
+
     if score >= 25:
         direction = "偏多"
     elif score >= 8:
@@ -187,6 +252,7 @@ def score_trend_us(df: pd.DataFrame) -> dict:
         "regime": regime,
         "historical_prob": hist_prob,
         "n_factors": n_factors,
+        "macro_overlay": macro_overlay,
     }
 
 

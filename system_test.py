@@ -55,7 +55,10 @@ def generate_signals(df, score_fn, fund_df=None):
     for i in range(WARMUP, len(df)):
         window = df.iloc[:i + 1].copy()
         try:
-            result = score_fn(window)
+            if score_fn is score_trend_us:
+                result = score_fn(window, apply_macro_overlay=False)
+            else:
+                result = score_fn(window)
         except:
             continue
         if "error" in result:

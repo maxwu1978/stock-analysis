@@ -75,6 +75,7 @@ def main():
     prob_rows = []
     tech_rows = []
     fund_rows = []
+    macro_notes = []
 
     for ticker, df in all_hist.items():
         name = US_STOCKS[ticker]
@@ -84,7 +85,7 @@ def main():
         if not s:
             continue
 
-        prob = score_trend(df)
+        prob = score_trend(df, symbol=ticker)
         if "error" in prob:
             continue
 
@@ -101,6 +102,15 @@ def main():
             return f"{p}% {avg} (n={n})"
 
         reliability = get_reliability_label(reliability_labels, "us", ticker)
+        macro = prob.get("macro_overlay", {})
+        penalty = int(macro.get("penalty", 0) or 0)
+        reasons = macro.get("reasons", [])
+        if penalty > 0:
+            reason_text = "/".join(dict.fromkeys(reasons)) if reasons else "宏观收缩"
+            macro_text = f"-{penalty} {reason_text}"
+            macro_notes.extend(macro.get("warnings", []))
+        else:
+            macro_text = "-"
 
         ft_score = df["fat_tail_score"].iloc[-1] if "fat_tail_score" in df.columns else 0
         if pd.isna(ft_score): ft_score = 0
@@ -109,6 +119,7 @@ def main():
 
         prob_rows.append([
             f"**{name}**", f"**{direction}**", f"**{reliability}**",
+            macro_text,
             ft_label if ft_label else "-",
             fmt_p(hp.get("5日")), fmt_p(hp.get("10日")),
             fmt_p(hp.get("30日")), fmt_p(hp.get("180日")),
@@ -135,7 +146,10 @@ def main():
             ])
 
     print(f"\n### 趋势概率\n")
-    print(md_table(["股票", "方向", "可靠度", "肥尾", "5日", "10日", "30日", "180日"], prob_rows))
+    if macro_notes:
+        summary = " | ".join(dict.fromkeys(macro_notes))
+        print(f"当前宏观覆盖: {summary}\n")
+    print(md_table(["股票", "方向", "可靠度", "宏观覆盖", "肥尾", "5日", "10日", "30日", "180日"], prob_rows))
 
     print(f"\n### 技术指标\n")
     print(md_table(["股票", "RSI6", "MACD柱", "MA5", "MA20", "MA60", "ADX", "股性"], tech_rows))
