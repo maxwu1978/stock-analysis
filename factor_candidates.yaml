@@ -4,171 +4,551 @@
   status: candidate
   source: manual
   formula_type: rolling_mean
-  inputs: [gap_ret_1d]
+  inputs:
+  - gap_ret_1d
   params:
     window: 5
     min_periods: 3
   notes: 短周期隔夜收益窗口
   owner: research
-
 - name: gap_ret_20d
   market: a
   family: behavior
-  status: candidate
+  status: trial
   source: manual
   formula_type: rolling_mean
-  inputs: [gap_ret_1d]
+  inputs:
+  - gap_ret_1d
   params:
     window: 20
     min_periods: 10
   notes: 长周期隔夜收益窗口
   owner: research
-
 - name: amihud_10d
   market: a
   family: behavior
   status: candidate
   source: manual
   formula_type: rolling_mean
-  inputs: [amihud_daily]
+  inputs:
+  - amihud_daily
   params:
     window: 10
     min_periods: 5
   notes: 非流动性短窗口
   owner: research
-
 - name: amihud_30d
   market: a
   family: behavior
   status: candidate
   source: manual
   formula_type: rolling_mean
-  inputs: [amihud_daily]
+  inputs:
+  - amihud_daily
   params:
     window: 30
     min_periods: 15
   notes: 非流动性长窗口
   owner: research
-
 - name: price_position_z20
   market: a
   family: behavior
-  status: candidate
+  status: watch
   source: generated
   formula_type: rolling_zscore
-  inputs: [price_position]
+  inputs:
+  - price_position
   params:
     window: 20
     min_periods: 10
   notes: 区间位置标准化
   owner: research
-
 - name: mfdfa_x_roc10
   market: a
   family: fractal
   status: candidate
   source: generated
   formula_type: interaction
-  inputs: [mfdfa_width_centered_120, ROC10]
+  inputs:
+  - mfdfa_width_centered_120
+  - ROC10
+  params: {}
   notes: Δα 中心化后乘 10 日动量
   owner: research
-
 - name: high52w_x_vol_surge
   market: a
   family: trend
-  status: candidate
+  status: watch
   source: generated
   formula_type: interaction
-  inputs: [high52w_pos, vol_surge]
+  inputs:
+  - high52w_pos
+  - vol_surge
+  params: {}
   notes: 52周位置与量能异动交互
   owner: research
-
 - name: intraday_ret_5d
   market: a
   family: behavior
   status: watch
   source: manual
   formula_type: rolling_mean
-  inputs: [intraday_ret_1d]
+  inputs:
+  - intraday_ret_1d
   params:
     window: 5
     min_periods: 3
   notes: 日内收益率短窗口
   owner: research
-
+- name: policy_beta_proxy
+  market: a
+  family: macro
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs:
+  - price_position
+  - vol_surge
+  params: {}
+  notes: 政策/风险偏好代理：区间位置与量能异动共振
+  owner: research
+- name: liquidity_stress_proxy
+  market: a
+  family: macro
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs:
+  - gap_ret_10d
+  - amihud_20d
+  params: {}
+  notes: 流动性与跳空共振，近似政策流动性冲击代理
+  owner: research
+- name: ai_mfg_heat_proxy
+  market: a
+  family: industry
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs:
+  - ROC20
+  - vol_surge
+  params: {}
+  notes: AI/制造链景气热度代理：动量与放量共振
+  owner: research
+- name: ai_mfg_leader_proxy
+  market: a
+  family: industry
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs:
+  - high52w_pos
+  - ROC20
+  params: {}
+  notes: 龙头靠近年高且动量增强
+  owner: research
+- name: earnings_accel_proxy
+  market: a
+  family: industry
+  status: trial
+  source: generated
+  formula_type: interaction
+  inputs:
+  - roe_chg
+  - rev_growth_accel
+  params: {}
+  notes: 制造升级链业绩改善代理：ROE变化与营收加速度
+  owner: research
+- name: quality_flow_proxy
+  market: a
+  family: industry
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs:
+  - cash_flow_ps
+  - vol_surge
+  params: {}
+  notes: 经营现金流与资金活跃共振
+  owner: research
+- name: mfdfa_x_vol_surge
+  market: a
+  family: industry
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs:
+  - mfdfa_width_centered_120
+  - vol_surge
+  params: {}
+  notes: 分形结构与主题放量共振
+  owner: research
 - name: gap_ret_5d
   market: us
   family: behavior
-  status: candidate
+  status: watch
   source: manual
   formula_type: rolling_mean
-  inputs: [gap_ret_1d]
+  inputs:
+  - gap_ret_1d
   params:
     window: 5
     min_periods: 3
   notes: 美股短周期隔夜收益窗口
   owner: research
-
 - name: atr_pct_z20
   market: us
   family: volatility
   status: candidate
   source: generated
   formula_type: rolling_zscore
-  inputs: [atr_pct]
+  inputs:
+  - atr_pct
   params:
     window: 20
     min_periods: 10
   notes: 波动率标准化
   owner: research
-
 - name: roc30
   market: us
   family: trend
   status: candidate
   source: generated
   formula_type: close_roc
+  inputs: []
   params:
     period: 30
   notes: 30日价格动量
   owner: research
-
 - name: high52w_x_vol_surge
   market: us
   family: trend
-  status: candidate
+  status: watch
   source: generated
   formula_type: interaction
-  inputs: [high52w_pos, vol_surge]
+  inputs:
+  - high52w_pos
+  - vol_surge
+  params: {}
   notes: 52周位置与量能异动交互
   owner: research
-
 - name: vix_z20_x_high52w
   market: us
   family: macro
-  status: candidate
+  status: watch
   source: generated
   formula_type: interaction
-  inputs: [vix_z20, high52w_pos]
+  inputs:
+  - vix_z20
+  - high52w_pos
+  params: {}
   notes: VIX 偏离与年度位置交互
   owner: research
-
 - name: vix_z20_x_vol_surge
   market: us
   family: macro
   status: candidate
   source: generated
   formula_type: interaction
-  inputs: [vix_z20, vol_surge]
+  inputs:
+  - vix_z20
+  - vol_surge
+  params: {}
   notes: VIX 偏离与量能异动交互
   owner: research
-
 - name: mfdfa_x_roc10
   market: us
   family: fractal
   status: watch
   source: generated
   formula_type: interaction
-  inputs: [mfdfa_width_centered_120, ROC10]
+  inputs:
+  - mfdfa_width_centered_120
+  - ROC10
+  params: {}
   notes: Δα 中心化后乘 10 日动量
   owner: research
+- name: vix_z20_x_atr_pct
+  market: us
+  family: macro
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs:
+  - vix_z20
+  - atr_pct
+  params: {}
+  notes: 宏观恐慌偏离与个股波动成本共振
+  owner: research
+- name: vix_roc5_x_vol_surge
+  market: us
+  family: macro
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs:
+  - vix_roc5
+  - vol_surge
+  params: {}
+  notes: VIX 变化率与量能异动共振
+  owner: research
+- name: vix_ma20_diff_x_roc20
+  market: us
+  family: macro
+  status: trial
+  source: generated
+  formula_type: interaction
+  inputs:
+  - vix_ma20_diff
+  - ROC20
+  params: {}
+  notes: 宏观风险溢价与中期动量共振
+  owner: research
+- name: ai_chain_heat_proxy
+  market: us
+  family: industry
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs:
+  - ROC20
+  - vol_surge
+  params: {}
+  notes: AI/制造链热度代理：20日动量与放量共振
+  owner: research
+- name: ai_chain_leader_proxy
+  market: us
+  family: industry
+  status: candidate
+  source: generated
+  formula_type: interaction
+  inputs:
+  - high52w_pos
+  - ROC20
+  params: {}
+  notes: 龙头强势代理：52周位置与中期动量共振
+  owner: research
+- name: ai_chain_vol_proxy
+  market: us
+  family: industry
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs:
+  - atr_pct
+  - high52w_pos
+  params: {}
+  notes: AI/制造链波动成本与年内位置共振
+  owner: research
+- name: mfdfa_x_high52w
+  market: us
+  family: industry
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs:
+  - mfdfa_width_centered_120
+  - high52w_pos
+  params: {}
+  notes: 分形结构与行业龙头位置共振
+  owner: research
+- name: vol_change_x_high52w
+  market: us
+  family: industry
+  status: watch
+  source: generated
+  formula_type: interaction
+  inputs:
+  - vol_change
+  - high52w_pos
+  params: {}
+  notes: 成交量变化与行业龙头位置共振
+  owner: research
+- name: roc15
+  market: a
+  family: trend
+  status: watch
+  source: generated
+  formula_type: close_roc
+  inputs: []
+  params:
+    period: 15
+  notes: 15 日价格动量候选
+  owner: idea_generator
+  source_url: https://qlib.readthedocs.io/
+  evidence_type: open_source_template
+  source_score: 4.0
+  source_notes: Common momentum template; verify under local universe.
+- name: roc60
+  market: a
+  family: trend
+  status: watch
+  source: generated
+  formula_type: close_roc
+  inputs: []
+  params:
+    period: 60
+  notes: 60 日价格动量候选
+  owner: idea_generator
+  source_url: https://qlib.readthedocs.io/
+  evidence_type: open_source_template
+  source_score: 4.0
+  source_notes: Common momentum template; verify under local universe.
+- name: price_position_z60
+  market: a
+  family: other
+  status: watch
+  source: generated
+  formula_type: rolling_zscore
+  inputs:
+  - price_position
+  params:
+    window: 60
+    min_periods: 30
+  notes: price_position 的 60 日滚动标准化变体
+  owner: idea_generator
+  source_url: https://arxiv.org/abs/1601.00991
+  evidence_type: formula_variant
+  source_score: 3.0
+  source_notes: Formulaic alpha style transformation; local evidence required.
+- name: price_position_z30
+  market: a
+  family: behavior
+  status: watch
+  source: adaptive
+  formula_type: rolling_zscore
+  inputs:
+  - price_position
+  params:
+    window: 30
+    min_periods: 15
+  notes: Adaptive variant from price_position_z20 after WATCH
+  owner: research
+  source_score: 2.5
+  source_notes: Generated from tested factor price_position_z20; latest decision=WATCH.
+- name: roc30
+  market: a
+  family: trend
+  status: watch
+  source: generated
+  formula_type: close_roc
+  inputs: []
+  params:
+    period: 30
+  notes: 30 日价格动量候选
+  owner: idea_generator
+  source_url: https://qlib.readthedocs.io/
+  evidence_type: open_source_template
+  source_score: 4.0
+  source_notes: Common momentum template; verify under local universe.
+- name: gap_ret_15d
+  market: us
+  family: behavior
+  status: watch
+  source: adaptive
+  formula_type: rolling_mean
+  inputs:
+  - gap_ret_1d
+  params:
+    window: 15
+    min_periods: 7
+  notes: Adaptive variant from gap_ret_5d after WATCH
+  owner: research
+  source_score: 2.5
+  source_notes: Generated from tested factor gap_ret_5d; latest decision=WATCH.
+- name: gap_ret_10d
+  market: us
+  family: behavior
+  status: watch
+  source: generated
+  formula_type: rolling_mean
+  inputs:
+  - gap_ret_1d
+  params:
+    window: 10
+    min_periods: 5
+  notes: gap_ret_1d 的 10 日滚动均值变体
+  owner: idea_generator
+  evidence_type: academic_formula
+  source_score: 4.0
+  source_notes: Overnight/intraday return decomposition hypothesis.
+- name: gap_ret_8d
+  market: us
+  family: behavior
+  status: watch
+  source: adaptive
+  formula_type: rolling_mean
+  inputs:
+  - gap_ret_1d
+  params:
+    window: 8
+    min_periods: 4
+  notes: Adaptive variant from gap_ret_5d after WATCH
+  owner: research
+  source_score: 2.5
+  source_notes: Generated from tested factor gap_ret_5d; latest decision=WATCH.
+- name: gap_ret_3d
+  market: us
+  family: behavior
+  status: watch
+  source: adaptive
+  formula_type: rolling_mean
+  inputs:
+  - gap_ret_1d
+  params:
+    window: 3
+    min_periods: 3
+  notes: Adaptive variant from gap_ret_5d after WATCH
+  owner: research
+  source_score: 2.5
+  source_notes: Generated from tested factor gap_ret_5d; latest decision=WATCH.
+- name: vix_z20_z20
+  market: us
+  family: macro
+  status: watch
+  source: generated
+  formula_type: rolling_zscore
+  inputs:
+  - vix_z20
+  params:
+    window: 20
+    min_periods: 10
+  notes: vix_z20 的 20 日滚动标准化变体
+  owner: idea_generator
+  source_url: https://fred.stlouisfed.org/docs/api/fred/
+  evidence_type: macro_data_proxy
+  source_score: 4.0
+  source_notes: Macro risk proxy built from VIX-derived features.
+- name: roc60
+  market: us
+  family: trend
+  status: watch
+  source: generated
+  formula_type: close_roc
+  inputs: []
+  params:
+    period: 60
+  notes: 60 日价格动量候选
+  owner: idea_generator
+  source_url: https://qlib.readthedocs.io/
+  evidence_type: open_source_template
+  source_score: 4.0
+  source_notes: Common momentum template; verify under local universe.
+- name: vol_change_z20
+  market: us
+  family: other
+  status: watch
+  source: generated
+  formula_type: rolling_zscore
+  inputs:
+  - vol_change
+  params:
+    window: 20
+    min_periods: 10
+  notes: vol_change 的 20 日滚动标准化变体
+  owner: idea_generator
+  source_url: https://arxiv.org/abs/1601.00991
+  evidence_type: formula_variant
+  source_score: 3.0
+  source_notes: Formulaic alpha style transformation; local evidence required.

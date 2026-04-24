@@ -55,26 +55,33 @@
 
 ## 总体架构
 
-建议新增 5 个组件：
+建议新增 7 个组件：
 
 1. `factor_registry.py`
 2. `candidate_factor_engine.py`
 3. `factor_lab.py`
 4. `factor_promotion.py`
 5. `factor_lab_report.py`
+6. `factor_idea_generator.py`
+7. `factor_candidate_importer.py`
 
-推荐输出 4 类数据文件：
+推荐输出 5 类数据文件：
 
 1. `factor_candidates.yaml`
 2. `factor_candidate_panel_{market}.csv`
 3. `factor_candidate_report_{market}.csv`
 4. `factor_promotion_queue.json`
+5. `factor_candidate_ideas.yaml`
 
 工作流如下：
 
 ```mermaid
 flowchart TD
+    A0["factor_idea_generator.py 生成候选草案"] --> A1["factor_candidate_ideas.yaml"]
+    A1 --> A2["factor_candidate_importer.py 显式引入"]
+    A2 --> A3["factor_candidates.yaml"]
     A["基础行情/财报数据"] --> B["compute_all() + candidate_factor_engine"]
+    A3 --> B
     B --> C["候选因子面板"]
     C --> D["factor_lab.py 结构化评估"]
     D --> E["候选因子报告"]
@@ -111,6 +118,7 @@ flowchart TD
 
 - `active`
 - `candidate`
+- `trial`
 - `watch`
 - `rejected`
 - `archived`
@@ -161,6 +169,220 @@ flowchart TD
 - 全组合搜索
 - 大规模符号树搜索
 - 遗传编程
+
+
+### 2.1 `factor_idea_generator.py`
+
+作用：
+
+- 从 active 因子、当前候选池、宏观/行业主题和常见窗口变体中生成候选草案
+- 输出 `factor_candidate_ideas.yaml`
+- 不直接写入 `factor_candidates.yaml`
+
+第一版候选来源：
+
+- active 因子的窗口变体
+  - `ROC20 -> roc15 / roc30 / roc60`
+  - `gap_ret_10d -> gap_ret_3d / 5d / 20d / 30d`
+  - `amihud_20d -> amihud_10d / 30d / 60d`
+- rolling z-score 变体
+  - `price_position_z20 / z60`
+  - `atr_pct_z20 / z60`
+  - `vol_surge_z20 / z60`
+- 主题交互
+  - AI/制造链：`ROC20 × vol_surge`, `high52w_pos × ROC20`
+  - 宏观风险：`vix_z20 × atr_pct`, `vix_ma20_diff × ROC20`
+  - A股政策/流动性代理：`price_position × vol_surge`, `gap_ret_10d × amihud_20d`
+
+输出规则：
+
+- 自动去掉 active 因子和已注册候选
+- 默认状态为 `idea`
+- 需要显式引入后才进入正式候选池
+
+
+### 2.2 `factor_candidate_importer.py`
+
+作用：
+
+- 把 `factor_candidate_ideas.yaml` 中选定的草案引入 `factor_candidates.yaml`
+- 支持按市场、按名称筛选
+- 支持 `--dry-run`
+
+示例：
+
+```bash
+python3 factor_idea_generator.py
+python3 factor_candidate_importer.py --dry-run
+python3 factor_candidate_importer.py --name roc60 --market us --status watch
+```
+
+设计原则：
+
+- 草案生成可以自动执行
+- 引入正式候选池需要显式命令
+- 引入后仍只进入 `factor_lab` 研究层，不影响主模型
+
+
+### 2.3 候选因子来源调研记录（2026-04-24）
+
+候选因子池不应该只靠手工灵感扩展，需要形成稳定的外部来源漏斗。当前建议按以下优先级引入：
+
+1. 公开论文和预印本
+   - 主要渠道：arXiv、SSRN、NBER、期刊论文
+   - 适合提取：可公式化的价格、成交量、波动率、行为金融、机器发现因子
+   - 代表来源：WorldQuant 101 Formulaic Alphas、AutoAlpha、52-week high、MAX、overnight/intraday return、Amihud liquidity
+
+2. 成熟因子库和策略数据库
+   - 主要渠道：Quantpedia、BigQuant Alpha101 / AI Alphas、JoinQuant `jqfactor_analyzer`
+   - 适合提取：已整理过的因子定义、A股可落地的字段组合、常见评估口径
+   - 使用方式：只转译公式和研究假设，不直接采纳结论
+
+3. 开源量化框架
+   - 主要渠道：Microsoft Qlib、Alphalens、DolphinDB WorldQuant 101 Alphas
+   - 适合提取：特征模板、评估指标、分组回测方式、去重和稳定性检查方法
+   - 使用方式：对标当前 `factor_lab.py` 的评估口径，补齐缺失指标
+
+4. 券商金融工程报告
+   - 主要渠道：中信、广发、国信、华泰、海通等金工研报及其公开转载
+   - 适合提取：A股微观结构、换手率、拥挤度、行业轮动、政策窗口代理
+   - 使用方式：先落到 `factor_candidate_ideas.yaml`，小样本验证通过后再进入正式候选池
+
+5. 宏观和行业数据源
+   - 主要渠道：FRED、AKShare macro、Futu、yfinance、行业指数/ETF/供应链代理
+   - 适合提取：美股利率/通胀/美元/VIX代理，A股政策窗口/流动性/行业热度代理
+   - 使用方式：优先做 gating 或 interaction，不直接作为单一交易信号
+
+推荐漏斗：
+
+```text
+论文 / 因子库 / 开源框架 / 金工研报 / 宏观行业数据
+  -> factor_idea_generator.py
+  -> factor_candidate_ideas.yaml
+  -> factor_lab.py idea-only 同口径复测
+  -> factor_candidate_importer.py 显式引入
+  -> factor_candidates.yaml
+  -> factor_promotion.py
+  -> 人工确认后才进入 trial / active review
+```
+
+来源可信度建议：
+
+- `source_score = 5`：有明确论文或成熟框架公式，且字段可复现
+- `source_score = 4`：券商金工报告或大型平台因子库，逻辑清楚但需自行复刻
+- `source_score = 3`：开源仓库或社区研究，有公式但缺少严谨样本说明
+- `source_score = 2`：主题假设或行业代理，只有逻辑链，必须先做 shadow test
+- `source_score = 1`：模型生成或弱证据想法，只能留在 `idea` 状态
+
+后续应给候选因子补充元数据字段：
+
+- `source_url`
+- `evidence_type`
+- `source_score`
+- `source_notes`
+
+这些字段只用于研究排序和审计留痕，不允许作为自动上线依据。
+
+
+### 2.4 本地学习与测试指令
+
+新增两条本地指令：
+
+```bash
+./scripts/factor_learn.sh
+./scripts/factor_test.sh
+```
+
+`factor_learn.sh` 默认行为：
+
+- 连续运行 60 分钟
+- 生成 `factor_candidate_ideas.yaml`
+- 用 `factor_lab.py` 对 `idea` 状态因子做轻量同口径预筛
+- 输出 `factor_learning_queue.json`、`factor_learning_report.md`、`factor_learning_history.jsonl`
+- 将通过预筛的草案写入 `factor_candidates.yaml`，状态为 `candidate` 或 `watch`
+- 维护 `factor_learning_state.json`，记录已筛过的因子，避免重复选择同一候选
+- 读取上一轮 `factor_promotion_queue.json`，按市场、因子家族、公式类型、证据类型调整下一轮学习排序
+- 对测试队列做 fingerprint 去重，避免同一份测试结果被反复计入学习方向
+- 围绕上一轮 `PROMOTE_TO_TRIAL / WATCH` 的因子自动生成邻近窗口变体，提高后续候选质量
+- 不修改 `FACTOR_COLS / US_FACTOR_COLS`
+
+常用参数：
+
+```bash
+./scripts/factor_learn.sh --duration-min 60
+./scripts/factor_learn.sh --duration-min 15 --markets us
+./scripts/factor_learn.sh --duration-min 60 --no-import
+```
+
+`factor_test.sh` 默认行为：
+
+- 对 `factor_candidates.yaml` 里的 `candidate / watch / trial` 因子做全量复测
+- 输出 `factor_candidate_{market}_report.csv`
+- 输出 `factor_promotion_queue.json`
+- 输出 `factor_test_decisions.md`
+- 将 `PROMOTE_TO_TRIAL` 的因子标记为 `trial`
+- 将 `WATCH` 的因子标记为 `watch`
+- 生成 `factor_runtime_overlay.json`，记录当前被推送给决策层的 `trial` 因子
+- 默认不把 `REJECT` 自动写成 `rejected`，除非显式加 `--apply-rejections`
+- 不直接编辑 `FACTOR_COLS / US_FACTOR_COLS`，但 `probability.py / probability_us.py` 会在运行时自动加载 `trial` 因子并纳入 IC 加权评分
+
+常用参数：
+
+```bash
+./scripts/factor_test.sh
+./scripts/factor_test.sh --dry-run
+./scripts/factor_test.sh --apply-rejections
+```
+
+生产接入边界：
+
+- `candidate`：只进入测试池
+- `watch`：继续观察，默认不影响生产评分
+- `trial`：进入运行时决策 overlay，参与 `score_trend / score_trend_us` 的 IC 加权评分
+- `active`：仍需人工确认后才写入 `FACTOR_COLS / US_FACTOR_COLS`
+- `rejected`：不参与学习和测试，除非人工恢复
+
+### 2.5 每日自动化
+
+本地 `launchd` 已支持两个每日任务：
+
+```bash
+./install_launchd.sh install-factors
+./install_launchd.sh uninstall-factors
+./install_launchd.sh status
+```
+
+任务安排：
+
+- `com.maxwu.factor-learning`
+  - 每天 12:10 本机时间运行
+  - 调用 `run_factor_learning_daily.sh`
+  - 默认运行 60 分钟
+  - 日志：`factor_learning_daily.log`
+
+- `com.maxwu.factor-testing`
+  - 每天 13:25 本机时间运行
+  - 调用 `run_factor_testing_daily.sh`
+  - 复测候选池并推送达标因子到 `trial`
+  - 日志：`factor_testing_daily.log`
+
+两个 wrapper 都有锁：
+
+- `.factor_learning.lock`
+- `.factor_testing.lock`
+
+如果上一轮未结束，下一轮会跳过，避免重复占用数据源或同时写候选池。
+
+自动化运行约束：
+
+- 不需要人工确认或批准
+- 不调用交易解锁、下单或实盘交易接口
+- `NONINTERACTIVE=1`
+- `GIT_TERMINAL_PROMPT=0`
+- `PIP_NO_INPUT=1`
+- `MPLBACKEND=Agg`
+
+如果底层网络、行情源或 Python 依赖失败，任务会写日志并退出，不会等待人工输入。
 
 
 ### 3. `factor_lab.py`

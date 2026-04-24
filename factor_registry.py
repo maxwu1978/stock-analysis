@@ -10,8 +10,6 @@ from typing import Any
 import yaml
 
 from factor_weighting import infer_factor_family
-from probability import FACTOR_COLS
-from probability_us import US_FACTOR_COLS
 
 
 ROOT = Path(__file__).resolve().parent
@@ -30,6 +28,10 @@ class FactorSpec:
     params: dict[str, Any] = field(default_factory=dict)
     notes: str = ""
     owner: str = "research"
+    source_url: str = ""
+    evidence_type: str = ""
+    source_score: float | None = None
+    source_notes: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "FactorSpec":
@@ -37,6 +39,13 @@ class FactorSpec:
         market = str(data["market"]).lower()
         family = str(data.get("family") or infer_factor_family(name))
         status = str(data.get("status") or "candidate").lower()
+        raw_score = data.get("source_score")
+        source_score = None
+        if raw_score not in (None, ""):
+            try:
+                source_score = float(raw_score)
+            except (TypeError, ValueError):
+                source_score = None
         return cls(
             name=name,
             market=market,
@@ -48,10 +57,14 @@ class FactorSpec:
             params=dict(data.get("params") or {}),
             notes=str(data.get("notes") or ""),
             owner=str(data.get("owner") or "research"),
+            source_url=str(data.get("source_url") or ""),
+            evidence_type=str(data.get("evidence_type") or ""),
+            source_score=source_score,
+            source_notes=str(data.get("source_notes") or ""),
         )
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "name": self.name,
             "market": self.market,
             "family": self.family,
@@ -63,13 +76,26 @@ class FactorSpec:
             "notes": self.notes,
             "owner": self.owner,
         }
+        if self.source_url:
+            out["source_url"] = self.source_url
+        if self.evidence_type:
+            out["evidence_type"] = self.evidence_type
+        if self.source_score is not None:
+            out["source_score"] = self.source_score
+        if self.source_notes:
+            out["source_notes"] = self.source_notes
+        return out
 
 
 def active_factor_names(market: str) -> list[str]:
     market = market.lower()
     if market == "a":
+        from probability import FACTOR_COLS
+
         return list(FACTOR_COLS)
     if market == "us":
+        from probability_us import US_FACTOR_COLS
+
         return list(US_FACTOR_COLS)
     raise ValueError(f"unknown market: {market}")
 
@@ -129,3 +155,10 @@ def candidate_factor_names(
     path: Path = CANDIDATE_PATH,
 ) -> list[str]:
     return [spec.name for spec in list_factor_specs(market, statuses=statuses, include_active=False, path=path)]
+
+
+def dump_factor_specs(specs: list[FactorSpec], path: Path) -> Path:
+    """Write factor specs to YAML in registry format."""
+    payload = [spec.to_dict() for spec in specs]
+    path.write_text(yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8")
+    return path

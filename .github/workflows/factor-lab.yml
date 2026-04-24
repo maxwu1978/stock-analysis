@@ -7,6 +7,10 @@ on:
         description: 候选状态（空格分隔，例如 "candidate watch"）
         required: false
         default: candidate watch
+      generate_ideas:
+        description: 是否先生成候选因子草案并评估 idea 状态
+        required: false
+        default: 'false'
   schedule:
     # 每周一北京时间 02:30 运行
     - cron: '30 18 * * 0'
@@ -27,6 +31,7 @@ jobs:
         market: [a, us]
     env:
       FACTOR_STATUSES: ${{ github.event_name == 'workflow_dispatch' && inputs.statuses || 'candidate watch' }}
+      GENERATE_FACTOR_IDEAS: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_ideas || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,17 +42,29 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.txt
 
+      - name: 生成候选因子草案
+        if: env.GENERATE_FACTOR_IDEAS == 'true'
+        run: |
+          python3 factor_idea_generator.py
+          echo "FACTOR_STATUSES=idea" >> "$GITHUB_ENV"
+          echo "FACTOR_CANDIDATE_PATH=factor_candidate_ideas.yaml" >> "$GITHUB_ENV"
+          echo "CSV_PREFIX=factor_ideas" >> "$GITHUB_ENV"
+
       - name: 运行候选因子实验
-        run: bash scripts/run_factor_lab_ci.sh "${{ matrix.market }}"
+        run: bash scripts/run_factor_lab_ci.sh "${{ matrix.market }}" "${CSV_PREFIX:-factor_candidate}" ${FACTOR_CANDIDATE_PATH:+--candidate-path "$FACTOR_CANDIDATE_PATH"}
 
       - name: 上传实验产物
         uses: actions/upload-artifact@v4
         with:
           name: factor-lab-${{ matrix.market }}
           path: |
+            factor_candidate_ideas.yaml
             factor_candidate_${{ matrix.market }}_panel.csv
             factor_candidate_${{ matrix.market }}_report.csv
             factor_candidate_${{ matrix.market }}_summary.csv
+            factor_ideas_${{ matrix.market }}_panel.csv
+            factor_ideas_${{ matrix.market }}_report.csv
+            factor_ideas_${{ matrix.market }}_summary.csv
           if-no-files-found: error
 
   promotion-queue:
@@ -73,20 +90,26 @@ jobs:
           path: .
 
       - name: 生成晋升队列
-        run: python3 factor_promotion.py --prefix factor_candidate --output factor_promotion_queue.json
+        env:
+          LAB_PREFIX: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_ideas == 'true' && 'factor_ideas' || 'factor_candidate' }}
+        run: python3 factor_promotion.py --prefix "$LAB_PREFIX" --output factor_promotion_queue.json
 
       - name: 提交报告与队列
         env:
           BRANCH_NAME: ${{ github.ref_name }}
+          LAB_PREFIX: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_ideas == 'true' && 'factor_ideas' || 'factor_candidate' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add \
-            factor_candidate_a_report.csv \
-            factor_candidate_a_summary.csv \
-            factor_candidate_us_report.csv \
-            factor_candidate_us_summary.csv \
+            "${LAB_PREFIX}_a_report.csv" \
+            "${LAB_PREFIX}_a_summary.csv" \
+            "${LAB_PREFIX}_us_report.csv" \
+            "${LAB_PREFIX}_us_summary.csv" \
             factor_promotion_queue.json
+          if [ "$LAB_PREFIX" = "factor_ideas" ] && [ -f factor_candidate_ideas.yaml ]; then
+            git add factor_candidate_ideas.yaml
+          fi
           if git diff --cached --quiet; then
             echo "No factor-lab changes to commit."
             exit 0

@@ -5,12 +5,13 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from candidate_factor_engine import build_candidate_factors
-from factor_registry import active_factor_names, list_factor_specs
+from factor_registry import CANDIDATE_PATH, active_factor_names, list_factor_specs
 from factor_tear_sheet import CONFIGS, _calc_factor_metrics, _fetch_series
 
 
@@ -21,6 +22,7 @@ class CandidateRun:
     max_candidates: int | None
     symbols: list[str] | None
     csv_prefix: str
+    candidate_path: Path
 
 
 def _filter_universe(universe: dict[str, str], symbols: list[str] | None) -> dict[str, str]:
@@ -32,7 +34,7 @@ def _filter_universe(universe: dict[str, str], symbols: list[str] | None) -> dic
 
 def collect_candidate_panel(run: CandidateRun) -> tuple[pd.DataFrame, list[str], list[str]]:
     cfg = CONFIGS[run.market]
-    specs = list_factor_specs(run.market, statuses=run.statuses)
+    specs = list_factor_specs(run.market, statuses=run.statuses, path=run.candidate_path)
     if run.max_candidates:
         specs = specs[: run.max_candidates]
 
@@ -133,7 +135,7 @@ def build_candidate_report(run: CandidateRun) -> tuple[pd.DataFrame, pd.DataFram
     if panel.empty:
         return panel, pd.DataFrame(), pd.DataFrame()
 
-    spec_map = {spec.name: spec for spec in list_factor_specs(run.market, statuses=run.statuses)}
+    spec_map = {spec.name: spec for spec in list_factor_specs(run.market, statuses=run.statuses, path=run.candidate_path)}
     rows = []
     for factor in candidate_names:
         if factor not in panel.columns:
@@ -221,6 +223,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-candidates", type=int)
     parser.add_argument("--symbols", nargs="*")
     parser.add_argument("--csv-prefix", default="factor_candidate")
+    parser.add_argument("--candidate-path", type=Path, default=CANDIDATE_PATH)
     return parser.parse_args()
 
 
@@ -232,6 +235,7 @@ def main() -> None:
         max_candidates=args.max_candidates,
         symbols=args.symbols,
         csv_prefix=args.csv_prefix,
+        candidate_path=args.candidate_path,
     )
 
     panel, report, summary = build_candidate_report(run)

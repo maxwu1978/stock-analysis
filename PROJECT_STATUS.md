@@ -1,6 +1,6 @@
 # 主力分析项目 · 状态快照
 
-**最后更新**: 2026-04-23
+**最后更新**: 2026-04-24
 **阶段**: 研究观察期（主模型可靠度已重估为偏弱，页面与发布链路已完成一轮稳定性收口）
 
 ---
@@ -116,6 +116,24 @@
     - 持仓管理
     - 无机会
   - `MICRO` 已补充说明：按风险预算 ÷ 单套风险估算，不是固定写死 1 套
+
+## 补充记录（2026-04-24）
+
+- 候选因子自动发现机制已补齐设计记录：`factor_idea_generator.py -> factor_candidate_ideas.yaml -> factor_candidate_importer.py -> factor_candidates.yaml -> factor_lab.py -> factor_promotion.py`
+- 外部候选因子来源已归档到 `FACTOR_DISCOVERY_PLAN.md`：论文/预印本、成熟因子库、开源量化框架、券商金工报告、宏观与行业数据源
+- 研究层边界已明确：外部来源只能进入 `idea` 或 `candidate`，不能自动改 `FACTOR_COLS / US_FACTOR_COLS`，也不能自动改变交易策略
+- 下一步工程项：给候选因子增加 `source_url / evidence_type / source_score / source_notes`，用于来源可信度排序和审计留痕
+- 本地因子学习/测试指令已建立：
+  - `./scripts/factor_learn.sh`：默认 60 分钟持续生成、预筛并引入候选草案
+  - `./scripts/factor_test.sh`：复测候选池并把通过门槛的因子标记为 `trial`
+  - `factor_learning_state.json`：记录已筛过候选并根据测试结果调整下一轮学习方向
+  - `factor_runtime_overlay.json`：记录当前已推送到运行时决策层的 `trial` 因子
+  - `trial` 因子会被 `probability.py / probability_us.py` 动态加载进 IC 加权评分；仍不直接硬改 `FACTOR_COLS / US_FACTOR_COLS`
+- 因子学习/测试已接入本地 `launchd`：
+  - `com.maxwu.factor-learning`：每天 12:10 本机时间，默认学习 60 分钟
+  - `com.maxwu.factor-testing`：每天 13:25 本机时间，复测并推送 `trial`
+  - 安装/卸载：`./install_launchd.sh install-factors` / `./install_launchd.sh uninstall-factors`
+  - 两个任务均为非交互运行：不需要人工批准，不触发交易解锁/下单，失败只写日志不等待输入
 
 ---
 

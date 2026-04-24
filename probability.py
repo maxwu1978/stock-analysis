@@ -9,6 +9,8 @@
 
 import pandas as pd
 import numpy as np
+from candidate_factor_engine import build_candidate_factors
+from factor_registry import list_factor_specs
 from factor_weighting import infer_factor_family, load_family_weight_multipliers
 
 # 使用的因子 — 技术因子 + 基本面因子
@@ -51,6 +53,7 @@ FACTOR_COLS = [
 IC_WINDOW = 120
 # 预测周期
 HORIZON = 5
+RUNTIME_FACTOR_STATUSES = ("trial",)
 
 
 def _apply_family_priors(ic_weights: dict[str, float]) -> tuple[dict[str, float], dict[str, float]]:
@@ -104,16 +107,30 @@ def _prepare_extra_factors(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _apply_runtime_trial_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Add promoted trial factors to the scoring panel without editing FACTOR_COLS."""
+    try:
+        specs = list_factor_specs("a", statuses=RUNTIME_FACTOR_STATUSES)
+    except Exception:
+        return df, []
+    if not specs:
+        return df, []
+    out, built = build_candidate_factors(df, specs, "a")
+    usable = [name for name in built if name in out.columns and out[name].notna().mean() > 0.3]
+    return out, usable
+
+
 def score_trend(df: pd.DataFrame) -> dict:
     """数据驱动评分: 用滚动IC作为因子权重"""
     if len(df) < IC_WINDOW + HORIZON + 20:
         return {"error": f"数据不足{IC_WINDOW + HORIZON + 20}天"}
 
     df = _prepare_extra_factors(df)
+    df, runtime_trial_factors = _apply_runtime_trial_factors(df)
 
     # 过滤掉NaN超过50%的因子 (美股财报数据稀疏时自动跳过)
     usable_factors = []
-    for col in FACTOR_COLS:
+    for col in list(dict.fromkeys(FACTOR_COLS + runtime_trial_factors)):
         if col in df.columns and df[col].notna().mean() > 0.3:
             usable_factors.append(col)
     if not usable_factors:
@@ -232,6 +249,7 @@ def score_trend(df: pd.DataFrame) -> dict:
         "raw_score": raw_score,
         "n_factors": n_factors,
         "family_overlay": family_overlay,
+        "runtime_trial_factors": runtime_trial_factors,
     }
 
 
