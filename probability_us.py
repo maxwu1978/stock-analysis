@@ -9,6 +9,8 @@
 
 import pandas as pd
 import numpy as np
+from candidate_factor_engine import build_candidate_factors
+from factor_registry import list_factor_specs
 from factor_weighting import infer_factor_family, load_family_weight_multipliers
 from macro_events import add_us_macro_factors, get_risk_warnings, get_vix_level
 
@@ -41,6 +43,7 @@ US_FACTOR_COLS = [
 
 IC_WINDOW = 90   # 美股用更短窗口
 HORIZON = 5
+RUNTIME_FACTOR_STATUSES = ("trial",)
 
 
 def _apply_family_priors(ic_weights: dict[str, float]) -> tuple[dict[str, float], dict[str, float]]:
@@ -103,6 +106,19 @@ def _prepare_us_factors(df: pd.DataFrame) -> pd.DataFrame:
     df["high52w_pos"] = (df["close"] - low_252) / range_252 * 100
 
     return df
+
+
+def _apply_runtime_trial_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
+    """Add promoted trial factors to the US scoring panel without editing US_FACTOR_COLS."""
+    try:
+        specs = list_factor_specs("us", statuses=RUNTIME_FACTOR_STATUSES)
+    except Exception:
+        return df, []
+    if not specs:
+        return df, []
+    out, built = build_candidate_factors(df, specs, "us")
+    usable = [name for name in built if name in out.columns and out[name].notna().mean() > 0.3]
+    return out, usable
 
 
 def _apply_current_macro_overlay(score: float, symbol: str | None = None) -> dict:
@@ -171,9 +187,10 @@ def score_trend_us(df: pd.DataFrame, symbol: str | None = None, apply_macro_over
         return {"error": f"数据不足{IC_WINDOW + HORIZON + 20}天"}
 
     df = _prepare_us_factors(df)
+    df, runtime_trial_factors = _apply_runtime_trial_factors(df)
 
     # 过滤NaN过多的因子
-    usable = [c for c in US_FACTOR_COLS if c in df.columns and df[c].notna().mean() > 0.3]
+    usable = [c for c in list(dict.fromkeys(US_FACTOR_COLS + runtime_trial_factors)) if c in df.columns and df[c].notna().mean() > 0.3]
     if not usable:
         return {"error": "可用因子不足"}
 
@@ -265,6 +282,7 @@ def score_trend_us(df: pd.DataFrame, symbol: str | None = None, apply_macro_over
         "n_factors": n_factors,
         "macro_overlay": macro_overlay,
         "family_overlay": family_overlay,
+        "runtime_trial_factors": runtime_trial_factors,
     }
 
 

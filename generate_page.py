@@ -2292,6 +2292,17 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
             us_quote_html += f'<td>${r.get("最高",0):.2f}</td>'
             us_quote_html += f'<td>${r.get("最低",0):.2f}</td></tr>\n'
 
+    us_quote_note_html = ""
+    if not us_rt.empty:
+        sources = " / ".join(sorted({str(x) for x in us_rt.get("数据源", pd.Series(dtype=str)).dropna() if str(x)}))
+        times = [str(x) for x in us_rt.get("更新时间", pd.Series(dtype=str)).dropna() if str(x)]
+        quote_time = max(times) if times else now
+        source_text = sources or "行情源未知"
+        us_quote_note_html = (
+            f'<p class="note">行情源: {source_text} · 报价时间: {quote_time} · '
+            'GitHub Pages 为静态快照，点击 Refresh Feed 会重新拉取并发布。</p>'
+        )
+
     us_prob_html = ""
     us_tech_html = ""
     us_fund_html = ""
@@ -2447,6 +2458,7 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
     <h2>Quote <em>Board</em><span class="cn">美股行情</span></h2>
     <div class="section-meta">Realtime<br>NYSE / NASDAQ</div>
   </div>
+  {us_quote_note_html}
   <div class="table-wrap">
   <table>
   <thead><tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交量</th><th>市值</th><th>最高</th><th>最低</th></tr></thead>

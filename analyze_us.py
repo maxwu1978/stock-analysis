@@ -7,6 +7,7 @@ import pandas as pd
 from fetch_us import US_STOCKS, fetch_us_realtime, fetch_us_all_history, fetch_us_financials
 from indicators import compute_all, summarize
 from probability_us import score_trend_us as score_trend
+from kronos_reference import format_kronos_reference_text, get_kronos_reference, load_kronos_reference
 from reliability import get_reliability_label, load_reliability_labels
 from position_sizing import recommend_model_action
 
@@ -34,6 +35,7 @@ def md_table(headers, rows):
 def main():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     reliability_labels = load_reliability_labels()
+    kronos_refs = load_kronos_reference()
     print("_正在获取数据..._", file=sys.stderr)
 
     try:
@@ -124,9 +126,11 @@ def main():
         if pd.isna(ft_score): ft_score = 0
         ft_score = int(ft_score)
         ft_label = f"{'⚡' * ft_score}" if ft_score >= 3 else ""
+        kronos_text = format_kronos_reference_text(get_kronos_reference(kronos_refs, "US", ticker))
 
         prob_rows.append([
             f"**{name}**", f"**{direction}**", f"**{reliability}**",
+            kronos_text,
             decision.action,
             f"{decision.plan.position_tier} / {decision.plan.qty}股 / ${decision.plan.risk_budget:,.0f}",
             macro_text,
@@ -159,7 +163,8 @@ def main():
     if macro_notes:
         summary = " | ".join(dict.fromkeys(macro_notes))
         print(f"当前宏观覆盖: {summary}\n")
-    print(md_table(["股票", "方向", "可靠度", "动作", "仓位计划", "宏观覆盖", "肥尾", "5日", "10日", "30日", "180日"], prob_rows))
+    print("Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。\n")
+    print(md_table(["股票", "方向", "可靠度", "Kronos参考", "动作", "仓位计划", "宏观覆盖", "肥尾", "5日", "10日", "30日", "180日"], prob_rows))
 
     print(f"\n### 技术指标\n")
     print(md_table(["股票", "RSI6", "MACD柱", "MA5", "MA20", "MA60", "ADX", "股性"], tech_rows))
