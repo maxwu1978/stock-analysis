@@ -60,6 +60,42 @@ def cmd_factor_test(extra: list[str]) -> int:
     return python_cmd("factor_testing.py", extra)
 
 
+def cmd_validate_a(extra: list[str]) -> int:
+    return python_cmd("a_share_signal_validation_2y.py", extra)
+
+
+def cmd_capital_flow_backtest(extra: list[str]) -> int:
+    return python_cmd("cn_capital_flow_backtest.py", extra)
+
+
+def cmd_industry_heat(extra: list[str]) -> int:
+    return python_cmd("industry_heat.py", extra)
+
+
+def cmd_kronos_reference(extra: list[str]) -> int:
+    return python_cmd("build_kronos_reference.py", extra)
+
+
+def cmd_option_signal_review(extra: list[str]) -> int:
+    return python_cmd("historical_option_signal_review.py", extra)
+
+
+def cmd_option_pnl_review(extra: list[str]) -> int:
+    return python_cmd("historical_option_pnl_review.py", extra)
+
+
+def cmd_option_account_sim(extra: list[str]) -> int:
+    return python_cmd("historical_option_account_sim.py", extra)
+
+
+def cmd_import_option_chains(extra: list[str]) -> int:
+    return python_cmd("import_option_chain_data.py", extra)
+
+
+def cmd_fetch_option_chains(extra: list[str]) -> int:
+    return python_cmd("fetch_dolthub_option_chains.py", extra)
+
+
 def cmd_preflight(extra: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="manage.py preflight")
     parser.add_argument("--remote", action="store_true", help="also smoke-test GitHub Pages")
@@ -74,19 +110,42 @@ def cmd_preflight(extra: list[str]) -> int:
     return 0
 
 
+def cmd_list_commands(extra: list[str]) -> int:
+    if extra:
+        raise SystemExit("list-commands does not accept extra arguments")
+    for name, (_, description) in sorted(COMMANDS.items()):
+        print(f"{name:<24} {description}")
+    return 0
+
+
 COMMANDS = {
-    "refresh-page": (cmd_refresh_page, "Generate docs pages. Defaults to --allow-partial."),
-    "smoke-test": (cmd_smoke_test, "Check generated pages locally or with --remote."),
-    "scan-cn": (cmd_scan_cn, "Run A-share opportunity scan."),
-    "refresh-options": (cmd_refresh_options, "Refresh option strategy output."),
+    "capital-flow-backtest": (cmd_capital_flow_backtest, "Backtest CN capital-flow intent labels."),
     "factor-learn": (cmd_factor_learn, "Run candidate factor learning."),
     "factor-test": (cmd_factor_test, "Run candidate factor testing."),
+    "fetch-option-chains": (cmd_fetch_option_chains, "Fetch needed historical option-chain slices."),
+    "import-option-chains": (cmd_import_option_chains, "Import third-party option-chain CSV snapshots."),
+    "industry-heat": (cmd_industry_heat, "Run industry heat and potential analysis."),
+    "kronos-reference": (cmd_kronos_reference, "Build research-only Kronos reference snapshot."),
+    "list-commands": (cmd_list_commands, "Print available project commands."),
+    "option-account-sim": (cmd_option_account_sim, "Simulate account equity from option trades."),
+    "option-pnl-review": (cmd_option_pnl_review, "Review historical option proxy PnL."),
+    "option-signal-review": (cmd_option_signal_review, "Replay historical strong/weak option signals."),
+    "refresh-page": (cmd_refresh_page, "Generate docs pages. Defaults to --allow-partial."),
+    "refresh-options": (cmd_refresh_options, "Refresh option strategy output."),
+    "scan-cn": (cmd_scan_cn, "Run A-share opportunity scan."),
+    "smoke-test": (cmd_smoke_test, "Check generated pages locally or with --remote."),
+    "validate-a": (cmd_validate_a, "Validate current A-share signal rules over recent years."),
     "preflight": (cmd_preflight, "Run release checks."),
 }
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Stock-analysis project command runner")
+    command_lines = "\n".join(f"  {name:<24} {description}" for name, (_, description) in sorted(COMMANDS.items()))
+    parser = argparse.ArgumentParser(
+        description="Stock-analysis project command runner",
+        epilog=f"Available commands:\n{command_lines}",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument("command", choices=sorted(COMMANDS))
     parser.add_argument("args", nargs=argparse.REMAINDER, help="arguments passed to the selected command")
     return parser.parse_args()

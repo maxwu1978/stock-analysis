@@ -50,6 +50,28 @@ python3 manage.py preflight
 - 这些 wrapper 应与 `factor_learning.py` / `factor_testing.py` / `factor_idea_generator.py` 等因子学习源码同批入库，避免干净克隆后命令入口存在但实现脚本缺失。
 - 当前第一批整理只固定通用入口和发布前检查；因子学习源码归入第二批审查。
 
+### 4. 项目入口文档化
+
+- 新增 `README.md`，作为根目录快速入口，明确线上页面、统一命令、发布检查和工程边界。
+- 新增 `COMMANDS.md`，把页面发布、A 股验证、行业热度、期权研究、因子学习、Kronos 和自动化脚本按用途分组。
+- 扩展 `manage.py list-commands`，让本地可直接查看当前稳定命令表。
+
+### 5. 研究工具接入统一命令
+
+以下工具已保留原脚本名，并接入 `manage.py`：
+
+- `validate-a` → `a_share_signal_validation_2y.py`
+- `capital-flow-backtest` → `cn_capital_flow_backtest.py`
+- `industry-heat` → `industry_heat.py`
+- `option-signal-review` → `historical_option_signal_review.py`
+- `option-pnl-review` → `historical_option_pnl_review.py`
+- `option-account-sim` → `historical_option_account_sim.py`
+- `import-option-chains` → `import_option_chain_data.py`
+- `fetch-option-chains` → `fetch_dolthub_option_chains.py`
+- `kronos-reference` → `build_kronos_reference.py`
+
+本阶段仍不把研究脚本移动到 package 目录。原因是当前很多脚本存在裸 import、根目录默认输出和 GitHub Actions/launchd 固定路径，直接搬迁风险高。
+
 ## 已确认问题
 
 ### launchd 因子任务 `Operation not permitted`
@@ -84,6 +106,6 @@ cd "/Users/wuqingxin/Projects/9，主力分析"
 ## 下一步建议
 
 1. 迁移项目到 `~/Projects/9，主力分析`，重新安装 launchd 因子任务。
-2. 决定哪些新增源码要正式入库：因子学习、期权链、Kronos、历史期权回测等。
-3. 第二批清理已跟踪生成物：对确认不再作为基准输入的 CSV/JSON 执行 `git rm --cached`。
-4. 把 GitHub Actions 逐步切到 `manage.py`，但先保留页面生成的严格/宽松模式差异。
+2. 第二批清理已跟踪生成物：对确认不再作为基准输入的 CSV/JSON 执行 `git rm --cached`。
+3. 把 GitHub Actions 逐步切到 `manage.py`，但先保留页面生成的严格/宽松模式差异。
+4. 后续再考虑 package 化；在此之前只增加统一入口，不移动核心脚本。
