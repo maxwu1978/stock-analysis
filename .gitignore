@@ -73,6 +73,8 @@ factor_test_decisions.md
 
 # Local automation state and generated runtime overlays.
 factor_learning_queue.json
+factor_candidate_ideas.yaml
+factor_learning_history.jsonl
 factor_promotion_queue*.json
 factor_runtime_overlay.json
 com.maxwu.factor-learning.plist

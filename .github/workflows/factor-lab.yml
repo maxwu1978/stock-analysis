@@ -108,7 +108,7 @@ jobs:
             "${LAB_PREFIX}_us_summary.csv" \
             factor_promotion_queue.json
           if [ "$LAB_PREFIX" = "factor_ideas" ] && [ -f factor_candidate_ideas.yaml ]; then
-            git add factor_candidate_ideas.yaml
+            git add -f factor_candidate_ideas.yaml
           fi
           if git diff --cached --quiet; then
             echo "No factor-lab changes to commit."
