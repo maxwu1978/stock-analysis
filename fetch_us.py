@@ -108,17 +108,7 @@ def _fetch_yfinance_realtime() -> pd.DataFrame:
             mcap = _first_present(fast, "marketCap")
             quote_time = ""
 
-            try:
-                intraday = t.history(period="1d", interval="1m", prepost=True)
-            except Exception:
-                intraday = pd.DataFrame()
-            if intraday is not None and not intraday.empty:
-                last_row = intraday.dropna(subset=["Close"]).iloc[-1]
-                price = float(last_row["Close"])
-                high = float(intraday["High"].max(skipna=True))
-                low = float(intraday["Low"].min(skipna=True))
-                vol = int(intraday["Volume"].sum(skipna=True))
-                quote_time = _quote_time_text(intraday.index[-1])
+            quote_time = datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
 
             if not price or not prev or not mcap:
                 try:
