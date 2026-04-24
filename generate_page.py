@@ -2,6 +2,7 @@
 """生成静态HTML页面, 用于GitHub Pages部署"""
 
 import argparse
+from html import escape
 import os
 import re
 import subprocess
@@ -20,6 +21,7 @@ from reliability import get_reliability_label, load_reliability_labels
 from position_sizing import recommend_model_action
 from production_review import load_signal_history, load_trade_log, summarize_execution_quality, summarize_plan_coverage
 from factor_lab_report import load_factor_lab_bundle, render_factor_lab_section_html
+from cn_capital_flow import analyze_capital_flows, format_money_cn
 
 
 def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
@@ -161,6 +163,45 @@ def chg_td(val):
     sign = "+" if val >= 0 else ""
     cls = "up" if val >= 0 else "down"
     return f'<td class="{cls}">{sign}{val:.2f}%</td>'
+
+
+def capital_intent_tag(intent: str) -> str:
+    up_intents = {"吸筹", "拉升", "流入确认"}
+    down_intents = {"派发", "撤退", "流出确认"}
+    cls = "tag-up" if intent in up_intents else ("tag-down" if intent in down_intents else "tag-neutral")
+    return f'<span class="tag {cls}">{escape(intent)}</span>'
+
+
+def capital_flow_marker(flow) -> str:
+    """Compact capital-flow marker for the A-share trend table."""
+    if not flow or getattr(flow, "intent", "") == "数据不足":
+        return (
+            '<span class="risk-chip capital-neutral"><strong>主力 -</strong></span>'
+            '<span class="risk-meta">资金流暂缺</span>'
+        )
+    intent = str(flow.intent)
+    if intent in {"吸筹", "拉升", "流入确认"}:
+        cls = "capital-up"
+    elif intent in {"派发", "撤退", "流出确认"}:
+        cls = "capital-down"
+    else:
+        cls = "capital-neutral"
+    return (
+        f'<span class="risk-chip {cls}"><strong>主力 {escape(intent)}</strong></span>'
+        f'<span class="risk-meta">{escape(flow.confidence)}置信 · 评分 {flow.capital_score:+.1f} · 5日 {format_money_cn(flow.main_net_5d)}</span>'
+    )
+
+
+def render_capital_overview_items(flows: list) -> str:
+    if not flows:
+        return "<li>主力资金暂缺，打开 A股子页查看趋势模型</li>"
+    items = []
+    for flow in flows:
+        items.append(
+            f"<li>{escape(flow.name)}：主力{escape(flow.intent)} · "
+            f"5日 {format_money_cn(flow.main_net_5d)} · {escape(flow.confidence)}置信</li>"
+        )
+    return "\n        ".join(items)
 
 
 def render_review_section() -> str:
@@ -401,7 +442,9 @@ def collect_option_strategy_signals() -> list[dict]:
                     continue
                 symbol = symbol_match.group(1)
                 action = advice_match.group(1)
-                if action in {"OBSERVE", "WAIT"}:
+                confidence_match = re.search(r"置信度:\s+([A-Z]+|None)", block)
+                confidence = confidence_match.group(1) if confidence_match else ""
+                if action in {"OBSERVE", "WAIT"} or action.startswith("WAIT"):
                     signals.append({
                         "kind": "single",
                         "symbol": symbol,
@@ -409,17 +452,25 @@ def collect_option_strategy_signals() -> list[dict]:
                         "action": action,
                         "strength": "无机会",
                         "plan": "当前无明确信号",
-                        "note": "分形单腿策略当前仅给出观望/等待，不建议开新仓。",
+                        "note": "分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。",
                     })
                 else:
+                    strength = "强机会" if confidence == "HIGH" else "弱机会"
+                    plan_match = re.search(r"仓位:\s+([^\n]+)", block)
+                    plan = plan_match.group(1).strip() if plan_match else "按顾问输出执行"
+                    note = (
+                        "单腿强机会仅限极端超卖/深度偏离，仍需按退出模板控制风险。"
+                        if strength == "强机会"
+                        else "普通超卖已降级为弱机会，默认不主动下单或只做观察。"
+                    )
                     signals.append({
                         "kind": "single",
                         "symbol": symbol,
                         "label": f"{symbol} 单腿分形",
                         "action": action,
-                        "strength": "强机会",
-                        "plan": "按顾问输出执行",
-                        "note": "出现单腿明确信号，可优先关注。",
+                        "strength": strength,
+                        "plan": plan,
+                        "note": note,
                     })
         else:
             blocks = re.findall(r"─+\n(.*?)(?=\n─+\n|\n═+|\Z)", out, re.S)
@@ -431,7 +482,7 @@ def collect_option_strategy_signals() -> list[dict]:
                 symbol = symbol_match.group(1)
                 action = signal_match.group(1)
                 confidence = signal_match.group(2)
-                if action in {"WAIT", "WAIT_IV_HIGH", "WAIT_IV_HIGH_SELL_CANDIDATE"}:
+                if action.startswith("WAIT"):
                     signals.append({
                         "kind": "straddle",
                         "symbol": symbol,
@@ -439,7 +490,7 @@ def collect_option_strategy_signals() -> list[dict]:
                         "action": action,
                         "strength": "无机会",
                         "plan": "当前无跨式机会",
-                        "note": "当前波动/IV 结构不支持新开跨式。",
+                        "note": "当前波动/IV 或执行成本不支持新开跨式。",
                     })
                     continue
                 plan_match = re.search(r"仓位:\s+([^\n]+)", block)
@@ -471,6 +522,34 @@ def collect_option_strategy_signals() -> list[dict]:
     strength_rank = {"强机会": 0, "弱机会": 1, "持仓管理": 2, "无机会": 3}
     deduped.sort(key=lambda x: (strength_rank.get(x.get("strength", ""), 9), x.get("symbol", "")))
     return deduped
+
+
+def render_option_setups_section(option_signals: list[dict]) -> str:
+    option_rows = ""
+    for row in option_signals:
+        option_rows += (
+            f"<tr><td>{row.get('label')}</td><td>{row.get('strength')}</td><td>{row.get('action')}</td>"
+            f"<td>{row.get('plan')}</td><td>{row.get('note')}</td></tr>\n"
+        )
+    option_html = f"""
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>策略</th><th>类型</th><th>信号</th><th>计划</th><th>说明</th></tr></thead>
+    <tbody>{option_rows or '<tr><td colspan="5">暂无期权机会更新</td></tr>'}</tbody>
+  </table>
+</div>
+"""
+    return f"""
+<section class="section" id="strategy-options">
+  <div class="section-head">
+    <div class="section-num">№ 03</div>
+    <h2>Option <em>Setups</em><span class="cn">今日期权机会</span></h2>
+    <div class="section-meta">Strong / Weak<br>Hold Mgmt</div>
+  </div>
+  <p class="note">这里基于期权顾问关注池做全池扫描，单独区分强机会、弱机会和仅持仓管理。弱信号存在并不等于要交易，默认仍以轻仓或不交易为主。</p>
+  {option_html}
+</section>
+"""
 
 
 def build_strategy_page(
@@ -524,20 +603,7 @@ def build_strategy_page(
 </div>
 """
 
-    option_rows = ""
-    for row in option_signals:
-        option_rows += (
-            f"<tr><td>{row.get('label')}</td><td>{row.get('strength')}</td><td>{row.get('action')}</td>"
-            f"<td>{row.get('plan')}</td><td>{row.get('note')}</td></tr>\n"
-        )
-    option_html = f"""
-<div class="table-wrap">
-  <table>
-    <thead><tr><th>策略</th><th>类型</th><th>信号</th><th>计划</th><th>说明</th></tr></thead>
-    <tbody>{option_rows or '<tr><td colspan="5">暂无期权机会更新</td></tr>'}</tbody>
-  </table>
-</div>
-"""
+    option_section_html = render_option_setups_section(option_signals)
 
     summary_cards_html = f"""
   <article class="summary-card">
@@ -589,15 +655,7 @@ def build_strategy_page(
   {watch_html}
 </section>
 
-<section class="section" id="strategy-options">
-  <div class="section-head">
-    <div class="section-num">№ 03</div>
-    <h2>Option <em>Setups</em><span class="cn">今日期权机会</span></h2>
-    <div class="section-meta">Strong / Weak<br>Hold Mgmt</div>
-  </div>
-  <p class="note">这里基于期权顾问关注池做全池扫描，单独区分强机会、弱机会和仅持仓管理。弱信号存在并不等于要交易，默认仍以轻仓或不交易为主。</p>
-  {option_html}
-</section>
+{option_section_html}
 """
     return render_subpage(
         title="主力分析 · Strategy Desk",
@@ -667,6 +725,7 @@ def build_cn_page(full_page_html: str, now: str, cn_section: str) -> str:
   <a class="major active" href="#cn-block">A-Share</a>
   <a class="minor" href="#cn-quote">CN Quote</a>
   <a class="minor" href="#cn-trend">CN Trend</a>
+  <a class="minor" href="#cn-capital">CN Capital</a>
   <a class="minor" href="#cn-tech">CN Tech</a>
   <a class="minor" href="#cn-fund">CN Fund</a>
 """
@@ -674,7 +733,7 @@ def build_cn_page(full_page_html: str, now: str, cn_section: str) -> str:
         title="主力分析 · A-Share Desk",
         hero_kicker="Issue № CN · Research Bulletin · 上海 / 深圳",
         hero_title_html="A股<em>子页</em>",
-        eyebrow="A-Share Quote, Trend, Tech & Filing Monitor",
+        eyebrow="A-Share Quote, Trend, Capital Flow, Tech & Filing Monitor",
         now=now,
         style_block=style_block,
         summary_cards_html=summary_cards_html,
@@ -692,6 +751,7 @@ def build_overview_page(
     summary_cards_html: str,
     a_weak: int,
     a_total: int,
+    capital_overview_items: str,
     us_mid_summary: str,
     option_summary: str,
     execution_summary_value: str,
@@ -739,9 +799,9 @@ def build_overview_page(
     <article class="control-panel">
       <div class="panel-kicker">A-Share Desk</div>
       <h3>{a_weak}/{a_total} 弱</h3>
-      <p>当前 A 股主模型偏研究参考，更适合先看趋势和宏观窗口，再决定是否加入观察名单。</p>
+      <p>当前 A 股主模型偏研究参考；主力资金动向已在首页摘要和 A 股趋势表同步标记。</p>
       <ul class="panel-list">
-        <li>Quote / Trend / Tech / Fund</li>
+        {capital_overview_items}
         <li>CN Macro Window 已接入</li>
       </ul>
       <a class="module-cta" href="./cn.html">打开 A股子页</a>
@@ -1074,10 +1134,11 @@ def generate(allow_partial: bool = False):
             quote_html += f'<td>{r.get("最高",0):.2f}</td>'
             quote_html += f'<td>{r.get("最低",0):.2f}</td></tr>\n'
 
-    # 概率 + 技术 + 财报
+    # 概率 + 技术 + 财报 + 资金流
     prob_html = ""
     tech_html = ""
     fund_html = ""
+    capital_html = ""
     cn_macro_note_html = ""
 
     try:
@@ -1095,6 +1156,39 @@ def generate(allow_partial: bool = False):
             f'<div class="banner-meta">{len(cn_macro_notes)} windows tracked</div>'
             f'</div>'
         )
+
+    print("获取A股主力资金流...")
+    try:
+        capital_rows = analyze_capital_flows(STOCKS)
+    except Exception as e:
+        print(f"  [!] A股资金流获取失败: {e}")
+        capital_rows = []
+    capital_map = {flow.code: flow for flow in capital_rows}
+    for flow in capital_rows:
+        score_cls = "up" if flow.capital_score > 0 else ("down" if flow.capital_score < 0 else "tag-neutral")
+        intent_cls = "emphasis" if flow.intent in {"吸筹", "拉升"} else ""
+        today_cls = "up" if flow.main_net > 0 else ("down" if flow.main_net < 0 else "")
+        d5_cls = "up" if flow.main_net_5d > 0 else ("down" if flow.main_net_5d < 0 else "")
+        d10_cls = "up" if flow.main_net_10d > 0 else ("down" if flow.main_net_10d < 0 else "")
+        big_cls = "up" if flow.super_large_net_5d + flow.large_net_5d > 0 else ("down" if flow.super_large_net_5d + flow.large_net_5d < 0 else "")
+        small_cls = "up" if flow.small_net_5d > 0 else ("down" if flow.small_net_5d < 0 else "")
+        capital_html += (
+            f'<article class="control-panel {intent_cls}">'
+            f'<div class="panel-kicker">{escape(flow.code)} · {escape(flow.date)} · {escape(flow.confidence)}置信</div>'
+            f'<h3>{escape(flow.name)} {capital_intent_tag(flow.intent)}</h3>'
+            f'<div class="panel-metrics">'
+            f'<span class="{today_cls}">今日 {format_money_cn(flow.main_net)} / {flow.main_ratio:+.2f}%</span>'
+            f'<span class="{d5_cls}">5日 {format_money_cn(flow.main_net_5d)}</span>'
+            f'<span class="{d10_cls}">10日 {format_money_cn(flow.main_net_10d)}</span>'
+            f'<span class="{big_cls}">大单5日 {format_money_cn(flow.super_large_net_5d + flow.large_net_5d)}</span>'
+            f'<span class="{small_cls}">小单5日 {format_money_cn(flow.small_net_5d)}</span>'
+            f'<span class="{score_cls}">评分 {flow.capital_score:+.1f}</span>'
+            f'</div>'
+            f'<p>{escape(flow.explanation)}</p>'
+            f'</article>\n'
+        )
+    if not capital_html:
+        capital_html = '<article class="control-panel"><h3>资金流数据暂不可用</h3><p>保留原趋势和技术模型，页面生成不因资金流接口失败而中断。</p></article>'
 
     for code, df in all_hist.items():
         name = STOCKS[code]
@@ -1145,9 +1239,11 @@ def generate(allow_partial: bool = False):
         ft_score = int(ft_score)
         ft_text = "⚡" * ft_score if ft_score >= 1 else "-"
         ft_cls = " strong" if ft_score >= 3 else ""
+        capital_marker = capital_flow_marker(capital_map.get(code))
         risk_html = (
             f'<td data-label="风险提示">'
             f'<div class="risk-stack">'
+            f'{capital_marker}'
             f'<span class="risk-chip{ft_cls}"><strong>{ft_text}</strong></span>'
             f'<span class="risk-meta">Fat Tail</span>'
             f'<span class="risk-chip"><strong>{decision.action}</strong></span>'
@@ -1760,6 +1856,20 @@ def generate(allow_partial: bool = False):
   .signal-table .risk-chip strong {{
     font-size: 11px;
   }}
+  .signal-table .risk-chip.capital-up {{
+    color: var(--up);
+    border-color: rgba(179,58,47,0.36);
+    background: rgba(179,58,47,0.08);
+  }}
+  .signal-table .risk-chip.capital-down {{
+    color: var(--down);
+    border-color: rgba(31,109,83,0.36);
+    background: rgba(31,109,83,0.08);
+  }}
+  .signal-table .risk-chip.capital-neutral {{
+    color: var(--muted);
+    border-style: dashed;
+  }}
   .signal-table .risk-meta {{
     display: block;
     font-size: 9px;
@@ -1883,7 +1993,7 @@ def generate(allow_partial: bool = False):
 
 <header class="hero">
   <div class="hero-kicker">Issue № 01 · Research Bulletin · 上海 / 深圳</div>
-  <h1>主力<em>分析</em><span class="eyebrow">A-Share Technical &amp; Factor Report</span></h1>
+  <h1>主力<em>分析</em><span class="eyebrow">A-Share Capital, Technical &amp; Factor Report</span></h1>
   <div class="hero-meta">
     <span class="pill">Last Sync · {now}</span>
     <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
@@ -1923,6 +2033,7 @@ def generate(allow_partial: bool = False):
   <a class="major" href="#cn-block">A-Share</a>
   <a class="minor" href="#cn-quote">CN Quote</a>
   <a class="minor" href="#cn-trend">CN Trend</a>
+  <a class="minor" href="#cn-capital">CN Capital</a>
   <a class="major" href="#us-block">U.S.</a>
   <a class="minor" href="#us-quote">US Quote</a>
   <a class="minor" href="#us-trend">US Trend</a>
@@ -1972,7 +2083,7 @@ async function triggerRefresh() {{
 </script>
 
 <div class="market-block cn-block" id="cn-block">
-<div class="market-label"><strong>China Block</strong><span>A-Share Core Board · Quote / Trend / Tech / Filing</span></div>
+<div class="market-label"><strong>China Block</strong><span>A-Share Core Board · Quote / Trend / Capital / Tech / Filing</span></div>
 <section class="section" id="cn-quote">
   <div class="section-head">
     <div class="section-num">№ 01</div>
@@ -1996,7 +2107,7 @@ async function triggerRefresh() {{
     <div class="section-meta">IC-Weighted<br>Rolling Model</div>
   </div>
   {cn_macro_note_html}
-  <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short<br>Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。</p>
+  <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short<br>风险提示区已内联标记主力资金动向；Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。</p>
   <div class="table-wrap">
   <table class="signal-table">
   <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>Kronos参考</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
@@ -2007,9 +2118,21 @@ async function triggerRefresh() {{
   </div>
 </section>
 
-<section class="section" id="cn-tech">
+<section class="section" id="cn-capital">
   <div class="section-head">
     <div class="section-num">№ 03</div>
+    <h2>Capital <em>Flow</em><span class="cn">主力资金</span></h2>
+    <div class="section-meta">Eastmoney<br>Main / Large Orders</div>
+  </div>
+  <p class="note">基于东方财富个股资金流历史，识别吸筹、拉升、派发、撤退与分歧；趋势表里显示简版标记，这里保留完整解释。该板块只解释资金行为，不直接触发交易。</p>
+  <div class="control-grid">
+  {capital_html}
+  </div>
+</section>
+
+<section class="section" id="cn-tech">
+  <div class="section-head">
+    <div class="section-num">№ 04</div>
     <h2>Technical <em>Indicators</em><span class="cn">技术指标</span></h2>
     <div class="section-meta">Oscillators<br>MA / ADX</div>
   </div>
@@ -2025,7 +2148,7 @@ async function triggerRefresh() {{
 
 <section class="section" id="cn-fund">
   <div class="section-head">
-    <div class="section-num">№ 04</div>
+    <div class="section-num">№ 05</div>
     <h2><em>Fundamentals</em><span class="cn">最新财报</span></h2>
     <div class="section-meta">Latest Filing<br>Report Period</div>
   </div>
@@ -2425,6 +2548,7 @@ Set in Space Grotesk &amp; IBM Plex Mono<br>
         summary_cards_html=summary_cards_html,
         a_weak=a_weak,
         a_total=a_total,
+        capital_overview_items=render_capital_overview_items(capital_rows),
         us_mid_summary=us_mid_summary,
         option_summary=option_summary,
         execution_summary_value=execution_summary_value,

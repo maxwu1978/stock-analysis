@@ -34,3 +34,14 @@ btc_4h_backtest_*.csv
 auto_hedge.log
 launchd_hedge_stdout.log
 launchd_hedge_stderr.log
+factor_learning_daily.log
+factor_testing_daily.log
+factor_learning_state.json
+factor_learning_history.jsonl
+launchd_factor_learning_stdout.log
+launchd_factor_learning_stderr.log
+launchd_factor_testing_stdout.log
+launchd_factor_testing_stderr.log
+.factor_learning.lock/
+.factor_testing.lock/
+.cache/

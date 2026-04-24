@@ -434,21 +434,23 @@
   .signal-table tbody td:first-child {
     text-align: left;
   }
-  .signal-table thead th:nth-child(1) { width: 16%; }
-  .signal-table thead th:nth-child(2) { width: 11%; }
-  .signal-table thead th:nth-child(3) { width: 9%; }
-  .signal-table thead th:nth-child(4) { width: 16%; }
-  .signal-table thead th:nth-child(5) { width: 48%; }
+  .signal-table thead th:nth-child(1) { width: 15%; }
+  .signal-table thead th:nth-child(2) { width: 10%; }
+  .signal-table thead th:nth-child(3) { width: 8%; }
+  .signal-table thead th:nth-child(4) { width: 14%; }
+  .signal-table thead th:nth-child(5) { width: 15%; }
+  .signal-table thead th:nth-child(6) { width: 38%; }
   .signal-table tbody td:nth-child(2),
   .signal-table tbody td:nth-child(3),
-  .signal-table tbody td:nth-child(4) {
+  .signal-table tbody td:nth-child(4),
+  .signal-table tbody td:nth-child(5) {
     vertical-align: middle;
     font-size: 12px;
   }
-  .signal-table tbody td:nth-child(-n+4) {
+  .signal-table tbody td:nth-child(-n+5) {
     background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.9));
   }
-  .signal-table thead th:nth-child(-n+4) {
+  .signal-table thead th:nth-child(-n+5) {
     background: linear-gradient(180deg, rgba(223,233,239,0.92), rgba(255,255,255,0.98));
   }
   .signal-table .prob-matrix-cell {
@@ -500,6 +502,40 @@
     gap: 6px;
     justify-items: center;
   }
+  .signal-table .kronos-stack {
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+  }
+  .signal-table .kronos-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 4px 7px;
+    border: 1px solid var(--hair);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.88);
+  }
+  .signal-table .kronos-chip.kronos-up {
+    color: var(--up);
+    border-color: rgba(179,58,47,0.35);
+    background: rgba(179,58,47,0.08);
+  }
+  .signal-table .kronos-chip.kronos-down {
+    color: var(--down);
+    border-color: rgba(31,109,83,0.35);
+    background: rgba(31,109,83,0.08);
+  }
+  .signal-table .kronos-meta {
+    display: block;
+    font-size: 9px;
+    line-height: 1.25;
+    color: var(--muted);
+  }
   .signal-table .risk-chip {
     display: inline-flex;
     align-items: center;
@@ -515,6 +551,20 @@
   }
   .signal-table .risk-chip strong {
     font-size: 11px;
+  }
+  .signal-table .risk-chip.capital-up {
+    color: var(--up);
+    border-color: rgba(179,58,47,0.36);
+    background: rgba(179,58,47,0.08);
+  }
+  .signal-table .risk-chip.capital-down {
+    color: var(--down);
+    border-color: rgba(31,109,83,0.36);
+    background: rgba(31,109,83,0.08);
+  }
+  .signal-table .risk-chip.capital-neutral {
+    color: var(--muted);
+    border-style: dashed;
   }
   .signal-table .risk-meta {
     display: block;
@@ -621,6 +671,9 @@
     .signal-table .risk-stack {
       justify-items: start;
     }
+    .signal-table .kronos-stack {
+      justify-items: start;
+    }
   }
 
 </style>
@@ -630,7 +683,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">STATIC SUBPAGE · OPTIONS / REVIEW</div>
-  <div class="muted">2026-04-23 22:56:13</div>
+  <div class="muted">2026-04-24 16:23:31</div>
 </div>
 
 <div class="container">
@@ -639,7 +692,7 @@
   <div class="hero-kicker">Issue № ST · Action Layer · Strategy</div>
   <h1>交易<em>策略</em><span class="eyebrow">Actionable Signals & Watchlist Only</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-23 22:56:13</span>
+    <span class="pill">Last Sync · 2026-04-24 16:23:31</span>
     <span class="pill">Linked from index.html</span>
     <a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>
   </div>
@@ -665,7 +718,7 @@
   </article>
   <article class="summary-card">
     <div class="label">Option Setup</div>
-    <div class="value">3</div>
+    <div class="value">0</div>
     <div class="sub">全池扫描后按强/弱机会与持仓管理分开显示</div>
   </article>
 
@@ -705,13 +758,13 @@
   <table>
     <thead><tr><th>市场</th><th>标的</th><th>状态</th><th>层级</th><th>可靠度</th><th>计划</th></tr></thead>
     <tbody><tr><td>CN</td><td>中国铝业</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>CN</td><td>宁德时代</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>CN</td><td>宁德时代</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>CN</td><td>贵州茅台</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>CN</td><td>闻泰科技</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>CN</td><td>阳光电源</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>CN</td><td>阳光电源</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>台积电</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>富途控股</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>US</td><td>携程</td><td>WATCHLIST</td><td>MICRO</td><td>中</td><td>MICRO · 232股 · $1,350</td></tr>
+<tr><td>US</td><td>携程</td><td>WATCHLIST</td><td>MICRO</td><td>中</td><td>MICRO · 155股 · $900</td></tr>
 <tr><td>US</td><td>特斯拉</td><td>OBSERVE</td><td>NO_TRADE</td><td>中</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>美光科技</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>英伟达</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
@@ -724,6 +777,7 @@
 
 </section>
 
+
 <section class="section" id="strategy-options">
   <div class="section-head">
     <div class="section-num">№ 03</div>
@@ -735,35 +789,36 @@
 <div class="table-wrap">
   <table>
     <thead><tr><th>策略</th><th>类型</th><th>信号</th><th>计划</th><th>说明</th></tr></thead>
-    <tbody><tr><td>AMD 跨式策略</td><td>弱机会</td><td>BUY_STRADDLE_WEAK</td><td>MICRO · 建议 1 套 · 风险预算 $900 · 名义资金 $4,000</td><td>跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。</td></tr>
-<tr><td>NVDA 跨式策略</td><td>弱机会</td><td>BUY_STRADDLE_WEAK</td><td>MICRO · 建议 1 套 · 风险预算 $900 · 名义资金 $1,400</td><td>跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。</td></tr>
-<tr><td>WDC 跨式策略</td><td>弱机会</td><td>BUY_STRADDLE_WEAK</td><td>MICRO · 建议 1 套 · 风险预算 $900 · 名义资金 $7,220</td><td>跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。</td></tr>
-<tr><td>GOOGL 持仓管理</td><td>持仓管理</td><td>有</td><td>剩 15 天, 进入 21天警戒区</td><td>现有仓位以退出模板和时间窗管理为主。</td></tr>
-<tr><td>AAPL 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>AAPL 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>AMD 单腿分形</td><td>无机会</td><td>WAIT</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>AMZN 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>AMZN 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>AVGO 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>AVGO 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>GOOGL 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>GOOGL 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>META 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>META 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>MSFT 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>MSFT 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>MU 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>NVDA 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>TSLA 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>TSLA 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>TSM 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
-<tr><td>TSM 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 结构不支持新开跨式。</td></tr>
-<tr><td>WDC 单腿分形</td><td>无机会</td><td>WAIT</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待，不建议开新仓。</td></tr>
+    <tbody><tr><td>GOOGL 持仓管理</td><td>持仓管理</td><td>有</td><td>剩 14 天, 进入 21天警戒区</td><td>现有仓位以退出模板和时间窗管理为主。</td></tr>
+<tr><td>AAPL 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AAPL 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>AMD 单腿分形</td><td>无机会</td><td>WAIT</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AMD 跨式策略</td><td>无机会</td><td>WAIT_EXECUTION_FILTER</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>AMZN 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AMZN 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>AVGO 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AVGO 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>GOOGL 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>GOOGL 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>META 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>META 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>MSFT 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>MSFT 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>MU 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>NVDA 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>NVDA 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>TSLA 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>TSLA 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>TSM 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>TSM 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>WDC 单腿分形</td><td>无机会</td><td>WAIT</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>WDC 跨式策略</td><td>无机会</td><td>WAIT_EXECUTION_FILTER</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
 </tbody>
   </table>
 </div>
 
 </section>
+
 
 
 <div class="footer" id="method-block">

@@ -434,21 +434,23 @@
   .signal-table tbody td:first-child {
     text-align: left;
   }
-  .signal-table thead th:nth-child(1) { width: 16%; }
-  .signal-table thead th:nth-child(2) { width: 11%; }
-  .signal-table thead th:nth-child(3) { width: 9%; }
-  .signal-table thead th:nth-child(4) { width: 16%; }
-  .signal-table thead th:nth-child(5) { width: 48%; }
+  .signal-table thead th:nth-child(1) { width: 15%; }
+  .signal-table thead th:nth-child(2) { width: 10%; }
+  .signal-table thead th:nth-child(3) { width: 8%; }
+  .signal-table thead th:nth-child(4) { width: 14%; }
+  .signal-table thead th:nth-child(5) { width: 15%; }
+  .signal-table thead th:nth-child(6) { width: 38%; }
   .signal-table tbody td:nth-child(2),
   .signal-table tbody td:nth-child(3),
-  .signal-table tbody td:nth-child(4) {
+  .signal-table tbody td:nth-child(4),
+  .signal-table tbody td:nth-child(5) {
     vertical-align: middle;
     font-size: 12px;
   }
-  .signal-table tbody td:nth-child(-n+4) {
+  .signal-table tbody td:nth-child(-n+5) {
     background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(231,238,240,0.9));
   }
-  .signal-table thead th:nth-child(-n+4) {
+  .signal-table thead th:nth-child(-n+5) {
     background: linear-gradient(180deg, rgba(223,233,239,0.92), rgba(255,255,255,0.98));
   }
   .signal-table .prob-matrix-cell {
@@ -500,6 +502,40 @@
     gap: 6px;
     justify-items: center;
   }
+  .signal-table .kronos-stack {
+    display: grid;
+    gap: 6px;
+    justify-items: center;
+  }
+  .signal-table .kronos-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 72px;
+    padding: 4px 7px;
+    border: 1px solid var(--hair);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.88);
+  }
+  .signal-table .kronos-chip.kronos-up {
+    color: var(--up);
+    border-color: rgba(179,58,47,0.35);
+    background: rgba(179,58,47,0.08);
+  }
+  .signal-table .kronos-chip.kronos-down {
+    color: var(--down);
+    border-color: rgba(31,109,83,0.35);
+    background: rgba(31,109,83,0.08);
+  }
+  .signal-table .kronos-meta {
+    display: block;
+    font-size: 9px;
+    line-height: 1.25;
+    color: var(--muted);
+  }
   .signal-table .risk-chip {
     display: inline-flex;
     align-items: center;
@@ -515,6 +551,20 @@
   }
   .signal-table .risk-chip strong {
     font-size: 11px;
+  }
+  .signal-table .risk-chip.capital-up {
+    color: var(--up);
+    border-color: rgba(179,58,47,0.36);
+    background: rgba(179,58,47,0.08);
+  }
+  .signal-table .risk-chip.capital-down {
+    color: var(--down);
+    border-color: rgba(31,109,83,0.36);
+    background: rgba(31,109,83,0.08);
+  }
+  .signal-table .risk-chip.capital-neutral {
+    color: var(--muted);
+    border-style: dashed;
   }
   .signal-table .risk-meta {
     display: block;
@@ -621,6 +671,9 @@
     .signal-table .risk-stack {
       justify-items: start;
     }
+    .signal-table .kronos-stack {
+      justify-items: start;
+    }
   }
 
 </style>
@@ -630,7 +683,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">STATIC SUBPAGE · OPTIONS / REVIEW</div>
-  <div class="muted">2026-04-23 22:56:13</div>
+  <div class="muted">2026-04-24 16:23:31</div>
 </div>
 
 <div class="container">
@@ -639,7 +692,7 @@
   <div class="hero-kicker">Issue № US · Research Bulletin · New York / Nasdaq</div>
   <h1>美股<em>子页</em><span class="eyebrow">U.S. Quote, Trend, Tech & Filing Monitor</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-23 22:56:13</span>
+    <span class="pill">Last Sync · 2026-04-24 16:23:31</span>
     <span class="pill">Linked from index.html</span>
     <a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>
   </div>
@@ -655,7 +708,7 @@
   </article>
   <article class="summary-card">
     <div class="label">Macro Window</div>
-    <div class="value">FOMC 2026-04-30 (7天后) / NFP 2026-05-01 (8天后)</div>
+    <div class="value">FOMC 2026-04-30 (6天后) / NFP 2026-05-01 (7天后)</div>
     <div class="sub">事件风控优先显示</div>
   </article>
 
@@ -688,15 +741,15 @@
   <div class="table-wrap">
   <table>
   <thead><tr><th>股票</th><th>代码</th><th>现价</th><th>涨跌</th><th>成交量</th><th>市值</th><th>最高</th><th>最低</th></tr></thead>
-  <tbody><tr><td>英伟达</td><td>NVDA</td><td>$198.74</td><td class="down">-1.86%</td><td>84.6M</td><td>$4.83T</td><td>$203.83</td><td>$197.22</td></tr>
-<tr><td>台积电</td><td>TSM</td><td>$380.24</td><td class="down">-1.86%</td><td>10.0M</td><td>$1.97T</td><td>$388.76</td><td>$375.81</td></tr>
-<tr><td>美光科技</td><td>MU</td><td>$476.50</td><td class="down">-2.25%</td><td>31.4M</td><td>$538B</td><td>$493.62</td><td>$471.80</td></tr>
-<tr><td>西部数据</td><td>WDC</td><td>$402.54</td><td class="up">+3.45%</td><td>5.3M</td><td>$138B</td><td>$416.37</td><td>$385.81</td></tr>
-<tr><td>特斯拉</td><td>TSLA</td><td>$372.99</td><td class="down">-3.75%</td><td>79.0M</td><td>$1.40T</td><td>$385.34</td><td>$368.39</td></tr>
-<tr><td>谷歌</td><td>GOOGL</td><td>$339.99</td><td class="up">+0.20%</td><td>11.8M</td><td>$4.11T</td><td>$341.96</td><td>$336.18</td></tr>
-<tr><td>苹果</td><td>AAPL</td><td>$274.15</td><td class="up">+0.36%</td><td>20.4M</td><td>$4.02T</td><td>$275.77</td><td>$271.65</td></tr>
-<tr><td>携程</td><td>TCOM</td><td>$52.63</td><td class="down">-2.45%</td><td>1.4M</td><td>$34B</td><td>$53.16</td><td>$52.31</td></tr>
-<tr><td>富途控股</td><td>FUTU</td><td>$153.79</td><td class="down">-4.36%</td><td>710,045</td><td>$22B</td><td>$160.78</td><td>$151.13</td></tr>
+  <tbody><tr><td>英伟达</td><td>NVDA</td><td>$199.64</td><td class="down">-1.41%</td><td>113.6M</td><td>$4.85T</td><td>$203.83</td><td>$197.22</td></tr>
+<tr><td>台积电</td><td>TSM</td><td>$382.66</td><td class="down">-1.23%</td><td>12.2M</td><td>$1.98T</td><td>$388.76</td><td>$375.81</td></tr>
+<tr><td>美光科技</td><td>MU</td><td>$481.72</td><td class="down">-1.18%</td><td>38.2M</td><td>$543B</td><td>$493.62</td><td>$471.80</td></tr>
+<tr><td>西部数据</td><td>WDC</td><td>$403.12</td><td class="up">+3.60%</td><td>6.8M</td><td>$138B</td><td>$416.37</td><td>$385.81</td></tr>
+<tr><td>特斯拉</td><td>TSLA</td><td>$373.72</td><td class="down">-3.56%</td><td>94.0M</td><td>$1.40T</td><td>$386.00</td><td>$368.39</td></tr>
+<tr><td>谷歌</td><td>GOOGL</td><td>$338.89</td><td class="down">-0.13%</td><td>18.7M</td><td>$4.10T</td><td>$341.96</td><td>$336.18</td></tr>
+<tr><td>苹果</td><td>AAPL</td><td>$273.43</td><td class="up">+0.10%</td><td>33.4M</td><td>$4.01T</td><td>$275.77</td><td>$271.65</td></tr>
+<tr><td>携程</td><td>TCOM</td><td>$52.95</td><td class="down">-1.85%</td><td>2.8M</td><td>$35B</td><td>$53.16</td><td>$52.31</td></tr>
+<tr><td>富途控股</td><td>FUTU</td><td>$154.18</td><td class="down">-4.12%</td><td>1.2M</td><td>$22B</td><td>$160.78</td><td>$151.13</td></tr>
 </tbody>
   </table>
   </div>
@@ -708,19 +761,20 @@
     <h2>Trend <em>Probability</em><span class="cn">趋势概率</span></h2>
     <div class="section-meta">US-Tuned<br>IC Weights</div>
   </div>
-  <div class="macro-banner"><div class="banner-kicker">Macro Overlay</div><div class="banner-body">🟡 FOMC 2026-04-30 (7天后) — 临近事件, 小心跨式 · ⚪ NFP 2026-05-01 (8天后) · 🟡 WDC 财报 2026-04-30 (7天后) — IV 已上升, 跨式性价比低 · 🟡 GOOGL 财报 2026-04-29 (6天后) — IV 已上升, 跨式性价比低 · 🟡 AAPL 财报 2026-04-30 (7天后) — IV 已上升, 跨式性价比低</div><div class="banner-meta">9 names affected · max -12</div></div>
+  <div class="macro-banner"><div class="banner-kicker">Macro Overlay</div><div class="banner-body">🟡 FOMC 2026-04-30 (6天后) — 临近事件, 小心跨式 · 🟡 NFP 2026-05-01 (7天后) — 临近事件, 小心跨式 · 🟡 WDC 财报 2026-04-30 (6天后) — IV 已上升, 跨式性价比低 · 🟡 GOOGL 财报 2026-04-29 (5天后) — IV 已上升, 跨式性价比低 · 🟡 AAPL 财报 2026-04-30 (6天后) — IV 已上升, 跨式性价比低</div><div class="banner-meta">9 names affected · max -16</div></div>
+  <p class="note">Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。</p>
   <div class="table-wrap">
   <table class="signal-table">
-  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
-  <tbody><tr><td data-label="股票">英伟达</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-4</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item strong"><span class="period">5日</span><span class="prob-main">63%</span><span class="prob-return">+2.19%</span><small>n=280</small></div><div class="prob-item strong"><span class="period">10日</span><span class="prob-main">65%</span><span class="prob-return">+3.57%</span><small>n=279</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">66%</span><span class="prob-return">+9.08%</span><small>n=267</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">90%</span><span class="prob-return">+101.02%</span><small>n=217</small></div></div></td></tr>
-<tr><td data-label="股票">台积电</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-4</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">54%</span><span class="prob-return">+0.69%</span><small>n=289</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">50%</span><span class="prob-return">+1.38%</span><small>n=287</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">50%</span><span class="prob-return">+2.41%</span><small>n=274</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">74%</span><span class="prob-return">+24.99%</span><small>n=222</small></div></div></td></tr>
-<tr><td data-label="股票">美光科技</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-4</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">41%</span><span class="prob-return">-0.26%</span><small>n=303</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">47%</span><span class="prob-return">-0.09%</span><small>n=300</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">49%</span><span class="prob-return">-0.16%</span><small>n=289</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">80%</span><span class="prob-return">+23.59%</span><small>n=217</small></div></div></td></tr>
-<tr><td data-label="股票">西部数据</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="strong" data-label="可靠度">强</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-12</strong></span><span class="risk-meta">宏观事件将近/财报将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WATCHLIST</strong></span><span class="risk-meta">MICRO · 249股 · $1,050</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">53%</span><span class="prob-return">+0.41%</span><small>n=290</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">56%</span><span class="prob-return">+0.89%</span><small>n=289</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">62%</span><span class="prob-return">+1.12%</span><small>n=279</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">70%</span><span class="prob-return">+24.08%</span><small>n=231</small></div></div></td></tr>
-<tr><td data-label="股票">特斯拉</td><td data-label="方向"><span class="tag tag-down">偏跌</span></td><td class="" data-label="可靠度">中</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-4</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip strong"><strong>⚡⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">42%</span><span class="prob-return">-0.63%</span><small>n=287</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">46%</span><span class="prob-return">-0.83%</span><small>n=287</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">44%</span><span class="prob-return">+0.75%</span><small>n=272</small></div><div class="prob-item"><span class="period">180日</span><span class="prob-main">43%</span><span class="prob-return">+1.25%</span><small>n=198</small></div></div></td></tr>
-<tr><td data-label="股票">谷歌</td><td data-label="方向"><span class="tag tag-up">偏涨</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-12</strong></span><span class="risk-meta">宏观事件将近/财报将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">50%</span><span class="prob-return">-0.13%</span><small>n=250</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">47%</span><span class="prob-return">-0.47%</span><small>n=248</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">56%</span><span class="prob-return">+0.55%</span><small>n=237</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">75%</span><span class="prob-return">+12.67%</span><small>n=174</small></div></div></td></tr>
-<tr><td data-label="股票">苹果</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="" data-label="可靠度">中</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-12</strong></span><span class="risk-meta">宏观事件将近/财报将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">58%</span><span class="prob-return">+0.20%</span><small>n=190</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">59%</span><span class="prob-return">+0.26%</span><small>n=185</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">49%</span><span class="prob-return">+0.60%</span><small>n=186</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">60%</span><span class="prob-return">+3.47%</span><small>n=126</small></div></div></td></tr>
-<tr><td data-label="股票">携程</td><td data-label="方向"><span class="tag tag-up">偏涨</span></td><td class="" data-label="可靠度">中</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-4</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WATCHLIST</strong></span><span class="risk-meta">MICRO · 232股 · $1,350</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">50%</span><span class="prob-return">+0.58%</span><small>n=317</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">51%</span><span class="prob-return">+0.87%</span><small>n=314</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">58%</span><span class="prob-return">+3.35%</span><small>n=300</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">75%</span><span class="prob-return">+24.49%</span><small>n=216</small></div></div></td></tr>
-<tr><td data-label="股票">富途控股</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="weak" data-label="可靠度">弱</td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-4</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item strong"><span class="period">5日</span><span class="prob-main">69%</span><span class="prob-return">+18.99%</span><small>n=13</small></div><div class="prob-item strong"><span class="period">10日</span><span class="prob-main">77%</span><span class="prob-return">+31.77%</span><small>n=13</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">85%</span><span class="prob-return">+22.60%</span><small>n=13</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">100%</span><span class="prob-return">+27.36%</span><small>n=10</small></div></div></td></tr>
+  <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>Kronos参考</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
+  <tbody><tr><td data-label="股票">英伟达</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="weak" data-label="可靠度">弱</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-down">看跌</span><span class="kronos-meta">-4.92% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-8</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item strong"><span class="period">5日</span><span class="prob-main">64%</span><span class="prob-return">+2.24%</span><small>n=277</small></div><div class="prob-item strong"><span class="period">10日</span><span class="prob-main">63%</span><span class="prob-return">+3.13%</span><small>n=276</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">65%</span><span class="prob-return">+7.98%</span><small>n=269</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">90%</span><span class="prob-return">+103.06%</span><small>n=215</small></div></div></td></tr>
+<tr><td data-label="股票">台积电</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-down">看跌</span><span class="kronos-meta">-7.26% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-8</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">56%</span><span class="prob-return">+0.96%</span><small>n=289</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">51%</span><span class="prob-return">+1.61%</span><small>n=286</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">51%</span><span class="prob-return">+3.06%</span><small>n=275</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">74%</span><span class="prob-return">+23.96%</span><small>n=227</small></div></div></td></tr>
+<tr><td data-label="股票">美光科技</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="weak" data-label="可靠度">弱</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-down">看跌</span><span class="kronos-meta">-2.56% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-8</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item weak"><span class="period">5日</span><span class="prob-main">39%</span><span class="prob-return">-0.38%</span><small>n=302</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">47%</span><span class="prob-return">-0.25%</span><small>n=301</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">49%</span><span class="prob-return">-0.30%</span><small>n=293</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">82%</span><span class="prob-return">+24.56%</span><small>n=223</small></div></div></td></tr>
+<tr><td data-label="股票">西部数据</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="strong" data-label="可靠度">强</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-down">看跌</span><span class="kronos-meta">-7.89% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-16</strong></span><span class="risk-meta">宏观事件将近/财报将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WATCHLIST</strong></span><span class="risk-meta">MICRO · 249股 · $1,050</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">52%</span><span class="prob-return">+0.12%</span><small>n=289</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">56%</span><span class="prob-return">+0.67%</span><small>n=289</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">60%</span><span class="prob-return">+0.73%</span><small>n=279</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">67%</span><span class="prob-return">+21.66%</span><small>n=234</small></div></div></td></tr>
+<tr><td data-label="股票">特斯拉</td><td data-label="方向"><span class="tag tag-down">偏跌</span></td><td class="" data-label="可靠度">中</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-up">看涨</span><span class="kronos-meta">+10.68% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-8</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip strong"><strong>⚡⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">43%</span><span class="prob-return">-0.74%</span><small>n=286</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">43%</span><span class="prob-return">-1.26%</span><small>n=285</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">43%</span><span class="prob-return">-0.43%</span><small>n=270</small></div><div class="prob-item"><span class="period">180日</span><span class="prob-main">45%</span><span class="prob-return">+3.58%</span><small>n=212</small></div></div></td></tr>
+<tr><td data-label="股票">谷歌</td><td data-label="方向"><span class="tag tag-up">偏涨</span></td><td class="weak" data-label="可靠度">弱</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-down">看跌</span><span class="kronos-meta">-1.73% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-16</strong></span><span class="risk-meta">宏观事件将近/财报将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">54%</span><span class="prob-return">+0.27%</span><small>n=285</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">56%</span><span class="prob-return">+0.31%</span><small>n=284</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">58%</span><span class="prob-return">+1.28%</span><small>n=274</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">77%</span><span class="prob-return">+14.64%</span><small>n=195</small></div></div></td></tr>
+<tr><td data-label="股票">苹果</td><td data-label="方向"><span class="tag tag-neutral">震荡</span></td><td class="" data-label="可靠度">中</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip">震荡</span><span class="kronos-meta">+0.33% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-16</strong></span><span class="risk-meta">宏观事件将近/财报将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>OBSERVE</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">53%</span><span class="prob-return">-0.15%</span><small>n=236</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">55%</span><span class="prob-return">-0.37%</span><small>n=231</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">51%</span><span class="prob-return">+0.42%</span><small>n=227</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">63%</span><span class="prob-return">+4.42%</span><small>n=166</small></div></div></td></tr>
+<tr><td data-label="股票">携程</td><td data-label="方向"><span class="tag tag-up">偏涨</span></td><td class="" data-label="可靠度">中</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-up">看涨</span><span class="kronos-meta">+8.12% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-8</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip strong"><strong>⚡⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WATCHLIST</strong></span><span class="risk-meta">MICRO · 155股 · $900</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">51%</span><span class="prob-return">+0.53%</span><small>n=319</small></div><div class="prob-item"><span class="period">10日</span><span class="prob-main">53%</span><span class="prob-return">+1.01%</span><small>n=315</small></div><div class="prob-item"><span class="period">30日</span><span class="prob-main">58%</span><span class="prob-return">+3.52%</span><small>n=301</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">72%</span><span class="prob-return">+23.54%</span><small>n=213</small></div></div></td></tr>
+<tr><td data-label="股票">富途控股</td><td data-label="方向"><span class="tag tag-up">看涨</span></td><td class="weak" data-label="可靠度">弱</td><td class="kronos-cell" data-label="Kronos参考"><div class="kronos-stack"><span class="kronos-chip kronos-up">看涨</span><span class="kronos-meta">+11.24% · mini · 仅研究</span></div></td><td data-label="风险提示"><div class="risk-stack"><span class="risk-chip weak"><strong>-8</strong></span><span class="risk-meta">宏观事件将近</span><span class="risk-chip"><strong>⚡⚡</strong></span><span class="risk-meta">Fat Tail</span><span class="risk-chip"><strong>WAIT</strong></span><span class="risk-meta">NO_TRADE · 0股 · $0</span></div></td><td class="prob-matrix-cell" data-label="概率矩阵"><div class="prob-grid"><div class="prob-item"><span class="period">5日</span><span class="prob-main">53%</span><span class="prob-return">+7.63%</span><small>n=30</small></div><div class="prob-item strong"><span class="period">10日</span><span class="prob-main">80%</span><span class="prob-return">+18.16%</span><small>n=30</small></div><div class="prob-item strong"><span class="period">30日</span><span class="prob-main">70%</span><span class="prob-return">+12.16%</span><small>n=30</small></div><div class="prob-item strong"><span class="period">180日</span><span class="prob-main">93%</span><span class="prob-return">+24.97%</span><small>n=28</small></div></div></td></tr>
 </tbody>
   </table>
   </div>

@@ -552,6 +552,20 @@
   .signal-table .risk-chip strong {
     font-size: 11px;
   }
+  .signal-table .risk-chip.capital-up {
+    color: var(--up);
+    border-color: rgba(179,58,47,0.36);
+    background: rgba(179,58,47,0.08);
+  }
+  .signal-table .risk-chip.capital-down {
+    color: var(--down);
+    border-color: rgba(31,109,83,0.36);
+    background: rgba(31,109,83,0.08);
+  }
+  .signal-table .risk-chip.capital-neutral {
+    color: var(--muted);
+    border-style: dashed;
+  }
   .signal-table .risk-meta {
     display: block;
     font-size: 9px;
@@ -669,7 +683,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">STATIC SUBPAGE · OPTIONS / REVIEW</div>
-  <div class="muted">2026-04-24 00:58:22</div>
+  <div class="muted">2026-04-24 16:23:31</div>
 </div>
 
 <div class="container">
@@ -678,7 +692,7 @@
   <div class="hero-kicker">Issue № 01 · Control Deck · Overview</div>
   <h1>主力<em>总览</em><span class="eyebrow">Overview, Navigation & Execution Pulse</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-24 00:58:22</span>
+    <span class="pill">Last Sync · 2026-04-24 16:23:31</span>
     <span class="pill">Linked from index.html</span>
     
   </div>
@@ -703,7 +717,7 @@
   </article>
   <article class="summary-card">
     <div class="label">Option Panel</div>
-    <div class="value">$-36.00</div>
+    <div class="value">$-100.00</div>
     <div class="sub">持仓盈亏快照</div>
   </article>
   <article class="summary-card">
@@ -749,9 +763,13 @@
     <article class="control-panel">
       <div class="panel-kicker">A-Share Desk</div>
       <h3>5/5 弱</h3>
-      <p>当前 A 股主模型偏研究参考，更适合先看趋势和宏观窗口，再决定是否加入观察名单。</p>
+      <p>当前 A 股主模型偏研究参考；主力资金动向已在首页摘要和 A 股趋势表同步标记。</p>
       <ul class="panel-list">
-        <li>Quote / Trend / Tech / Fund</li>
+        <li>宁德时代：主力吸筹 · 5日 +21.15亿 · 高置信</li>
+        <li>贵州茅台：主力拉升 · 5日 +13.73亿 · 高置信</li>
+        <li>阳光电源：主力撤退 · 5日 -10.22亿 · 中置信</li>
+        <li>中国铝业：主力撤退 · 5日 -11.96亿 · 高置信</li>
+        <li>闻泰科技：主力撤退 · 5日 -7.68亿 · 高置信</li>
         <li>CN Macro Window 已接入</li>
       </ul>
       <a class="module-cta" href="./cn.html">打开 A股子页</a>
@@ -768,7 +786,7 @@
     </article>
     <article class="control-panel">
       <div class="panel-kicker">Options Panel</div>
-      <h3>$-36.00</h3>
+      <h3>$-100.00</h3>
       <p>期权页单独展示持仓、退出模板和全池扫描后的机会强弱，不再混在研究主表里。</p>
       <ul class="panel-list">
         <li>弱机会默认 MICRO</li>
@@ -788,7 +806,7 @@
     </article>
     <article class="control-panel">
       <div class="panel-kicker">Factor Lab</div>
-      <h3>0 晋升 / 13 候选</h3>
+      <h3>3 晋升 / 42 候选</h3>
       <p>候选因子研究与晋升队列</p>
       <ul class="panel-list">
         <li>候选因子观察名单</li>
