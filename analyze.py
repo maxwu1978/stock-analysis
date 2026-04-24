@@ -9,6 +9,7 @@ from indicators import compute_all, summarize
 from probability import score_trend
 from fundamental import fetch_all_financials
 from reliability import get_reliability_label, load_reliability_labels
+from kronos_reference import format_kronos_reference_text, get_kronos_reference, load_kronos_reference
 from macro_events import get_cn_risk_warnings
 from position_sizing import recommend_model_action
 
@@ -37,6 +38,7 @@ def md_table(headers, rows):
 def main():
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     reliability_labels = load_reliability_labels()
+    kronos_refs = load_kronos_reference()
 
     print("_正在获取数据..._", file=sys.stderr)
 
@@ -121,11 +123,13 @@ def main():
         if pd.isna(ft_score): ft_score = 0
         ft_score = int(ft_score)
         ft_label = f"{'⚡' * ft_score}" if ft_score >= 3 else ""
+        kronos_text = format_kronos_reference_text(get_kronos_reference(kronos_refs, "CN", code))
 
         prob_rows.append([
             f"**{name}**",
             f"**{direction}**",
             f"**{reliability}**",
+            kronos_text,
             decision.action,
             f"{decision.plan.position_tier} / {decision.plan.qty}股 / ${decision.plan.risk_budget:,.0f}",
             ft_label if ft_label else "-",
@@ -168,8 +172,9 @@ def main():
 
     print(f"\n### 趋势概率\n")
     print(f"方向由30日上涨概率决定: >55%偏涨, <45%偏跌\n")
+    print("Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。\n")
     print(md_table(
-        ["股票", "方向", "可靠度", "动作", "仓位计划", "肥尾", "5日", "10日", "30日", "180日"],
+        ["股票", "方向", "可靠度", "Kronos参考", "动作", "仓位计划", "肥尾", "5日", "10日", "30日", "180日"],
         prob_rows))
 
     print(f"\n### 技术指标\n")
