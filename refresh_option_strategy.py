@@ -20,7 +20,7 @@ DEFAULT_STRATEGY_PAGE = ROOT / "docs" / "strategy.html"
 def _run_monitor(timeout: int) -> tuple[bool, str]:
     try:
         run = subprocess.run(
-            [sys.executable, "option_monitor.py", "--quiet"],
+            [sys.executable, "manage.py", "option-monitor", "--quiet"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -29,7 +29,7 @@ def _run_monitor(timeout: int) -> tuple[bool, str]:
             timeout=timeout,
         )
     except subprocess.TimeoutExpired:
-        return False, f"option_monitor.py timeout after {timeout}s"
+        return False, f"option monitor timeout after {timeout}s"
     except Exception as exc:
         return False, str(exc)
 

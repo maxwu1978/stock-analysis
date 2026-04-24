@@ -14,11 +14,21 @@ fi
 
 cd "$PROJECT_DIR"
 
+file_hash() {
+    if [ -f "$1" ]; then
+        shasum -a 256 "$1" | awk '{print $1}'
+    else
+        echo "missing"
+    fi
+}
+
 # 检查 OpenD 在线
 if ! lsof -iTCP:11111 -sTCP:LISTEN >/dev/null 2>&1; then
     echo "$(date +%H:%M) OpenD 未启动, 跳过" >> option_monitor_cron.log
     exit 0
 fi
+
+OPTION_BEFORE="$(file_hash option_section.html)"
 
 # 1) 期权持仓监控 (模拟盘, 写 option_section.html)
 "$VENV_PY" manage.py option-monitor --market-open-only 2>/dev/null \
@@ -37,23 +47,25 @@ fi
     | grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning" \
     >> option_monitor_cron.log
 
-# 4) 如果任一片段有变化, 重新生成主页 + push
+# 4) 如果公开期权片段有变化, 重新生成公开 docs + push.
+# option_section.html 是本地忽略文件, 不能用 git diff 检测。
+OPTION_AFTER="$(file_hash option_section.html)"
 ANY_CHANGE=0
-for frag in option_section.html real_position_section.html; do
-    if [ -f "$frag" ] && ! git diff --quiet "$frag" 2>/dev/null; then
-        ANY_CHANGE=1
-    fi
-done
+if [ "$OPTION_BEFORE" != "$OPTION_AFTER" ]; then
+    ANY_CHANGE=1
+fi
 
 if [ "$ANY_CHANGE" = "1" ]; then
     "$VENV_PY" manage.py refresh-page --strict >> option_monitor_cron.log 2>&1 || \
         echo "$(date +%H:%M) generate_page failed" >> option_monitor_cron.log
 
-    git add docs/index.html option_section.html real_position_section.html 2>/dev/null || true
+    git add docs/ 2>/dev/null || true
     if ! git diff --cached --quiet 2>/dev/null; then
         git commit -q -m "主页期权+真实盘更新 $(date +%H:%M)" \
             -m "auto by option_monitor launchd job"
         git push origin main -q 2>&1 >> option_monitor_cron.log || \
             echo "$(date +%H:%M) git push failed" >> option_monitor_cron.log
     fi
+else
+    echo "$(date +%H:%M) option fragment unchanged; skip docs refresh" >> option_monitor_cron.log
 fi

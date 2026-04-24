@@ -102,6 +102,14 @@ python3 manage.py preflight
 - 新增 `manage.py trade-sim` / `futu-live` / `option-straddle` / `option-advisor-backtest` / `btc-trend` / `futures-fractal`。
 - 这些命令只统一入口，不降低原有安全门槛；`trade-sim` 下单仍必须显式 `--confirm` 且保持 SIMULATE 硬锁。
 
+### 10. 期权页面实时刷新修复
+
+- `option_section.html` 是本地忽略文件，不能用 `git diff` 判断是否变化。
+- `run_option_monitor.sh` 已改为用 SHA-256 hash 对比期权片段刷新前后内容，期权片段变化时强制重新生成公开 `docs/`。
+- 重新生成后改为 `git add docs/`，确保 `docs/options.html` / `docs/dashboard_full.html` / `docs/index.html` 等公开静态页一起提交。
+- `refresh_option_strategy.py` 内部监控调用已改为 `manage.py option-monitor --quiet`，避免绕开统一入口。
+- `real_position_section.html` 仍只作为本地真实盘观察片段，不参与公开页面触发条件。
+
 ## 已确认问题
 
 ### launchd 因子任务 `Operation not permitted`
