@@ -9,8 +9,6 @@
 
 import pandas as pd
 import numpy as np
-from candidate_factor_engine import build_candidate_factors
-from factor_registry import list_factor_specs
 from factor_weighting import infer_factor_family, load_family_weight_multipliers
 from macro_events import add_us_macro_factors, get_risk_warnings, get_vix_level
 
@@ -111,6 +109,9 @@ def _prepare_us_factors(df: pd.DataFrame) -> pd.DataFrame:
 def _apply_runtime_trial_factors(df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     """Add promoted trial factors to the US scoring panel without editing US_FACTOR_COLS."""
     try:
+        from candidate_factor_engine import build_candidate_factors
+        from factor_registry import list_factor_specs
+
         specs = list_factor_specs("us", statuses=RUNTIME_FACTOR_STATUSES)
     except Exception:
         return df, []
