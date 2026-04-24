@@ -13,7 +13,8 @@
 | `./manage.py refresh-page` | 重新生成 `docs/` 页面，默认带 `--allow-partial`。 |
 | `./manage.py smoke-test` | 本地页面关键标记检查。 |
 | `./manage.py smoke-test --remote` | 检查线上 GitHub Pages 关键标记。 |
-| `./manage.py preflight` | 发布前固定检查：Python 编译、本地页面 smoke、diff 空白检查。 |
+| `./manage.py doctor` | 检查本地自动化入口、shell 可执行位、plist 语法和旧路径硬编码。 |
+| `./manage.py preflight` | 发布前固定检查：doctor、Python 编译、本地页面 smoke、diff 空白检查。 |
 | `./manage.py preflight --remote` | 发布前检查并追加线上 smoke。 |
 
 ## A 股与行业
@@ -70,4 +71,3 @@
 - 因子候选进入 `trial` 后才会影响运行时 overlay，仍需定期复测。
 - 期权历史回测如果没有真实历史期权链和 IV，只能作为代理结果，不能作为正式胜率。
 - 在当前 Desktop 路径下，launchd 可能遇到 macOS TCC 权限限制；长期建议迁移到 `~/Projects/9，主力分析`。
-

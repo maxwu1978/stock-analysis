@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -96,11 +97,83 @@ def cmd_fetch_option_chains(extra: list[str]) -> int:
     return python_cmd("fetch_dolthub_option_chains.py", extra)
 
 
+def cmd_doctor(extra: list[str]) -> int:
+    if extra:
+        raise SystemExit("doctor does not accept extra arguments")
+
+    failures = 0
+
+    def check(ok: bool, message: str) -> None:
+        nonlocal failures
+        status = "OK" if ok else "FAIL"
+        print(f"[{status}] {message}")
+        if not ok:
+            failures += 1
+
+    required_files = [
+        "README.md",
+        "COMMANDS.md",
+        "requirements.txt",
+        "docs/index.html",
+        "manage.py",
+        "install_launchd.sh",
+    ]
+    for name in required_files:
+        check((ROOT / name).exists(), f"required file exists: {name}")
+
+    shell_scripts = [
+        "auto_hedge_daily.sh",
+        "install_launchd.sh",
+        "run_advisor_daily.sh",
+        "run_factor_learning_daily.sh",
+        "run_factor_testing_daily.sh",
+        "run_option_monitor.sh",
+        "scripts/factor_learn.sh",
+        "scripts/factor_test.sh",
+        "scripts/preflight.sh",
+        "scripts/refresh_option_strategy.sh",
+        "scripts/run_factor_lab_ci.sh",
+        "scripts/scan_a_opportunities.sh",
+    ]
+    for name in shell_scripts:
+        path = ROOT / name
+        check(path.exists(), f"script exists: {name}")
+        if path.exists():
+            check(os.access(path, os.X_OK), f"script is executable: {name}")
+
+    legacy_path = "/Volumes/MaxRelocated/主力分析"
+    portable_scripts = ["auto_hedge_daily.sh", "run_advisor_daily.sh", "run_option_monitor.sh"]
+    for name in portable_scripts:
+        path = ROOT / name
+        if path.exists():
+            check(legacy_path not in path.read_text(encoding="utf-8"), f"no legacy hard-coded project path: {name}")
+
+    plists = sorted(ROOT.glob("com.maxwu.*.plist"))
+    check(bool(plists), "launchd plist templates exist")
+    if shutil.which("plutil"):
+        for plist in plists:
+            completed = subprocess.run(["plutil", "-lint", str(plist)], cwd=ROOT, text=True, capture_output=True)
+            check(completed.returncode == 0, f"plist is valid: {plist.name}")
+            if completed.returncode != 0:
+                print(completed.stdout + completed.stderr, end="")
+    else:
+        print("[SKIP] plutil is not available; plist syntax was not checked")
+
+    if failures:
+        print(f"doctor found {failures} issue(s)")
+        return 1
+    print("doctor checks passed")
+    return 0
+
+
 def cmd_preflight(extra: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="manage.py preflight")
     parser.add_argument("--remote", action="store_true", help="also smoke-test GitHub Pages")
     args = parser.parse_args(extra)
 
+    doctor_status = cmd_doctor([])
+    if doctor_status != 0:
+        return doctor_status
     py_files = [str(path) for path in sorted(ROOT.glob("*.py"))]
     run([sys.executable, "-m", "compileall", "-q", *py_files], display=f"{sys.executable} -m compileall -q *.py")
     run([sys.executable, "page_smoke_test.py"])
@@ -120,6 +193,7 @@ def cmd_list_commands(extra: list[str]) -> int:
 
 COMMANDS = {
     "capital-flow-backtest": (cmd_capital_flow_backtest, "Backtest CN capital-flow intent labels."),
+    "doctor": (cmd_doctor, "Check local automation wiring and entrypoint files."),
     "factor-learn": (cmd_factor_learn, "Run candidate factor learning."),
     "factor-test": (cmd_factor_test, "Run candidate factor testing."),
     "fetch-option-chains": (cmd_fetch_option_chains, "Fetch needed historical option-chain slices."),

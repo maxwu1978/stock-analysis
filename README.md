@@ -19,6 +19,7 @@
 ./manage.py refresh-page
 ./manage.py smoke-test
 ./manage.py smoke-test --remote
+./manage.py doctor
 ./manage.py preflight
 ```
 
@@ -59,11 +60,19 @@ A 股机会和可靠性验证：
 ./manage.py preflight
 ```
 
-该检查会编译顶层 Python 脚本、执行本地页面 smoke test，并运行 `git diff --check`。如果要同时检查线上 GitHub Pages：
+该检查会先执行 `doctor`，再编译顶层 Python 脚本、执行本地页面 smoke test，并运行 `git diff --check`。如果要同时检查线上 GitHub Pages：
 
 ```bash
 ./manage.py preflight --remote
 ```
+
+本地自动化或 launchd 配置变更后，先执行：
+
+```bash
+./manage.py doctor
+```
+
+该检查会验证核心入口文件、shell wrapper 可执行位、launchd plist 语法，以及核心自动化脚本是否仍包含旧的硬编码项目路径。
 
 ## 工程边界
 
@@ -80,4 +89,3 @@ A 股机会和可靠性验证：
 - `.github/workflows/`: GitHub Actions 页面刷新和因子实验。
 - `.cache/`: 本地测试、因子学习和临时实验缓存，不入库。
 - 根目录 Python 脚本: 当前保留原位置，按 `COMMANDS.md` 做功能分组。
-

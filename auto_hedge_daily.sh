@@ -10,9 +10,14 @@
 
 set -euo pipefail
 
-PROJECT_DIR="/Volumes/MaxRelocated/主力分析"
-VENV_PY="$PROJECT_DIR/venv/bin/python"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -x "$PROJECT_DIR/venv/bin/python" ]; then
+    VENV_PY="$PROJECT_DIR/venv/bin/python"
+else
+    VENV_PY="python3"
+fi
 LOG="$PROJECT_DIR/auto_hedge.log"
+export TRADE_PY="$VENV_PY"
 
 cd "$PROJECT_DIR"
 
@@ -28,6 +33,7 @@ fi
 # 用 Python 读持仓并生成+执行挂单命令
 "$VENV_PY" - >> "$LOG" 2>&1 <<'PYEOF'
 import logging
+import os
 logging.getLogger('futu').setLevel(logging.ERROR)
 
 import re
@@ -83,7 +89,7 @@ for _, r in options.iterrows():
         continue
 
     cmd = [
-        "./venv/bin/python", "trade_futu_sim.py",
+        os.environ.get("TRADE_PY", "python3"), "trade_futu_sim.py",
         "limit_sell", code, str(qty), str(target_price), "--confirm",
     ]
     print(f"    {code} × {qty}张  成本${cost:.2f}  挂@${target_price:.2f} (+{TP_PCT*100:.0f}%)")

@@ -6,9 +6,13 @@
 
 set -euo pipefail
 
-PROJECT_DIR="/Volumes/MaxRelocated/主力分析"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$PROJECT_DIR/advisor_history.log"
-VENV_PY="$PROJECT_DIR/venv/bin/python"
+if [ -x "$PROJECT_DIR/venv/bin/python" ]; then
+    VENV_PY="$PROJECT_DIR/venv/bin/python"
+else
+    VENV_PY="python3"
+fi
 
 cd "$PROJECT_DIR"
 

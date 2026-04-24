@@ -72,6 +72,13 @@ python3 manage.py preflight
 
 本阶段仍不把研究脚本移动到 package 目录。原因是当前很多脚本存在裸 import、根目录默认输出和 GitHub Actions/launchd 固定路径，直接搬迁风险高。
 
+### 6. 自动化路径收口
+
+- `run_advisor_daily.sh` / `run_option_monitor.sh` / `auto_hedge_daily.sh` 已从旧的 `/Volumes/MaxRelocated/主力分析` 硬编码改为按脚本所在目录定位项目。
+- 三个脚本均保留 `venv/bin/python` 优先、否则回退 `python3` 的运行方式。
+- 新增 `manage.py doctor`，检查核心入口文件、shell wrapper 可执行位、launchd plist 语法和核心脚本旧路径硬编码。
+- `scripts/refresh_option_strategy.sh` 与 `scripts/scan_a_opportunities.sh` 已转为调用 `manage.py`，减少重复入口。
+
 ## 已确认问题
 
 ### launchd 因子任务 `Operation not permitted`
