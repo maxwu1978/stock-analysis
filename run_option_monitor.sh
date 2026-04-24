@@ -21,19 +21,19 @@ if ! lsof -iTCP:11111 -sTCP:LISTEN >/dev/null 2>&1; then
 fi
 
 # 1) 期权持仓监控 (模拟盘, 写 option_section.html)
-"$VENV_PY" option_monitor.py --market-open-only 2>/dev/null \
+"$VENV_PY" manage.py option-monitor --market-open-only 2>/dev/null \
     | grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning" \
     >> option_monitor_cron.log
 
 # 2) 期权链/IV 快照积累 (用于后续真实链路回测, 失败不影响页面刷新)
-"$VENV_PY" option_chain_snapshot.py --watchlist tech --dtes 14,21 --sleep-sec 3.2 2>/dev/null \
+"$VENV_PY" manage.py option-chain-snapshot --watchlist tech --dtes 14,21 --sleep-sec 3.2 2>/dev/null \
     | grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning" \
     >> option_monitor_cron.log || \
     echo "$(date +%H:%M) option_chain_snapshot skipped/failed" >> option_monitor_cron.log
 
 # 3) 真实盘观察 (只读, 写 real_position_section.html)
 # 不用 --market-open-only, 真实持仓任何时候都值得观察
-"$VENV_PY" real_position_observer.py 2>/dev/null \
+"$VENV_PY" manage.py real-position-observer 2>/dev/null \
     | grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning" \
     >> option_monitor_cron.log
 

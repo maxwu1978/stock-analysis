@@ -32,7 +32,7 @@ TS=$(date +"%Y-%m-%d %H:%M:%S %Z")
     fi
 
     # 过滤掉 futu SDK 的 connect/disconnect 日志噪声
-    "$VENV_PY" option_fractal_advisor.py tech_plus 2>/dev/null | \
+    "$VENV_PY" manage.py option-advisor tech_plus 2>/dev/null | \
         grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning|trace-deprecation" \
         || echo "  [!] advisor 脚本运行失败"
 

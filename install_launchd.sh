@@ -94,7 +94,7 @@ case "$cmd" in
         else
             PY="python3"
         fi
-        "$PY" "$PROJECT_DIR/option_monitor.py"
+        "$PY" "$PROJECT_DIR/manage.py" option-monitor
         echo ""
         echo "=== 测试 factor-learning (short dry run) ==="
         FACTOR_LEARN_DURATION_MIN=0 FACTOR_LEARN_EXTRA_ARGS="--max-cycles 1 --max-candidates 1 --limit-per-market 1 --no-import" \

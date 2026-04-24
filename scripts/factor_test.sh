@@ -10,4 +10,5 @@ export PIP_NO_INPUT=1
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
-python3 manage.py factor-test "$@"
+PY="${PYTHON:-python3}"
+exec "$PY" manage.py factor-test "$@"

@@ -12,7 +12,7 @@
   python option_monitor.py --quiet   # 只写log, 不通知 (用于频繁跑)
 """
 
-import sys
+import argparse
 import subprocess
 import re
 from datetime import datetime
@@ -942,8 +942,24 @@ def run(quiet: bool = False, trd_env: str = "SIMULATE",
         print(f"  [!] HTML 片段保存失败: {e}")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Monitor option positions and emit console/log/html output")
+    parser.add_argument("--quiet", action="store_true", help="write logs/html without macOS notification")
+    parser.add_argument("--real", action="store_true", help="read REAL account instead of SIMULATE")
+    parser.add_argument("--market-open-only", action="store_true", help="skip when U.S. market is closed")
+    parser.add_argument("--html-output", help="option section fragment output path")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    run(
+        quiet=args.quiet,
+        trd_env="REAL" if args.real else "SIMULATE",
+        market_filter=args.market_open_only,
+        html_output=args.html_output,
+    )
+
+
 if __name__ == "__main__":
-    quiet = "--quiet" in sys.argv
-    trd_env = "REAL" if "--real" in sys.argv else "SIMULATE"
-    market_filter = "--market-open-only" in sys.argv
-    run(quiet=quiet, trd_env=trd_env, market_filter=market_filter)
+    main()

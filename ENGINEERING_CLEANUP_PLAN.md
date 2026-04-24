@@ -87,6 +87,14 @@ python3 manage.py preflight
 - `run_option_monitor.sh` 与 `run_factor_testing_daily.sh` 内部页面再生成已改为 `manage.py refresh-page --strict`。
 - `refresh_us_quotes_page.py` 已补标准 `argparse` 入口，避免 `--help` 被误当成刷新执行。
 
+### 8. 期权监控入口统一
+
+- `option_fractal_advisor.py` / `option_monitor.py` / `real_position_observer.py` 已补标准 `argparse` 帮助入口，避免 `--help` 误触发真实查询。
+- 新增 `manage.py option-advisor` / `option-monitor` / `option-chain-snapshot` / `real-position-observer`。
+- `run_advisor_daily.sh` 与 `run_option_monitor.sh` 已改为调用 `manage.py` 期权命令。
+- `install_launchd.sh test` 的期权监控检查已改为调用 `manage.py option-monitor`。
+- `scripts/factor_learn.sh` / `factor_test.sh` / `run_factor_lab_ci.sh` 已支持 `PYTHON=...` 覆盖解释器。
+
 ## 已确认问题
 
 ### launchd 因子任务 `Operation not permitted`

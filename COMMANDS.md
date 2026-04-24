@@ -34,6 +34,10 @@
 | 命令 | 用途 |
 |---|---|
 | `./manage.py refresh-options` | 本地生成当前期权策略输出。 |
+| `./manage.py option-advisor tech_plus` | 运行期权全池策略顾问，只输出建议和命令，不下单。 |
+| `./manage.py option-monitor --market-open-only` | 监控模拟盘期权持仓并更新本地片段。 |
+| `./manage.py option-chain-snapshot --watchlist tech` | 收集当前期权链/IV 快照，用于后续真实链路回测。 |
+| `./manage.py real-position-observer` | 只读观察真实盘股票持仓并生成本地片段。 |
 | `./manage.py option-signal-review --period 2y` | 用历史数据回放强/弱期权信号。 |
 | `./manage.py option-pnl-review --execution-filter` | 用当前执行过滤器复测历史期权代理 PnL。 |
 | `./manage.py option-account-sim --initial-capital 10000` | 用历史交易结果模拟账户资金占用和释放。 |

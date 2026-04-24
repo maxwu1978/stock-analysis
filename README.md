@@ -38,6 +38,10 @@ A 股机会和可靠性验证：
 
 ```bash
 ./manage.py refresh-options
+./manage.py option-advisor tech_plus
+./manage.py option-monitor --market-open-only
+./manage.py option-chain-snapshot --watchlist tech
+./manage.py real-position-observer
 ./manage.py option-signal-review --period 2y
 ./manage.py option-pnl-review --execution-filter
 ./manage.py option-account-sim --initial-capital 10000

@@ -12,7 +12,7 @@
         python trade_futu_sim.py buy <option_code> <qty> --confirm
 """
 
-import sys
+import argparse
 import time
 import numpy as np
 import pandas as pd
@@ -448,10 +448,17 @@ def run(watchlist: list[str]) -> None:
     print("═" * 80 + "\n")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate option strategy ideas from fractal signals")
+    parser.add_argument("watchlist", nargs="?", default="default", choices=sorted(WATCHLISTS))
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    print(f"使用关注池: {args.watchlist}")
+    run(WATCHLISTS[args.watchlist])
+
+
 if __name__ == "__main__":
-    wl_name = sys.argv[1] if len(sys.argv) > 1 else "default"
-    if wl_name not in WATCHLISTS:
-        print(f"可用关注池: {list(WATCHLISTS)}")
-        sys.exit(1)
-    print(f"使用关注池: {wl_name}")
-    run(WATCHLISTS[wl_name])
+    main()

@@ -63,6 +63,22 @@ def cmd_refresh_options(extra: list[str]) -> int:
     return python_cmd("refresh_option_strategy.py", extra)
 
 
+def cmd_option_advisor(extra: list[str]) -> int:
+    return python_cmd("option_fractal_advisor.py", extra)
+
+
+def cmd_option_monitor(extra: list[str]) -> int:
+    return python_cmd("option_monitor.py", extra)
+
+
+def cmd_option_chain_snapshot(extra: list[str]) -> int:
+    return python_cmd("option_chain_snapshot.py", extra)
+
+
+def cmd_real_position_observer(extra: list[str]) -> int:
+    return python_cmd("real_position_observer.py", extra)
+
+
 def cmd_factor_learn(extra: list[str]) -> int:
     return python_cmd("factor_learning.py", extra)
 
@@ -257,8 +273,12 @@ COMMANDS = {
     "kronos-us-experiment": (cmd_kronos_us_experiment, "Run minimal U.S. Kronos experiment."),
     "list-commands": (cmd_list_commands, "Print available project commands."),
     "option-account-sim": (cmd_option_account_sim, "Simulate account equity from option trades."),
+    "option-advisor": (cmd_option_advisor, "Generate option strategy ideas from fractal signals."),
+    "option-chain-snapshot": (cmd_option_chain_snapshot, "Collect current option-chain snapshots."),
+    "option-monitor": (cmd_option_monitor, "Monitor option positions and update local fragments."),
     "option-pnl-review": (cmd_option_pnl_review, "Review historical option proxy PnL."),
     "option-signal-review": (cmd_option_signal_review, "Replay historical strong/weak option signals."),
+    "real-position-observer": (cmd_real_position_observer, "Emit read-only REAL account observation fragment."),
     "refresh-page": (cmd_refresh_page, "Generate docs pages. Defaults to --allow-partial; use --strict for release mode."),
     "refresh-options": (cmd_refresh_options, "Refresh option strategy output."),
     "refresh-us-quotes": (cmd_refresh_us_quotes, "Refresh U.S. quote snapshot pages."),

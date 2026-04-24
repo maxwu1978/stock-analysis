@@ -13,7 +13,7 @@
   - 退出模板接在 option_monitor.py 的期权监控页；本文件仅明确真实盘股票观察页不适用
 """
 
-import sys
+import argparse
 from datetime import datetime
 from pathlib import Path
 
@@ -212,5 +212,16 @@ def run(output_html: str | None = None) -> list[dict]:
     return positions
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Read REAL account positions and emit a read-only HTML fragment")
+    parser.add_argument("--output-html", help="real-position section fragment output path")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    run(output_html=args.output_html)
+
+
 if __name__ == "__main__":
-    run()
+    main()
