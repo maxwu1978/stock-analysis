@@ -33,7 +33,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: 快速刷新美股行情
-        run: python -u refresh_us_quotes_page.py
+        run: python -u manage.py refresh-us-quotes
 
       - name: 先发布美股行情
         env:
@@ -47,7 +47,7 @@ jobs:
       - name: 生成完整页面
         run: |
           set +e
-          timeout 600s python -u generate_page.py
+          timeout 600s python -u manage.py refresh-page --strict
           status=$?
           echo "FULL_GENERATE_STATUS=$status" >> "$GITHUB_ENV"
           if [ "$status" -ne 0 ]; then

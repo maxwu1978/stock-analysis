@@ -52,7 +52,7 @@ fi
     "$PY" manage.py factor-test "${EXTRA_ARGS[@]}"
 
     if [ "${FACTOR_REGENERATE_PAGE:-0}" = "1" ]; then
-        "$PY" generate_page.py
+        "$PY" manage.py refresh-page --strict
     fi
 
     echo "completed_at=$(date '+%Y-%m-%d %H:%M:%S %Z')"

@@ -11,6 +11,8 @@
 | 命令 | 用途 |
 |---|---|
 | `./manage.py refresh-page` | 重新生成 `docs/` 页面，默认带 `--allow-partial`。 |
+| `./manage.py refresh-page --strict` | 按发布语义严格生成完整页面，缺数据则失败。 |
+| `./manage.py refresh-us-quotes` | 快速刷新美股行情快照页。 |
 | `./manage.py smoke-test` | 本地页面关键标记检查。 |
 | `./manage.py smoke-test --remote` | 检查线上 GitHub Pages 关键标记。 |
 | `./manage.py doctor` | 检查本地自动化入口、shell 可执行位、plist 语法和旧路径硬编码。 |
@@ -43,6 +45,9 @@
 | 命令 | 用途 |
 |---|---|
 | `./manage.py factor-learn --duration-min 60` | 持续生成、去重、筛选候选因子。 |
+| `./manage.py factor-ideas` | 生成候选因子草案。 |
+| `./manage.py factor-lab --market us` | 复测指定市场候选因子。 |
+| `./manage.py factor-promotion` | 根据实验报告生成因子晋升队列。 |
 | `./manage.py factor-test` | 复测候选因子并更新晋升队列。 |
 | `./scripts/factor_learn.sh` | launchd/本地非交互学习 wrapper。 |
 | `./scripts/factor_test.sh` | launchd/本地非交互测试 wrapper。 |
@@ -52,9 +57,9 @@
 | 命令 | 用途 |
 |---|---|
 | `./manage.py kronos-reference` | 生成研究用 Kronos 参考快照。 |
-| `python3 kronos_us_experiment.py --mode latest` | 运行美股 Kronos 最小实验。 |
-| `python3 kronos_confirmation_backtest.py` | 运行美股 Kronos 二次确认小回测。 |
-| `python3 kronos_confirmation_backtest_a.py` | 运行 A 股 Kronos 二次确认小回测。 |
+| `./manage.py kronos-us-experiment --mode latest` | 运行美股 Kronos 最小实验。 |
+| `./manage.py kronos-confirm-us` | 运行美股 Kronos 二次确认小回测。 |
+| `./manage.py kronos-confirm-a` | 运行 A 股 Kronos 二次确认小回测。 |
 
 ## 自动化
 

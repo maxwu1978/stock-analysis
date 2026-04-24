@@ -46,7 +46,7 @@ for frag in option_section.html real_position_section.html; do
 done
 
 if [ "$ANY_CHANGE" = "1" ]; then
-    "$VENV_PY" generate_page.py >> option_monitor_cron.log 2>&1 || \
+    "$VENV_PY" manage.py refresh-page --strict >> option_monitor_cron.log 2>&1 || \
         echo "$(date +%H:%M) generate_page failed" >> option_monitor_cron.log
 
     git add docs/index.html option_section.html real_position_section.html 2>/dev/null || true

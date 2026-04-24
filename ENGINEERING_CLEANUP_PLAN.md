@@ -79,6 +79,14 @@ python3 manage.py preflight
 - 新增 `manage.py doctor`，检查核心入口文件、shell wrapper 可执行位、launchd plist 语法和核心脚本旧路径硬编码。
 - `scripts/refresh_option_strategy.sh` 与 `scripts/scan_a_opportunities.sh` 已转为调用 `manage.py`，减少重复入口。
 
+### 7. GitHub Actions 入口统一
+
+- `update-page.yml` 已改为调用 `manage.py refresh-us-quotes` 和 `manage.py refresh-page --strict`。
+- `factor-lab.yml` 已改为调用 `manage.py factor-ideas` 和 `manage.py factor-promotion`。
+- `scripts/run_factor_lab_ci.sh` 已改为调用 `manage.py factor-lab`。
+- `run_option_monitor.sh` 与 `run_factor_testing_daily.sh` 内部页面再生成已改为 `manage.py refresh-page --strict`。
+- `refresh_us_quotes_page.py` 已补标准 `argparse` 入口，避免 `--help` 被误当成刷新执行。
+
 ## 已确认问题
 
 ### launchd 因子任务 `Operation not permitted`
@@ -114,5 +122,4 @@ cd "/Users/wuqingxin/Projects/9，主力分析"
 
 1. 迁移项目到 `~/Projects/9，主力分析`，重新安装 launchd 因子任务。
 2. 第二批清理已跟踪生成物：对确认不再作为基准输入的 CSV/JSON 执行 `git rm --cached`。
-3. 把 GitHub Actions 逐步切到 `manage.py`，但先保留页面生成的严格/宽松模式差异。
-4. 后续再考虑 package 化；在此之前只增加统一入口，不移动核心脚本。
+3. 后续再考虑 package 化；在此之前只增加统一入口，不移动核心脚本。

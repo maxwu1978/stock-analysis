@@ -37,8 +37,18 @@ def python_cmd(script: str, extra: list[str]) -> int:
 
 
 def cmd_refresh_page(extra: list[str]) -> int:
-    args = extra or ["--allow-partial"]
+    parser = argparse.ArgumentParser(prog="manage.py refresh-page", add_help=False)
+    parser.add_argument("--strict", action="store_true", help="run generate_page.py without --allow-partial")
+    known, passthrough = parser.parse_known_args(extra)
+    if known.strict:
+        args = passthrough
+    else:
+        args = passthrough or ["--allow-partial"]
     return python_cmd("generate_page.py", args)
+
+
+def cmd_refresh_us_quotes(extra: list[str]) -> int:
+    return python_cmd("refresh_us_quotes_page.py", extra)
 
 
 def cmd_smoke_test(extra: list[str]) -> int:
@@ -61,6 +71,18 @@ def cmd_factor_test(extra: list[str]) -> int:
     return python_cmd("factor_testing.py", extra)
 
 
+def cmd_factor_ideas(extra: list[str]) -> int:
+    return python_cmd("factor_idea_generator.py", extra)
+
+
+def cmd_factor_lab(extra: list[str]) -> int:
+    return python_cmd("factor_lab.py", extra)
+
+
+def cmd_factor_promotion(extra: list[str]) -> int:
+    return python_cmd("factor_promotion.py", extra)
+
+
 def cmd_validate_a(extra: list[str]) -> int:
     return python_cmd("a_share_signal_validation_2y.py", extra)
 
@@ -75,6 +97,18 @@ def cmd_industry_heat(extra: list[str]) -> int:
 
 def cmd_kronos_reference(extra: list[str]) -> int:
     return python_cmd("build_kronos_reference.py", extra)
+
+
+def cmd_kronos_us_experiment(extra: list[str]) -> int:
+    return python_cmd("kronos_us_experiment.py", extra)
+
+
+def cmd_kronos_confirm_us(extra: list[str]) -> int:
+    return python_cmd("kronos_confirmation_backtest.py", extra)
+
+
+def cmd_kronos_confirm_a(extra: list[str]) -> int:
+    return python_cmd("kronos_confirmation_backtest_a.py", extra)
 
 
 def cmd_option_signal_review(extra: list[str]) -> int:
@@ -113,6 +147,8 @@ def cmd_doctor(extra: list[str]) -> int:
     required_files = [
         "README.md",
         "COMMANDS.md",
+        ".github/workflows/factor-lab.yml",
+        ".github/workflows/update-page.yml",
         "requirements.txt",
         "docs/index.html",
         "manage.py",
@@ -120,6 +156,19 @@ def cmd_doctor(extra: list[str]) -> int:
     ]
     for name in required_files:
         check((ROOT / name).exists(), f"required file exists: {name}")
+
+    try:
+        import yaml  # type: ignore[import-not-found]
+    except ImportError:
+        print("[SKIP] PyYAML is not available; workflow syntax was not checked")
+    else:
+        for workflow in sorted((ROOT / ".github/workflows").glob("*.yml")):
+            try:
+                yaml.safe_load(workflow.read_text(encoding="utf-8"))
+                check(True, f"workflow yaml is parseable: {workflow.name}")
+            except Exception as exc:
+                check(False, f"workflow yaml is parseable: {workflow.name}")
+                print(f"  {exc}")
 
     shell_scripts = [
         "auto_hedge_daily.sh",
@@ -194,18 +243,25 @@ def cmd_list_commands(extra: list[str]) -> int:
 COMMANDS = {
     "capital-flow-backtest": (cmd_capital_flow_backtest, "Backtest CN capital-flow intent labels."),
     "doctor": (cmd_doctor, "Check local automation wiring and entrypoint files."),
+    "factor-ideas": (cmd_factor_ideas, "Generate draft factor candidate ideas."),
+    "factor-lab": (cmd_factor_lab, "Batch-evaluate candidate factors."),
     "factor-learn": (cmd_factor_learn, "Run candidate factor learning."),
+    "factor-promotion": (cmd_factor_promotion, "Build factor promotion queue from lab outputs."),
     "factor-test": (cmd_factor_test, "Run candidate factor testing."),
     "fetch-option-chains": (cmd_fetch_option_chains, "Fetch needed historical option-chain slices."),
     "import-option-chains": (cmd_import_option_chains, "Import third-party option-chain CSV snapshots."),
     "industry-heat": (cmd_industry_heat, "Run industry heat and potential analysis."),
+    "kronos-confirm-a": (cmd_kronos_confirm_a, "Run A-share Kronos confirmation backtest."),
+    "kronos-confirm-us": (cmd_kronos_confirm_us, "Run U.S. Kronos confirmation backtest."),
     "kronos-reference": (cmd_kronos_reference, "Build research-only Kronos reference snapshot."),
+    "kronos-us-experiment": (cmd_kronos_us_experiment, "Run minimal U.S. Kronos experiment."),
     "list-commands": (cmd_list_commands, "Print available project commands."),
     "option-account-sim": (cmd_option_account_sim, "Simulate account equity from option trades."),
     "option-pnl-review": (cmd_option_pnl_review, "Review historical option proxy PnL."),
     "option-signal-review": (cmd_option_signal_review, "Replay historical strong/weak option signals."),
-    "refresh-page": (cmd_refresh_page, "Generate docs pages. Defaults to --allow-partial."),
+    "refresh-page": (cmd_refresh_page, "Generate docs pages. Defaults to --allow-partial; use --strict for release mode."),
     "refresh-options": (cmd_refresh_options, "Refresh option strategy output."),
+    "refresh-us-quotes": (cmd_refresh_us_quotes, "Refresh U.S. quote snapshot pages."),
     "scan-cn": (cmd_scan_cn, "Run A-share opportunity scan."),
     "smoke-test": (cmd_smoke_test, "Check generated pages locally or with --remote."),
     "validate-a": (cmd_validate_a, "Validate current A-share signal rules over recent years."),

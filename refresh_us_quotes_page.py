@@ -9,6 +9,7 @@ prices even when the slower analysis pass is skipped or times out.
 from __future__ import annotations
 
 import concurrent.futures
+import argparse
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -201,7 +202,13 @@ def refresh_file(path: Path, quotes: list[Quote], sync_text: str) -> bool:
     return True
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Fast-refresh U.S. quote board in generated static pages")
+    return parser.parse_args()
+
+
 def main() -> int:
+    parse_args()
     quotes = fetch_quotes()
     sync_text = datetime.now(ZoneInfo("Asia/Dubai")).strftime("%Y-%m-%d %H:%M:%S")
     changed = False

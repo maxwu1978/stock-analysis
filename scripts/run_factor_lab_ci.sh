@@ -20,7 +20,7 @@ cd "${ROOT_DIR}"
 FACTOR_STATUSES="${FACTOR_STATUSES:-candidate watch}"
 read -r -a STATUS_ARGS <<< "${FACTOR_STATUSES}"
 
-python3 factor_lab.py \
+python3 manage.py factor-lab \
   --market "${MARKET}" \
   --csv-prefix "${CSV_PREFIX}" \
   --statuses "${STATUS_ARGS[@]}" \

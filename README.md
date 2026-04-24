@@ -17,6 +17,8 @@
 ```bash
 ./manage.py list-commands
 ./manage.py refresh-page
+./manage.py refresh-page --strict
+./manage.py refresh-us-quotes
 ./manage.py smoke-test
 ./manage.py smoke-test --remote
 ./manage.py doctor
@@ -49,6 +51,9 @@ A 股机会和可靠性验证：
 ./scripts/factor_learn.sh
 ./scripts/factor_test.sh
 ./manage.py factor-learn --duration-min 60
+./manage.py factor-ideas
+./manage.py factor-lab --market us
+./manage.py factor-promotion
 ./manage.py factor-test
 ```
 

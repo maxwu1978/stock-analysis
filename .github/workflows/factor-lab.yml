@@ -45,7 +45,7 @@ jobs:
       - name: 生成候选因子草案
         if: env.GENERATE_FACTOR_IDEAS == 'true'
         run: |
-          python3 factor_idea_generator.py
+          python3 manage.py factor-ideas
           echo "FACTOR_STATUSES=idea" >> "$GITHUB_ENV"
           echo "FACTOR_CANDIDATE_PATH=factor_candidate_ideas.yaml" >> "$GITHUB_ENV"
           echo "CSV_PREFIX=factor_ideas" >> "$GITHUB_ENV"
@@ -92,7 +92,7 @@ jobs:
       - name: 生成晋升队列
         env:
           LAB_PREFIX: ${{ github.event_name == 'workflow_dispatch' && inputs.generate_ideas == 'true' && 'factor_ideas' || 'factor_candidate' }}
-        run: python3 factor_promotion.py --prefix "$LAB_PREFIX" --output factor_promotion_queue.json
+        run: python3 manage.py factor-promotion --prefix "$LAB_PREFIX" --output factor_promotion_queue.json
 
       - name: 提交报告与队列
         env:
