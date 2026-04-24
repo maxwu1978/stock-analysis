@@ -21,6 +21,7 @@ from datetime import datetime
 from fetch_futu import realtime_quotes, get_kline, find_atm_options, health_check
 from fractal_survey import mfdfa_spectrum
 from macro_events import get_risk_warnings, get_vix_level
+from option_execution_filter import evaluate_long_option_entry
 from position_sizing import recommend_long_option_position, recommend_straddle_position
 from exit_rules import build_long_option_exit, build_straddle_exit, format_exit_plan
 from trade_plan import build_trade_plan_meta
@@ -178,14 +179,17 @@ def apply_macro_override(regime: dict, symbol: str) -> dict:
 def classify_regime(feat: dict) -> dict:
     """根据分形特征 + 技术指标分类市场情境, 给出期权策略建议.
 
-    **v2 (基于 2026-04 回测修正)**:
+    **v3 (基于 2026-04 强信号 PnL 复测修正)**:
       400天 × 7只科技股回测 n=545, 发现美股市场:
-      - BUY_CALL @ strong_asym_oversold 胜率 67.9% (✓ 保留核心信号)
+      - BUY_CALL @ strong_asym_oversold 方向胜率 67.9% (✓ 保留核心信号)
       - BUY_PUT @ strong_asym_overbought 胜率 47.9% (✗ 美股长期牛市 反转不成立)
       - trend_continuation 样本少且胜率低 (<35%)
+      - 近6个月强信号代理期权PnL显示: 普通超卖单腿Call中位数为负,
+        只有 RSI6<=20 或 MA20<=-8% 的“极端超卖/深度偏离”子集质量更稳定
 
     决策逻辑 (保守版):
-      - asym > 0.3 + RSI<40 超卖 → BUY_CALL (反转买入, 胜率 67%) ⭐
+      - asym > 0.3 + (RSI6<=20 或 MA20<=-8%) → BUY_CALL HIGH ⭐
+      - asym > 0.3 + 普通超卖 → BUY_CALL LOW, 只提示弱机会/不主动重仓
       - asym > 0.3 + RSI>70 超买 → WAIT (不做空) 或降低 confidence
       - asym < -0.1 + RSI>60 强势 → BUY_CALL 延续 (样本少, 低 confidence)
       - |asym|弱 + Δα>0.6 → BUY_STRADDLE (波动放大)
@@ -203,12 +207,18 @@ def classify_regime(feat: dict) -> dict:
 
     if asym > 0.3:
         # 强反转股
-        if rsi < 40 or ma20 < -6:
-            # ⭐ 当前最可信的单腿信号: 胜率 67.9% (回测验证, 仍需生产样本闭环)
-            regime = "strong_asym_oversold"
+        if rsi <= 20 or ma20 <= -8:
+            # PnL复测后只把极端超卖/深度均线偏离列为强机会。
+            regime = "strong_asym_capitulation"
             strategy = "BUY_CALL"
             days_to_expiry = 14  # Call 持有期更长, 给反转空间
             confidence = "HIGH"
+        elif rsi < 40 or ma20 < -6:
+            # 普通超卖方向上仍可反弹, 但期权中位收益差, 只保留弱机会提示。
+            regime = "strong_asym_oversold_WEAK_FILTERED"
+            strategy = "BUY_CALL"
+            days_to_expiry = 14
+            confidence = "LOW"
         elif rsi > 75 or ma20 > 10:
             # 超买反转信号 - 回测胜率仅 48%, 不推荐做空
             regime = "strong_asym_overbought_LOW_CONFIDENCE"
@@ -284,6 +294,8 @@ def format_recommendation(feat: dict, regime_info: dict, picks: pd.DataFrame) ->
     conf = regime_info.get("confidence")
     conf_str = f"  置信度: {conf}" if conf else ""
     lines.append(f"  建议:  {regime_info['strategy']}   到期天数目标={regime_info['days_to_expiry']}{conf_str}")
+    if regime_info.get("execution_gate_reason"):
+        lines.append(f"  执行:  已拦截 ({regime_info['execution_gate_reason']})，不生成下单命令")
     # 宏观风险 - 按紧急度排序 (🔴 最先显示, 最多 3 条)
     warnings = regime_info.get("macro_warnings", [])
     if warnings:
@@ -409,6 +421,20 @@ def run(watchlist: list[str]) -> None:
             # 应用宏观事件覆盖
             regime = apply_macro_override(regime, code)
             picks = pick_option_contract(code, regime["strategy"], regime["days_to_expiry"])
+            if not picks.empty and regime["strategy"].startswith("BUY_"):
+                kind = "straddle" if "STRADDLE" in regime["strategy"] else "single"
+                gate = evaluate_long_option_entry(picks, kind=kind)
+                if not gate.allowed:
+                    regime = dict(regime)
+                    regime["strategy_original"] = regime["strategy"]
+                    regime["strategy"] = "WAIT_EXECUTION_FILTER"
+                    regime["confidence"] = None
+                    regime["execution_gate_reason"] = gate.reason
+                    regime["reason"] = (
+                        f"执行闸门未通过: {gate.reason}; "
+                        f"debit=${gate.debit_per_contract:.0f}/contract"
+                    )
+                    picks = pd.DataFrame()
             print(format_recommendation(feat, regime, picks))
         except Exception as e:
             print(f"\n  {code}: 错误 {str(e)[:80]}")

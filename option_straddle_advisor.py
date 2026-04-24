@@ -26,6 +26,7 @@ from datetime import datetime
 from fetch_futu import realtime_quotes, get_kline, find_atm_options, health_check
 from fractal_survey import mfdfa_spectrum
 from iv_rank import get_iv_rank_best_effort, describe_rank, log_iv
+from option_execution_filter import evaluate_long_option_entry
 from position_sizing import recommend_straddle_position
 from exit_rules import build_straddle_exit, format_exit_plan
 from trade_plan import build_trade_plan_meta
@@ -160,11 +161,19 @@ def score_straddle_opportunity(feat: dict, atm_chain: pd.DataFrame) -> dict:
         iv_low = iv_cheap
         iv_high = False  # 代理无法判断高位, 保守
 
+    vol_too_hot = realized_vol >= 40
+    complexity_too_extreme = delta_a > 1.0
+
     # 按优先级判定 (IV_HIGH 先拦截, 再考虑分形+IV 便宜的买入机会)
     if delta_a > 0.6 and iv_high:
         # 分形复杂但 IV 贵 → 买跨式性价比差, 等 IV 回落
         result["signal"] = "WAIT_IV_HIGH"
         result["confidence"] = None
+    elif delta_a > 0.6 and iv_low and (vol_too_hot or complexity_too_extreme):
+        # 近6个月复测显示: Δα过高或实现波动已很高时, 强跨式容易买在波动释放后段。
+        result["signal"] = "BUY_STRADDLE_WEAK"
+        result["confidence"] = "LOW"
+        result["downgrade_reason"] = "realized_vol_hot" if vol_too_hot else "delta_alpha_extreme"
     elif delta_a > 0.6 and iv_low:
         # 分形强 + IV 便宜 = 最强信号
         result["signal"] = "BUY_STRADDLE_STRONG"
@@ -184,6 +193,16 @@ def score_straddle_opportunity(feat: dict, atm_chain: pd.DataFrame) -> dict:
     else:
         result["signal"] = "WAIT"
         result["confidence"] = None
+
+    if result["signal"].startswith("BUY_STRADDLE"):
+        gate = evaluate_long_option_entry(pd.DataFrame([atm_call, atm_put]), kind="straddle")
+        result["execution_debit_per_contract"] = gate.debit_per_contract
+        result["execution_spread_pct_mid"] = gate.spread_pct_mid
+        if not gate.allowed:
+            result["signal_original"] = result["signal"]
+            result["signal"] = "WAIT_EXECUTION_FILTER"
+            result["confidence"] = None
+            result["execution_gate_reason"] = gate.reason
 
     return result
 
@@ -215,6 +234,11 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
             print(f"  分形: asym={feat.get('asym', 0):+.3f}  Δα={feat.get('delta_alpha', 0):.3f}  h(q=2)={feat.get('hq2', 0):+.3f}")
             print(f"  波动: 实际年化={feat['realized_vol']:.1f}%  IV均值={sc.get('iv_avg', 0):.1f}%  IV Rank: {sc.get('iv_rank_desc', '-')}")
             print(f"  信号: {sc['signal']}  置信度: {sc.get('confidence', '-')}")
+            if sc.get("execution_gate_reason"):
+                print(
+                    f"  执行: 已拦截 ({sc['execution_gate_reason']}) · "
+                    f"debit=${sc.get('execution_debit_per_contract', 0):.0f}/套"
+                )
 
             if sc["signal"].startswith("BUY_STRADDLE"):
                 pos = recommend_straddle_position(
