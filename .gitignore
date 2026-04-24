@@ -45,3 +45,35 @@ launchd_factor_testing_stderr.log
 .factor_learning.lock/
 .factor_testing.lock/
 .cache/
+.DS_Store
+
+# Generated research and backtest artifacts. Keep source scripts versioned, but
+# do not let one-off CSV/HTML/MD outputs pollute the working tree.
+*_panel.csv
+*_report.csv
+*_summary.csv
+*_details.csv
+*_coverage.csv
+*_skipped.csv
+*_entries.csv
+execution_watchlist*.csv
+account_sim_*.csv
+historical_option_*.csv
+option_chain_snapshots*.csv
+production_exit_distribution.csv
+data_quality_report.csv
+industry_*_report.csv
+kronos_*_details*.csv
+kronos_*_summary*.csv
+factor_lab_report.html
+factor_lab_report.md
+factor_learning_report.md
+factor_test_decisions.md
+*.log
+
+# Local automation state and generated runtime overlays.
+factor_learning_queue.json
+factor_promotion_queue*.json
+factor_runtime_overlay.json
+com.maxwu.factor-learning.plist
+com.maxwu.factor-testing.plist
