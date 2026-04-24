@@ -22,6 +22,7 @@ from position_sizing import recommend_model_action
 from production_review import load_signal_history, load_trade_log, summarize_execution_quality, summarize_plan_coverage
 from factor_lab_report import load_factor_lab_bundle, render_factor_lab_section_html
 from cn_capital_flow import analyze_capital_flows, format_money_cn
+from cn_retail_sentiment import analyze_retail_sentiment
 
 
 def ensure_complete_dataset(all_hist: dict, label: str, expected: dict) -> None:
@@ -202,6 +203,40 @@ def render_capital_overview_items(flows: list) -> str:
             f"5日 {format_money_cn(flow.main_net_5d)} · {escape(flow.confidence)}置信</li>"
         )
     return "\n        ".join(items)
+
+
+def retail_signal_tag(signal: str, contra_risk: str) -> str:
+    if contra_risk == "高":
+        cls = "tag-down"
+    elif contra_risk == "中":
+        cls = "tag-neutral"
+    elif signal == "关注低位":
+        cls = "tag-up"
+    else:
+        cls = "tag-neutral"
+    return f'<span class="tag {cls}">{escape(signal)}</span>'
+
+
+def retail_sentiment_marker(retail) -> str:
+    """Compact retail sentiment marker for the A-share trend table."""
+    if not retail or getattr(retail, "signal", "") == "数据不足":
+        return (
+            '<span class="risk-chip capital-neutral"><strong>散户 -</strong></span>'
+            '<span class="risk-meta">情绪暂缺</span>'
+        )
+    signal = str(retail.signal)
+    if retail.contra_risk == "高":
+        cls = "capital-down"
+    elif retail.contra_risk == "中":
+        cls = "capital-neutral"
+    elif signal == "关注低位":
+        cls = "capital-up"
+    else:
+        cls = "capital-neutral"
+    return (
+        f'<span class="risk-chip {cls}"><strong>散户 {escape(signal)}</strong></span>'
+        f'<span class="risk-meta">反向{escape(retail.contra_risk)} · 评分 {retail.retail_score:.1f} · 关注 {retail.attention_index:.1f}</span>'
+    )
 
 
 def render_review_section() -> str:
@@ -773,6 +808,7 @@ def build_cn_page(full_page_html: str, now: str, cn_section: str) -> str:
   <a class="minor" href="#cn-quote">CN Quote</a>
   <a class="minor" href="#cn-trend">CN Trend</a>
   <a class="minor" href="#cn-capital">CN Capital</a>
+  <a class="minor" href="#cn-retail">CN Retail</a>
   <a class="minor" href="#cn-tech">CN Tech</a>
   <a class="minor" href="#cn-fund">CN Fund</a>
 """
@@ -1186,6 +1222,7 @@ def generate(allow_partial: bool = False):
     tech_html = ""
     fund_html = ""
     capital_html = ""
+    retail_html = ""
     cn_macro_note_html = ""
 
     try:
@@ -1237,6 +1274,40 @@ def generate(allow_partial: bool = False):
     if not capital_html:
         capital_html = '<article class="control-panel"><h3>资金流数据暂不可用</h3><p>保留原趋势和技术模型，页面生成不因资金流接口失败而中断。</p></article>'
 
+    print("获取A股散户情绪...")
+    try:
+        retail_rows = analyze_retail_sentiment(STOCKS)
+    except Exception as e:
+        print(f"  [!] A股散户情绪获取失败: {e}")
+        retail_rows = []
+    retail_map = {row.code: row for row in retail_rows}
+    for row in retail_rows:
+        risk_cls = "down" if row.contra_risk == "高" else ("up" if row.signal == "关注低位" else "")
+        score_cls = "down" if row.contra_risk in {"高", "中"} else ("up" if row.signal == "关注低位" else "")
+        hot_rank_text = f"人气榜 {row.hot_rank}" if row.hot_rank else "人气榜 >100"
+        comment_rank_text = f"千评 {row.comment_rank}" if row.comment_rank else "千评 -"
+        history_rank_text = f"历史 {row.history_rank}" if row.history_rank else "历史 -"
+        rank_change_text = f"上升 {row.rank_change:+.0f}" if row.rank_change else "上升 0"
+        retail_html += (
+            f'<article class="control-panel {"emphasis" if row.contra_risk == "高" else ""}">'
+            f'<div class="panel-kicker">{escape(row.code)} · {escape(row.date)} · {escape(row.confidence)}置信</div>'
+            f'<h3>{escape(row.name)} {retail_signal_tag(row.signal, row.contra_risk)}</h3>'
+            f'<div class="panel-metrics">'
+            f'<span class="{score_cls}">散户评分 {row.retail_score:.1f}</span>'
+            f'<span class="{risk_cls}">反向风险 {escape(row.contra_risk)}</span>'
+            f'<span>关注 {row.attention_index:.1f}</span>'
+            f'<span>{escape(comment_rank_text)}</span>'
+            f'<span>{escape(hot_rank_text)}</span>'
+            f'<span>{escape(history_rank_text)}</span>'
+            f'<span>{escape(rank_change_text)}</span>'
+            f'<span>换手 {row.turnover_rate:.2f}%</span>'
+            f'</div>'
+            f'<p>{escape(row.explanation)}</p>'
+            f'</article>\n'
+        )
+    if not retail_html:
+        retail_html = '<article class="control-panel"><h3>散户情绪数据暂不可用</h3><p>保留原趋势、资金流和技术模型；页面生成不因情绪接口失败而中断。</p></article>'
+
     for code, df in all_hist.items():
         name = STOCKS[code]
         fund_df = all_fund.get(code)
@@ -1287,10 +1358,12 @@ def generate(allow_partial: bool = False):
         ft_text = "⚡" * ft_score if ft_score >= 1 else "-"
         ft_cls = " strong" if ft_score >= 3 else ""
         capital_marker = capital_flow_marker(capital_map.get(code))
+        retail_marker = retail_sentiment_marker(retail_map.get(code))
         risk_html = (
             f'<td data-label="风险提示">'
             f'<div class="risk-stack">'
             f'{capital_marker}'
+            f'{retail_marker}'
             f'<span class="risk-chip{ft_cls}"><strong>{ft_text}</strong></span>'
             f'<span class="risk-meta">Fat Tail</span>'
             f'<span class="risk-chip"><strong>{decision.action}</strong></span>'
@@ -2081,6 +2154,7 @@ def generate(allow_partial: bool = False):
   <a class="minor" href="#cn-quote">CN Quote</a>
   <a class="minor" href="#cn-trend">CN Trend</a>
   <a class="minor" href="#cn-capital">CN Capital</a>
+  <a class="minor" href="#cn-retail">CN Retail</a>
   <a class="major" href="#us-block">U.S.</a>
   <a class="minor" href="#us-quote">US Quote</a>
   <a class="minor" href="#us-trend">US Trend</a>
@@ -2154,7 +2228,7 @@ async function triggerRefresh() {{
     <div class="section-meta">IC-Weighted<br>Rolling Model</div>
   </div>
   {cn_macro_note_html}
-  <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short<br>风险提示区已内联标记主力资金动向；Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。</p>
+  <p class="note">Direction flag set by 30-day upside prob · &gt;55 % bias long · &lt;45 % bias short<br>风险提示区已内联标记主力资金动向和散户反向情绪；Kronos参考仅做研究旁路，不参与动作、仓位或策略触发。</p>
   <div class="table-wrap">
   <table class="signal-table">
   <thead><tr><th>股票</th><th>方向</th><th>可靠度</th><th>Kronos参考</th><th>风险提示</th><th>概率矩阵</th></tr></thead>
@@ -2177,9 +2251,21 @@ async function triggerRefresh() {{
   </div>
 </section>
 
-<section class="section" id="cn-tech">
+<section class="section" id="cn-retail">
   <div class="section-head">
     <div class="section-num">№ 04</div>
+    <h2>Retail <em>Sentiment</em><span class="cn">散户情绪</span></h2>
+    <div class="section-meta">Eastmoney<br>Attention / Crowd</div>
+  </div>
+  <p class="note">基于东方财富人气榜、千股千评和个股历史热度构建散户拥挤代理；高热度不直接做空，但作为追高和反向风险扣分。</p>
+  <div class="control-grid">
+  {retail_html}
+  </div>
+</section>
+
+<section class="section" id="cn-tech">
+  <div class="section-head">
+    <div class="section-num">№ 05</div>
     <h2>Technical <em>Indicators</em><span class="cn">技术指标</span></h2>
     <div class="section-meta">Oscillators<br>MA / ADX</div>
   </div>
@@ -2195,7 +2281,7 @@ async function triggerRefresh() {{
 
 <section class="section" id="cn-fund">
   <div class="section-head">
-    <div class="section-num">№ 05</div>
+    <div class="section-num">№ 06</div>
     <h2><em>Fundamentals</em><span class="cn">最新财报</span></h2>
     <div class="section-meta">Latest Filing<br>Report Period</div>
   </div>
