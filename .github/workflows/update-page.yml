@@ -27,15 +27,39 @@ jobs:
       - name: 安装依赖
         run: pip install -r requirements.txt
 
-      - name: 生成页面
-        run: python generate_page.py
-
-      - name: 提交并推送
-        env:
-          TIMESTAMP: ${{ github.run_id }}
+      - name: 配置 Git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: 快速刷新美股行情
+        run: python -u refresh_us_quotes_page.py
+
+      - name: 先发布美股行情
+        env:
+          TIMESTAMP: ${{ github.run_id }}
+        run: |
+          git add docs/
+          git diff --cached --quiet || git commit -m "快速更新美股行情"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
+
+      - name: 生成完整页面
+        run: |
+          set +e
+          timeout 600s python -u generate_page.py
+          status=$?
+          echo "FULL_GENERATE_STATUS=$status" >> "$GITHUB_ENV"
+          if [ "$status" -ne 0 ]; then
+            echo "::warning::完整页面生成失败或超时，本次保留已发布的快速美股行情。status=$status"
+          fi
+          exit 0
+
+      - name: 提交并推送完整页面
+        if: env.FULL_GENERATE_STATUS == '0'
+        env:
+          TIMESTAMP: ${{ github.run_id }}
+        run: |
           git add docs/
           git diff --cached --quiet || git commit -m "自动更新数据"
           git pull --rebase origin "${GITHUB_REF_NAME}"
