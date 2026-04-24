@@ -278,6 +278,49 @@ def extract_summary_strip_html(page_html: str) -> str:
     return match.group(1).strip() if match else ""
 
 
+def render_refresh_script() -> str:
+    return """<script>
+async function triggerRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  const msg = document.getElementById('refreshMsg');
+  if (!btn || !msg) return;
+  btn.disabled = true;
+  btn.textContent = 'Syncing...';
+  msg.textContent = '';
+  let token = localStorage.getItem('gh_token');
+  if (!token) {
+    token = prompt('首次使用请输入GitHub Personal Access Token (需要repo和workflow权限):');
+    if (!token) { btn.disabled = false; btn.textContent = '◉ Refresh Feed'; return; }
+    localStorage.setItem('gh_token', token);
+  }
+  try {
+    const r = await fetch('https://api.github.com/repos/maxwu1978/stock-analysis/actions/workflows/update-page.yml/dispatches', {
+      method: 'POST',
+      headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ref: 'main'})
+    });
+    if (r.status === 204) {
+      msg.textContent = 'DISPATCHED · 约4分钟后自动刷新';
+      msg.style.color = 'var(--down)';
+      setTimeout(() => location.reload(), 240000);
+    } else if (r.status === 401 || r.status === 403) {
+      localStorage.removeItem('gh_token');
+      msg.textContent = 'TOKEN INVALID · 请重新点击输入';
+      msg.style.color = 'var(--up)';
+    } else {
+      msg.textContent = 'FAIL · HTTP ' + r.status;
+      msg.style.color = 'var(--up)';
+    }
+  } catch(e) {
+    msg.textContent = 'NET ERROR · ' + e.message;
+    msg.style.color = 'var(--up)';
+  }
+  btn.disabled = false;
+  btn.textContent = '◉ Refresh Feed';
+}
+</script>"""
+
+
 def render_subpage(
     *,
     title: str,
@@ -329,12 +372,16 @@ def render_subpage(
   <h1>{hero_title_html}<span class="eyebrow">{eyebrow}</span></h1>
   <div class="hero-meta">
     <span class="pill">Last Sync · {now}</span>
+    <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
+    <span class="refresh-msg" id="refreshMsg"></span>
     <span class="pill">Linked from index.html</span>
     {hero_link_html}
   </div>
 </header>
 
 {summary_section_html}
+
+{render_refresh_script()}
 
 <nav class="anchor-nav">
 {nav_links_html}

@@ -683,7 +683,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">STATIC SUBPAGE · OPTIONS / REVIEW</div>
-  <div class="muted">2026-04-24 14:19:39</div>
+  <div class="muted">2026-04-24 18:28:46</div>
 </div>
 
 <div class="container">
@@ -692,7 +692,9 @@
   <div class="hero-kicker">Issue № ST · Action Layer · Strategy</div>
   <h1>交易<em>策略</em><span class="eyebrow">Actionable Signals & Watchlist Only</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-24 14:19:39</span>
+    <span class="pill">Last Sync · 2026-04-24 18:28:46</span>
+    <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
+    <span class="refresh-msg" id="refreshMsg"></span>
     <span class="pill">Linked from index.html</span>
     <a class="pill" href="./index.html" style="text-decoration:none;">← 返回总览</a>
   </div>
@@ -703,8 +705,8 @@
 
   <article class="summary-card">
     <div class="label">Execution Pulse</div>
-    <div class="value">0 可执行 / 11 观察</div>
-    <div class="sub">STD 0 · PROBE 0 · MICRO 3 · 胜率 N/A</div>
+    <div class="value">0 可执行 / 14 观察</div>
+    <div class="sub">STD 0 · PROBE 0 · MICRO 2 · 胜率 N/A</div>
   </article>
   <article class="summary-card">
     <div class="label">Actionable Signals</div>
@@ -713,17 +715,58 @@
   </article>
   <article class="summary-card">
     <div class="label">Watchlist</div>
-    <div class="value">11</div>
+    <div class="value">14</div>
     <div class="sub">弱信号或等待阶段默认不交易</div>
   </article>
   <article class="summary-card">
     <div class="label">Option Setup</div>
-    <div class="value">0</div>
+    <div class="value">2</div>
     <div class="sub">全池扫描后按强/弱机会与持仓管理分开显示</div>
   </article>
 
 </section>
 
+
+<script>
+async function triggerRefresh() {
+  const btn = document.getElementById('refreshBtn');
+  const msg = document.getElementById('refreshMsg');
+  if (!btn || !msg) return;
+  btn.disabled = true;
+  btn.textContent = 'Syncing...';
+  msg.textContent = '';
+  let token = localStorage.getItem('gh_token');
+  if (!token) {
+    token = prompt('首次使用请输入GitHub Personal Access Token (需要repo和workflow权限):');
+    if (!token) { btn.disabled = false; btn.textContent = '◉ Refresh Feed'; return; }
+    localStorage.setItem('gh_token', token);
+  }
+  try {
+    const r = await fetch('https://api.github.com/repos/maxwu1978/stock-analysis/actions/workflows/update-page.yml/dispatches', {
+      method: 'POST',
+      headers: { 'Accept': 'application/vnd.github+json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ref: 'main'})
+    });
+    if (r.status === 204) {
+      msg.textContent = 'DISPATCHED · 约4分钟后自动刷新';
+      msg.style.color = 'var(--down)';
+      setTimeout(() => location.reload(), 240000);
+    } else if (r.status === 401 || r.status === 403) {
+      localStorage.removeItem('gh_token');
+      msg.textContent = 'TOKEN INVALID · 请重新点击输入';
+      msg.style.color = 'var(--up)';
+    } else {
+      msg.textContent = 'FAIL · HTTP ' + r.status;
+      msg.style.color = 'var(--up)';
+    }
+  } catch(e) {
+    msg.textContent = 'NET ERROR · ' + e.message;
+    msg.style.color = 'var(--up)';
+  }
+  btn.disabled = false;
+  btn.textContent = '◉ Refresh Feed';
+}
+</script>
 
 <nav class="anchor-nav">
 
@@ -758,15 +801,18 @@
   <table>
     <thead><tr><th>市场</th><th>标的</th><th>状态</th><th>层级</th><th>可靠度</th><th>计划</th></tr></thead>
     <tbody><tr><td>CN</td><td>中国铝业</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>CN</td><td>宁德时代</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>CN</td><td>宁德时代</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>CN</td><td>贵州茅台</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>CN</td><td>闻泰科技</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>CN</td><td>阳光电源</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>US</td><td>富途控股</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>US</td><td>携程</td><td>WATCHLIST</td><td>MICRO</td><td>中</td><td>MICRO · 212股 · $900</td></tr>
-<tr><td>US</td><td>特斯拉</td><td>WATCHLIST</td><td>MICRO</td><td>中</td><td>MICRO · 59股 · $1,800</td></tr>
+<tr><td>CN</td><td>阳光电源</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>US</td><td>台积电</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>US</td><td>富途控股</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>US</td><td>携程</td><td>WATCHLIST</td><td>MICRO</td><td>中</td><td>MICRO · 155股 · $900</td></tr>
+<tr><td>US</td><td>特斯拉</td><td>OBSERVE</td><td>NO_TRADE</td><td>中</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>US</td><td>美光科技</td><td>OBSERVE</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 <tr><td>US</td><td>英伟达</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
-<tr><td>US</td><td>苹果</td><td>WATCHLIST</td><td>MICRO</td><td>中</td><td>MICRO · 43股 · $945</td></tr>
+<tr><td>US</td><td>苹果</td><td>OBSERVE</td><td>NO_TRADE</td><td>中</td><td>NO_TRADE · 0股 · $0</td></tr>
+<tr><td>US</td><td>西部数据</td><td>WATCHLIST</td><td>MICRO</td><td>强</td><td>MICRO · 249股 · $1,050</td></tr>
 <tr><td>US</td><td>谷歌</td><td>WAIT</td><td>NO_TRADE</td><td>弱</td><td>NO_TRADE · 0股 · $0</td></tr>
 </tbody>
   </table>
@@ -786,7 +832,31 @@
 <div class="table-wrap">
   <table>
     <thead><tr><th>策略</th><th>类型</th><th>信号</th><th>计划</th><th>说明</th></tr></thead>
-    <tbody><tr><td colspan="5">暂无期权机会更新</td></tr></tbody>
+    <tbody><tr><td>AAPL 跨式策略</td><td>弱机会</td><td>BUY_STRADDLE_VOL_ONLY</td><td>MICRO · 建议 1 套 · 风险预算 $900 · 名义资金 $1,479</td><td>跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。</td></tr>
+<tr><td>NVDA 跨式策略</td><td>弱机会</td><td>BUY_STRADDLE_WEAK</td><td>MICRO · 建议 1 套 · 风险预算 $900 · 名义资金 $1,390</td><td>跨式弱机会，只适合微型试单。MICRO 表示最小试探仓，套数按风险预算 ÷ 单套风险估算。</td></tr>
+<tr><td>GOOGL 持仓管理</td><td>持仓管理</td><td>有</td><td>剩 14 天, 进入 21天警戒区</td><td>现有仓位以退出模板和时间窗管理为主。</td></tr>
+<tr><td>AAPL 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AMD 单腿分形</td><td>无机会</td><td>WAIT</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AMD 跨式策略</td><td>无机会</td><td>WAIT_EXECUTION_FILTER</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>AMZN 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AMZN 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>AVGO 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>AVGO 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>GOOGL 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>GOOGL 跨式策略</td><td>无机会</td><td>WAIT_EXECUTION_FILTER</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>META 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>META 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>MSFT 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>MSFT 跨式策略</td><td>无机会</td><td>WAIT</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>MU 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>NVDA 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>TSLA 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>TSLA 跨式策略</td><td>无机会</td><td>WAIT_EXECUTION_FILTER</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>TSM 单腿分形</td><td>无机会</td><td>OBSERVE</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>TSM 跨式策略</td><td>无机会</td><td>WAIT_IV_HIGH_SELL_CANDIDATE</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+<tr><td>WDC 单腿分形</td><td>无机会</td><td>WAIT</td><td>当前无明确信号</td><td>分形单腿策略当前仅给出观望/等待；若为执行闸门拦截，则不建议开新仓。</td></tr>
+<tr><td>WDC 跨式策略</td><td>无机会</td><td>WAIT_EXECUTION_FILTER</td><td>当前无跨式机会</td><td>当前波动/IV 或执行成本不支持新开跨式。</td></tr>
+</tbody>
   </table>
 </div>
 
