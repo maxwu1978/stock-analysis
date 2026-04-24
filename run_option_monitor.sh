@@ -21,13 +21,19 @@ fi
     | grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning" \
     >> option_monitor_cron.log
 
-# 2) 真实盘观察 (只读, 写 real_position_section.html)
+# 2) 期权链/IV 快照积累 (用于后续真实链路回测, 失败不影响页面刷新)
+"$VENV_PY" option_chain_snapshot.py --watchlist tech --dtes 14,21 --sleep-sec 3.2 2>/dev/null \
+    | grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning" \
+    >> option_monitor_cron.log || \
+    echo "$(date +%H:%M) option_chain_snapshot skipped/failed" >> option_monitor_cron.log
+
+# 3) 真实盘观察 (只读, 写 real_position_section.html)
 # 不用 --market-open-only, 真实持仓任何时候都值得观察
 "$VENV_PY" real_position_observer.py 2>/dev/null \
     | grep -v -E "open_context_base|_init_connect_sync|on_disconnect|DeprecationWarning" \
     >> option_monitor_cron.log
 
-# 3) 如果任一片段有变化, 重新生成主页 + push
+# 4) 如果任一片段有变化, 重新生成主页 + push
 ANY_CHANGE=0
 for frag in option_section.html real_position_section.html; do
     if [ -f "$frag" ] && ! git diff --quiet "$frag" 2>/dev/null; then
