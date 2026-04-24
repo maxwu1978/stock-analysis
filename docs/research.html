@@ -683,7 +683,7 @@
 <div class="tape">
   <div><span class="dot">●</span> QUANT DESK · 主力分析 · LIVE</div>
   <div class="muted">STATIC SUBPAGE · OPTIONS / REVIEW</div>
-  <div class="muted">2026-04-24 18:28:46</div>
+  <div class="muted">2026-04-24 17:14:30</div>
 </div>
 
 <div class="container">
@@ -692,7 +692,7 @@
   <div class="hero-kicker">Issue № 11 · Factor Lab · Candidate Research</div>
   <h1>候选因子<em>研究</em><span class="eyebrow">Candidate Factor Lab & Promotion Queue</span></h1>
   <div class="hero-meta">
-    <span class="pill">Last Sync · 2026-04-24 18:28:46</span>
+    <span class="pill">Last Sync · 2026-04-24 17:14:30</span>
     <button class="btn-refresh" id="refreshBtn" onclick="triggerRefresh()">◉ Refresh Feed</button>
     <span class="refresh-msg" id="refreshMsg"></span>
     <span class="pill">Linked from index.html</span>
@@ -705,7 +705,7 @@
 
   <article class="summary-card">
     <div class="label">Promotion Queue</div>
-    <div class="value">3 晋升 / 42 候选</div>
+    <div class="value">0 晋升 / 13 候选</div>
     <div class="sub">候选因子研究与晋升队列</div>
   </article>
   <article class="summary-card">
@@ -782,17 +782,17 @@ async function triggerRefresh() {
   <div class="section-head">
     <div class="section-num">№ 11</div>
     <h2>Factor Lab <em>Research</em><span class="cn">候选因子研究摘要</span></h2>
-    <div class="section-meta">Generated<br>2026-04-24T08:10:13.381839+00:00</div>
+    <div class="section-meta">Generated<br>2026-04-23T20:53:28.057904+00:00</div>
   </div>
   <p class="note">
     该摘要只用于研究层，不会自动修改 active 因子池或交易动作。当前门槛: promote_rankic≥0.04, watch_rankic≥0.025, coverage≥50.0
   </p>
 </section>
 <section class="summary-strip">
-<article class="summary-card"><div class="label">Promotion Queue</div><div class="value">3</div><div class="sub">当前可进入 trial backtest 的候选</div></article>
-<article class="summary-card"><div class="label">Watchlist</div><div class="value">21</div><div class="sub">局部有效但证据还不够强</div></article>
-<article class="summary-card"><div class="label">Duplicate Rejects</div><div class="value">10</div><div class="sub">与现有 active 因子高度重叠</div></article>
-<article class="summary-card"><div class="label">Hard Rejects</div><div class="value">8</div><div class="sub">覆盖不足或信号强度不够</div></article>
+<article class="summary-card"><div class="label">Promotion Queue</div><div class="value">0</div><div class="sub">当前可进入 trial backtest 的候选</div></article>
+<article class="summary-card"><div class="label">Watchlist</div><div class="value">5</div><div class="sub">局部有效但证据还不够强</div></article>
+<article class="summary-card"><div class="label">Duplicate Rejects</div><div class="value">4</div><div class="sub">与现有 active 因子高度重叠</div></article>
+<article class="summary-card"><div class="label">Hard Rejects</div><div class="value">4</div><div class="sub">覆盖不足或信号强度不够</div></article>
 </section>
 
 <div class="market-block cn-block" id="factor-lab-a">
@@ -801,7 +801,7 @@ async function triggerRefresh() {
     <h2>A股 <em>Factor Lab</em><span class="cn">候选因子摘要</span></h2>
     <div class="section-meta">Candidate Research<br>Promotion Queue</div>
   </div>
-  <p class="note">当前已有候选可进入试验回测池，但仍不应直接改 active 因子池。</p>
+  <p class="note">当前没有足够证据进入试验晋升队列，重点应继续观察局部有效且正交性尚可的候选。</p>
   <div class="table-wrap">
     <table>
       <thead>
@@ -815,11 +815,8 @@ async function triggerRefresh() {
           <th>研究结论</th>
         </tr>
       </thead>
-      <tbody><tr><td><strong>high52w_x_vol_surge</strong><br><small>trend</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0515</td><td>0.1338</td><td>80.7%</td><td>high52w_pos</td><td>局部有效且单周期稳定，但整体晋升证据不足，进入观察名单</td></tr>
-<tr><td><strong>price_position_z30</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0661</td><td>0.2574</td><td>94.9%</td><td>price_position</td><td>局部有效且单周期稳定，但整体晋升证据不足，进入观察名单</td></tr>
-<tr><td><strong>price_position_z20</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0461</td><td>0.3524</td><td>95.6%</td><td>price_position</td><td>局部有效且单周期稳定，但整体晋升证据不足，进入观察名单</td></tr>
-<tr><td><strong>liquidity_stress_proxy</strong><br><small>macro</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0530</td><td>0.3055</td><td>98.4%</td><td>gap_ret_10d</td><td>局部有效且单周期稳定，但整体晋升证据不足，进入观察名单</td></tr>
-<tr><td><strong>roc15</strong><br><small>trend</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0651</td><td>0.1421</td><td>97.7%</td><td>ROC20</td><td>局部有效且单周期稳定，但整体晋升证据不足，进入观察名单</td></tr></tbody>
+      <tbody><tr><td><strong>gap_ret_20d</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0416</td><td>0.2663</td><td>99.3%</td><td>gap_ret_10d</td><td>局部有效且单周期稳定，但整体晋升证据不足，进入观察名单</td></tr>
+<tr><td><strong>price_position_z20</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0256</td><td>0.3863</td><td>98.1%</td><td>price_position</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr></tbody>
     </table>
   </div>
   <div class="table-wrap" style="margin-top:18px;">
@@ -835,11 +832,11 @@ async function triggerRefresh() {
           <th>研究结论</th>
         </tr>
       </thead>
-      <tbody><tr><td><strong>ai_mfg_heat_proxy</strong><br><small>industry</small></td><td><span class="tag tag-down">重复</span></td><td>0.0779</td><td>0.0529</td><td>96.9%</td><td>ROC20</td><td>与active因子 ROC20 高度重叠</td></tr>
-<tr><td><strong>quality_flow_proxy</strong><br><small>industry</small></td><td><span class="tag tag-down">重复</span></td><td>0.0715</td><td>0.0483</td><td>97.0%</td><td>cash_flow_ps</td><td>与active因子 cash_flow_ps 高度重叠</td></tr>
-<tr><td><strong>amihud_30d</strong><br><small>behavior</small></td><td><span class="tag tag-down">重复</span></td><td>0.0168</td><td>0.0275</td><td>97.7%</td><td>amihud_20d</td><td>与active因子 amihud_20d 高度重叠</td></tr>
-<tr><td><strong>policy_beta_proxy</strong><br><small>macro</small></td><td><span class="tag tag-down">重复</span></td><td>0.0584</td><td>0.0856</td><td>97.0%</td><td>price_position</td><td>与active因子 price_position 高度重叠</td></tr>
-<tr><td><strong>amihud_10d</strong><br><small>behavior</small></td><td><span class="tag tag-down">重复</span></td><td>0.0026</td><td>0.0648</td><td>99.2%</td><td>amihud_20d</td><td>与active因子 amihud_20d 高度重叠</td></tr></tbody>
+      <tbody><tr><td><strong>amihud_30d</strong><br><small>behavior</small></td><td><span class="tag tag-down">重复</span></td><td>0.0927</td><td>0.0165</td><td>99.0%</td><td>amihud_20d</td><td>与active因子 amihud_20d 高度重叠</td></tr>
+<tr><td><strong>amihud_10d</strong><br><small>behavior</small></td><td><span class="tag tag-down">重复</span></td><td>0.0817</td><td>0.0380</td><td>99.7%</td><td>amihud_20d</td><td>与active因子 amihud_20d 高度重叠</td></tr>
+<tr><td><strong>high52w_x_vol_surge</strong><br><small>trend</small></td><td><span class="tag tag-down">重复</span></td><td>0.0302</td><td>0.0954</td><td>91.7%</td><td>high52w_pos</td><td>与active因子 high52w_pos 高度重叠</td></tr>
+<tr><td><strong>gap_ret_5d</strong><br><small>behavior</small></td><td><span class="tag tag-down">淘汰</span></td><td>0.0236</td><td>0.2804</td><td>99.8%</td><td>gap_ret_10d</td><td>信号强度不足</td></tr>
+<tr><td><strong>mfdfa_x_roc10</strong><br><small>fractal</small></td><td><span class="tag tag-down">淘汰</span></td><td>0.0136</td><td>0.2838</td><td>88.1%</td><td>mfdfa_x_roc20</td><td>信号强度不足</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -851,7 +848,7 @@ async function triggerRefresh() {
     <h2>美股 <em>Factor Lab</em><span class="cn">候选因子摘要</span></h2>
     <div class="section-meta">Candidate Research<br>Promotion Queue</div>
   </div>
-  <p class="note">当前已有候选可进入试验回测池，但仍不应直接改 active 因子池。</p>
+  <p class="note">当前没有足够证据进入试验晋升队列，重点应继续观察局部有效且正交性尚可的候选。</p>
   <div class="table-wrap">
     <table>
       <thead>
@@ -865,11 +862,9 @@ async function triggerRefresh() {
           <th>研究结论</th>
         </tr>
       </thead>
-      <tbody><tr><td><strong>gap_ret_15d</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0491</td><td>0.3777</td><td>99.3%</td><td>ROC20</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr>
-<tr><td><strong>gap_ret_10d</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0373</td><td>0.4557</td><td>99.5%</td><td>ROC20</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr>
-<tr><td><strong>gap_ret_8d</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0360</td><td>0.5019</td><td>99.6%</td><td>ROC20</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr>
-<tr><td><strong>gap_ret_3d</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0259</td><td>0.6318</td><td>99.7%</td><td>-DI</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr>
-<tr><td><strong>gap_ret_5d</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0287</td><td>0.5751</td><td>99.7%</td><td>-DI</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr></tbody>
+      <tbody><tr><td><strong>gap_ret_5d</strong><br><small>behavior</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0287</td><td>0.5751</td><td>99.7%</td><td>-DI</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr>
+<tr><td><strong>high52w_x_vol_surge</strong><br><small>trend</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0500</td><td>0.1362</td><td>87.6%</td><td>high52w_pos</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr>
+<tr><td><strong>vix_z20_x_high52w</strong><br><small>macro</small></td><td><span class="tag tag-neutral">观察</span></td><td>0.0262</td><td>0.1137</td><td>81.8%</td><td>vix_z20</td><td>局部有效，但稳定性或正交性不足，进入观察名单</td></tr></tbody>
     </table>
   </div>
   <div class="table-wrap" style="margin-top:18px;">
@@ -885,11 +880,9 @@ async function triggerRefresh() {
           <th>研究结论</th>
         </tr>
       </thead>
-      <tbody><tr><td><strong>ai_chain_leader_proxy</strong><br><small>industry</small></td><td><span class="tag tag-down">重复</span></td><td>0.0273</td><td>0.0962</td><td>87.6%</td><td>ROC20</td><td>与active因子 ROC20 高度重叠</td></tr>
-<tr><td><strong>ai_chain_heat_proxy</strong><br><small>industry</small></td><td><span class="tag tag-down">重复</span></td><td>0.0263</td><td>0.0472</td><td>98.0%</td><td>ROC20</td><td>与active因子 ROC20 高度重叠</td></tr>
-<tr><td><strong>vix_z20_x_vol_surge</strong><br><small>macro</small></td><td><span class="tag tag-down">重复</span></td><td>0.0451</td><td>0.0355</td><td>83.0%</td><td>vix_z20</td><td>与active因子 vix_z20 高度重叠</td></tr>
-<tr><td><strong>vix_roc5_x_vol_surge</strong><br><small>macro</small></td><td><span class="tag tag-down">重复</span></td><td>0.0163</td><td>0.0311</td><td>84.2%</td><td>vix_roc5</td><td>与active因子 vix_roc5 高度重叠</td></tr>
-<tr><td><strong>atr_pct_z20</strong><br><small>volatility</small></td><td><span class="tag tag-down">淘汰</span></td><td>0.0113</td><td>0.5076</td><td>98.2%</td><td>vol_surge</td><td>信号强度不足</td></tr></tbody>
+      <tbody><tr><td><strong>vix_z20_x_vol_surge</strong><br><small>macro</small></td><td><span class="tag tag-down">重复</span></td><td>0.0451</td><td>0.0355</td><td>83.0%</td><td>vix_z20</td><td>与active因子 vix_z20 高度重叠</td></tr>
+<tr><td><strong>roc30</strong><br><small>trend</small></td><td><span class="tag tag-down">淘汰</span></td><td>0.0179</td><td>0.1627</td><td>97.0%</td><td>ROC20</td><td>信号强度不足</td></tr>
+<tr><td><strong>atr_pct_z20</strong><br><small>volatility</small></td><td><span class="tag tag-down">淘汰</span></td><td>-</td><td>-</td><td>0.0%</td><td>-</td><td>coverage不足或缺少有效rankIC</td></tr></tbody>
     </table>
   </div>
 </div>
