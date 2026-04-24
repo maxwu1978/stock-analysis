@@ -11,6 +11,7 @@
   - 腾讯/阿里 (HK): 尚未系统分析, 观察模式
 """
 
+import argparse
 import sys
 import numpy as np
 import pandas as pd
@@ -175,15 +176,15 @@ def format_report(df: pd.DataFrame) -> None:
     print()
 
 
-if __name__ == "__main__":
-    wl_name = "default"
-    for i, arg in enumerate(sys.argv):
-        if arg == "--watchlist" and i + 1 < len(sys.argv):
-            wl_name = sys.argv[i + 1]
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Read Futu OpenD quotes and print live fractal observations")
+    parser.add_argument("--watchlist", default="default", choices=sorted(WATCHLISTS))
+    return parser.parse_args()
 
-    if wl_name not in WATCHLISTS:
-        print(f"Unknown watchlist {wl_name!r}. Available: {list(WATCHLISTS.keys())}")
-        sys.exit(1)
+
+def main() -> None:
+    args = parse_args()
+    wl_name = args.watchlist
 
     print(f"使用关注池: {wl_name}")
     codes = WATCHLISTS[wl_name]
@@ -199,3 +200,7 @@ if __name__ == "__main__":
     out_path = f"futu_live_{wl_name}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     df.to_csv(out_path, index=False)
     print(f"  保存: {out_path}\n")
+
+
+if __name__ == "__main__":
+    main()

@@ -95,6 +95,13 @@ python3 manage.py preflight
 - `install_launchd.sh test` 的期权监控检查已改为调用 `manage.py option-monitor`。
 - `scripts/factor_learn.sh` / `factor_test.sh` / `run_factor_lab_ci.sh` 已支持 `PYTHON=...` 覆盖解释器。
 
+### 9. 研究脚本帮助入口标准化
+
+- `trade_futu_sim.py --help` 现在只打印文档，不再落入未知命令分支。
+- `futu_live.py` / `option_straddle_advisor.py` / `option_advisor_backtest.py` / `btc_trend_advisor.py` / `futures_fractal_survey.py` 已补标准 `argparse` 入口。
+- 新增 `manage.py trade-sim` / `futu-live` / `option-straddle` / `option-advisor-backtest` / `btc-trend` / `futures-fractal`。
+- 这些命令只统一入口，不降低原有安全门槛；`trade-sim` 下单仍必须显式 `--confirm` 且保持 SIMULATE 硬锁。
+
 ## 已确认问题
 
 ### launchd 因子任务 `Operation not permitted`

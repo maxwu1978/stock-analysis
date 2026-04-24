@@ -15,7 +15,7 @@
 运行: python option_advisor_backtest.py [watchlist_name]
 """
 
-import sys
+import argparse
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -235,12 +235,16 @@ def run(symbols: list[str]) -> pd.DataFrame:
     return combined
 
 
-if __name__ == "__main__":
-    wl_name = sys.argv[1] if len(sys.argv) > 1 else "default"
-    symbols = WATCHLISTS.get(wl_name)
-    if symbols is None:
-        print(f"可用: {list(WATCHLISTS)}")
-        sys.exit(1)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Backtest option-advisor direction signals on underlying prices")
+    parser.add_argument("watchlist", nargs="?", default="default", choices=sorted(WATCHLISTS))
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    wl_name = args.watchlist
+    symbols = WATCHLISTS[wl_name]
 
     df = run(symbols)
     report(df)
@@ -248,3 +252,7 @@ if __name__ == "__main__":
     out = f"advisor_backtest_{wl_name}_{datetime.now().strftime('%Y%m%d_%H%M')}.csv"
     df.to_csv(out, index=False)
     print(f"  详细信号: {out}\n")
+
+
+if __name__ == "__main__":
+    main()

@@ -10,7 +10,7 @@
   python futures_fractal_survey.py metals    # 贵金属
 """
 
-import sys
+import argparse
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -102,12 +102,20 @@ def report(df: pd.DataFrame, label: str = "") -> None:
     print()
 
 
-if __name__ == "__main__":
-    universe = sys.argv[1] if len(sys.argv) > 1 else "cme_indexes"
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Survey MF-DFA fractal structure across futures universes")
+    parser.add_argument("universe", nargs="?", default="cme_indexes", choices=sorted(FUTURES_UNIVERSE))
+    parser.add_argument("--days", type=int, default=400)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    universe = args.universe
 
     if universe == "all":
         # 全部一起跑 + 按板块分组诊断
-        full = survey("all", days=400)
+        full = survey("all", days=args.days)
         report(full, f"(universe=all)")
         # 按板块分组
         sector_map = {}
@@ -121,7 +129,7 @@ if __name__ == "__main__":
         grouped = full.groupby("sector")["asym"].agg(["mean", "count"])
         print(grouped.to_string(float_format=lambda x: f"{x:+.3f}"))
     else:
-        df = survey(universe, days=400)
+        df = survey(universe, days=args.days)
         report(df, f"(universe={universe})")
 
     # 保存 CSV
@@ -131,3 +139,7 @@ if __name__ == "__main__":
     else:
         df.to_csv(out_path, index=False)
     print(f"\n  保存: {out_path}\n")
+
+
+if __name__ == "__main__":
+    main()

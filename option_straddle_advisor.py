@@ -17,7 +17,7 @@ Strangle = OTM Call + OTM Put (更便宜但需更大波动才盈利)
   python option_straddle_advisor.py nvda_only
 """
 
-import sys
+import argparse
 import time
 import numpy as np
 import pandas as pd
@@ -291,9 +291,17 @@ def run(watchlist: list[str], days_to_expiry: int = 21) -> None:
     print(f"{'═' * 88}\n")
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate straddle ideas from fractal and IV signals")
+    parser.add_argument("watchlist", nargs="?", default="default", choices=sorted(WATCHLISTS))
+    parser.add_argument("--days-to-expiry", type=int, default=21)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    run(WATCHLISTS[args.watchlist], days_to_expiry=args.days_to_expiry)
+
+
 if __name__ == "__main__":
-    wl_name = sys.argv[1] if len(sys.argv) > 1 else "default"
-    if wl_name not in WATCHLISTS:
-        print(f"可用: {list(WATCHLISTS)}")
-        sys.exit(1)
-    run(WATCHLISTS[wl_name], days_to_expiry=21)
+    main()

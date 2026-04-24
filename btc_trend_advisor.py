@@ -23,7 +23,7 @@
 **原始设计 (失败)**:
 """
 
-import sys
+import argparse
 import numpy as np
 import pandas as pd
 import yfinance as yf
@@ -269,9 +269,20 @@ def backtest(days: int = 400, lookback_min: int = 60) -> None:
     print(f"\n  详细: {out}")
 
 
-if __name__ == "__main__":
-    mode = sys.argv[1] if len(sys.argv) > 1 else "live"
-    if mode == "backtest":
-        backtest(days=400)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Research-only BTC trend/mean-reversion advisor")
+    parser.add_argument("mode", nargs="?", default="live", choices=["live", "backtest"])
+    parser.add_argument("--days", type=int, default=400)
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    if args.mode == "backtest":
+        backtest(days=args.days)
     else:
         run_live()
+
+
+if __name__ == "__main__":
+    main()

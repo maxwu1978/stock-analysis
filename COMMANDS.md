@@ -35,6 +35,8 @@
 |---|---|
 | `./manage.py refresh-options` | 本地生成当前期权策略输出。 |
 | `./manage.py option-advisor tech_plus` | 运行期权全池策略顾问，只输出建议和命令，不下单。 |
+| `./manage.py option-straddle tech` | 运行跨式/宽跨式研究顾问。 |
+| `./manage.py option-advisor-backtest tech` | 回测期权顾问方向信号。 |
 | `./manage.py option-monitor --market-open-only` | 监控模拟盘期权持仓并更新本地片段。 |
 | `./manage.py option-chain-snapshot --watchlist tech` | 收集当前期权链/IV 快照，用于后续真实链路回测。 |
 | `./manage.py real-position-observer` | 只读观察真实盘股票持仓并生成本地片段。 |
@@ -55,6 +57,17 @@
 | `./manage.py factor-test` | 复测候选因子并更新晋升队列。 |
 | `./scripts/factor_learn.sh` | launchd/本地非交互学习 wrapper。 |
 | `./scripts/factor_test.sh` | launchd/本地非交互测试 wrapper。 |
+
+## 实盘观察与交易模拟
+
+| 命令 | 用途 |
+|---|---|
+| `./manage.py futu-live --watchlist default` | 只读拉取 Futu 行情并输出分形观察。 |
+| `./manage.py trade-sim balance` | 查询富途模拟盘资金。 |
+| `./manage.py trade-sim buy US.AAPL 1 --confirm` | 模拟盘买入；真实下单仍由脚本硬锁禁止。 |
+| `./manage.py btc-trend` | 运行 BTC 研究策略当前状态，仅研究用途。 |
+| `./manage.py btc-trend backtest --days 400` | 复测 BTC 研究策略。 |
+| `./manage.py futures-fractal metals` | 调研指定期货 universe 的 MF-DFA 结构。 |
 
 ## Kronos 研究
 

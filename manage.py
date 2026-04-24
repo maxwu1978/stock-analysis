@@ -67,6 +67,14 @@ def cmd_option_advisor(extra: list[str]) -> int:
     return python_cmd("option_fractal_advisor.py", extra)
 
 
+def cmd_option_straddle(extra: list[str]) -> int:
+    return python_cmd("option_straddle_advisor.py", extra)
+
+
+def cmd_option_advisor_backtest(extra: list[str]) -> int:
+    return python_cmd("option_advisor_backtest.py", extra)
+
+
 def cmd_option_monitor(extra: list[str]) -> int:
     return python_cmd("option_monitor.py", extra)
 
@@ -77,6 +85,22 @@ def cmd_option_chain_snapshot(extra: list[str]) -> int:
 
 def cmd_real_position_observer(extra: list[str]) -> int:
     return python_cmd("real_position_observer.py", extra)
+
+
+def cmd_trade_sim(extra: list[str]) -> int:
+    return python_cmd("trade_futu_sim.py", extra)
+
+
+def cmd_futu_live(extra: list[str]) -> int:
+    return python_cmd("futu_live.py", extra)
+
+
+def cmd_btc_trend(extra: list[str]) -> int:
+    return python_cmd("btc_trend_advisor.py", extra)
+
+
+def cmd_futures_fractal(extra: list[str]) -> int:
+    return python_cmd("futures_fractal_survey.py", extra)
 
 
 def cmd_factor_learn(extra: list[str]) -> int:
@@ -258,6 +282,7 @@ def cmd_list_commands(extra: list[str]) -> int:
 
 COMMANDS = {
     "capital-flow-backtest": (cmd_capital_flow_backtest, "Backtest CN capital-flow intent labels."),
+    "btc-trend": (cmd_btc_trend, "Run research-only BTC trend advisor/backtest."),
     "doctor": (cmd_doctor, "Check local automation wiring and entrypoint files."),
     "factor-ideas": (cmd_factor_ideas, "Generate draft factor candidate ideas."),
     "factor-lab": (cmd_factor_lab, "Batch-evaluate candidate factors."),
@@ -265,6 +290,8 @@ COMMANDS = {
     "factor-promotion": (cmd_factor_promotion, "Build factor promotion queue from lab outputs."),
     "factor-test": (cmd_factor_test, "Run candidate factor testing."),
     "fetch-option-chains": (cmd_fetch_option_chains, "Fetch needed historical option-chain slices."),
+    "futu-live": (cmd_futu_live, "Read Futu quotes and print live fractal observations."),
+    "futures-fractal": (cmd_futures_fractal, "Survey MF-DFA structure across futures universes."),
     "import-option-chains": (cmd_import_option_chains, "Import third-party option-chain CSV snapshots."),
     "industry-heat": (cmd_industry_heat, "Run industry heat and potential analysis."),
     "kronos-confirm-a": (cmd_kronos_confirm_a, "Run A-share Kronos confirmation backtest."),
@@ -274,16 +301,19 @@ COMMANDS = {
     "list-commands": (cmd_list_commands, "Print available project commands."),
     "option-account-sim": (cmd_option_account_sim, "Simulate account equity from option trades."),
     "option-advisor": (cmd_option_advisor, "Generate option strategy ideas from fractal signals."),
+    "option-advisor-backtest": (cmd_option_advisor_backtest, "Backtest option-advisor direction signals."),
     "option-chain-snapshot": (cmd_option_chain_snapshot, "Collect current option-chain snapshots."),
     "option-monitor": (cmd_option_monitor, "Monitor option positions and update local fragments."),
     "option-pnl-review": (cmd_option_pnl_review, "Review historical option proxy PnL."),
     "option-signal-review": (cmd_option_signal_review, "Replay historical strong/weak option signals."),
+    "option-straddle": (cmd_option_straddle, "Generate straddle ideas from fractal and IV signals."),
     "real-position-observer": (cmd_real_position_observer, "Emit read-only REAL account observation fragment."),
     "refresh-page": (cmd_refresh_page, "Generate docs pages. Defaults to --allow-partial; use --strict for release mode."),
     "refresh-options": (cmd_refresh_options, "Refresh option strategy output."),
     "refresh-us-quotes": (cmd_refresh_us_quotes, "Refresh U.S. quote snapshot pages."),
     "scan-cn": (cmd_scan_cn, "Run A-share opportunity scan."),
     "smoke-test": (cmd_smoke_test, "Check generated pages locally or with --remote."),
+    "trade-sim": (cmd_trade_sim, "Run SIMULATE-only Futu trade helper; order commands still require --confirm."),
     "validate-a": (cmd_validate_a, "Validate current A-share signal rules over recent years."),
     "preflight": (cmd_preflight, "Run release checks."),
 }

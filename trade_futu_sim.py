@@ -442,7 +442,7 @@ def sim_cancel(order_id: str, market: str = "US", confirmed: bool = False, plan_
 
 def main():
     args = sys.argv[1:]
-    if not args:
+    if not args or args[0] in {"-h", "--help"}:
         print(__doc__)
         return
 

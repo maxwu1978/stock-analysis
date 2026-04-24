@@ -39,6 +39,8 @@ A 股机会和可靠性验证：
 ```bash
 ./manage.py refresh-options
 ./manage.py option-advisor tech_plus
+./manage.py option-straddle tech
+./manage.py option-advisor-backtest tech
 ./manage.py option-monitor --market-open-only
 ./manage.py option-chain-snapshot --watchlist tech
 ./manage.py real-position-observer
@@ -47,6 +49,16 @@ A 股机会和可靠性验证：
 ./manage.py option-account-sim --initial-capital 10000
 ./manage.py import-option-chains --input vendor_option_chain.csv
 ./manage.py fetch-option-chains --max-targets 10
+```
+
+只读观察和模拟盘：
+
+```bash
+./manage.py futu-live --watchlist default
+./manage.py trade-sim balance
+./manage.py trade-sim buy US.AAPL 1 --confirm
+./manage.py btc-trend
+./manage.py futures-fractal metals
 ```
 
 因子学习和测试：
